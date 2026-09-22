@@ -217,7 +217,7 @@
         "<td>" + (tbl ? escapeHtml(tbl.name) : '<span style="color:var(--text-muted)">Unassigned</span>') + "</td>" +
         '<td style="max-width:160px; font-size:.74rem; color:var(--text-muted);">' + escapeHtml(g.dietary || "—") + "</td>" +
         '<td><span class="pill ' + (g.checkedIn ? "pill-checked" : "pill-notchecked") + '">' + (g.checkedIn ? "Checked in" : "Not yet") + "</span></td>" +
-        '<td><div class="row-actions">' + iconBtn("edit", g.id, "Edit") + iconBtn("link", g.id, "Copy invite link") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Delete") + "</div></td>" +
+        '<td><div class="row-actions">' + iconBtn("edit", g.id, "Edit") + iconBtn("link", g.id, "Copy invite link") + iconBtn("invite", g.id, "Send invite via WhatsApp") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Delete") + "</div></td>" +
         "</tr>";
     }).join("");
   }
@@ -225,6 +225,7 @@
     var icons = {
       edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
       link: '<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>',
+      invite: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
       badge: '<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 18h8"/>',
       checkin: '<path d="M20 6L9 17l-5-5"/>',
       delete: '<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/>',
@@ -249,6 +250,7 @@
     if (!g) return;
     if (action === "edit") openGuestModal(g);
     else if (action === "link") copyInviteLink(g);
+    else if (action === "invite") sendInvite(g);
     else if (action === "badge") openBadgeModal(g);
     else if (action === "checkin") toggleCheckin(g);
     else if (action === "delete") deleteGuest(g);
@@ -259,6 +261,22 @@
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(function () { showToast("Invite link copied for " + fullName(g)); }).catch(function () { prompt("Copy this link:", url); });
     } else { prompt("Copy this link:", url); }
+  }
+
+  function waNumber(phone) {
+    var digits = String(phone || "").replace(/[^\d]/g, "");
+    if (!digits) return "";
+    if (digits.charAt(0) === "0") return "263" + digits.slice(1); // local Zimbabwean format -> country code
+    return digits;
+  }
+
+  function sendInvite(g) {
+    var link = location.origin + "/?g=" + encodeURIComponent(g.id);
+    var msg = "Hello " + (g.firstName || "there") + "! You're warmly invited to Nyasha & Watson's wedding on Saturday, 5 December 2026 at Colne Valley Nature Reserve Park, Harare. Please view your invitation and RSVP here: " + link;
+    var num = waNumber(g.phone);
+    var url = (num ? "https://wa.me/" + num : "https://wa.me/") + "?text=" + encodeURIComponent(msg);
+    window.open(url, "_blank");
+    showToast(num ? "Opening WhatsApp to invite " + fullName(g) : "No phone on file — opening WhatsApp so you can choose a contact");
   }
 
   function toggleCheckin(g) {
@@ -828,87 +846,138 @@
     });
   });
 
-  /* ---------------- CSV IMPORT ---------------- */
-  var importedRows = [];
-  document.getElementById("importGuestsBtn").addEventListener("click", function () {
-    resetImportModal();
-    document.getElementById("importModalOverlay").hidden = false;
-  });
-  document.getElementById("importModalClose").addEventListener("click", function () { document.getElementById("importModalOverlay").hidden = true; });
-  document.getElementById("importCancelBtn").addEventListener("click", function () { document.getElementById("importModalOverlay").hidden = true; });
-
-  function resetImportModal() {
-    importedRows = [];
-    document.getElementById("importPreviewWrap").hidden = true;
-    document.getElementById("importDropzone").hidden = false;
-    document.getElementById("importCommitBtn").hidden = true;
-    document.getElementById("importFileInput").value = "";
+  /* ---------------- CSV IMPORT (generic engine, reused for guests/gifts/providers) ---------------- */
+  function importOpt(r, value, label) {
+    return "<option value=\"" + value + "\"" + (r.resolution === value ? " selected" : "") + ">" + label + "</option>";
   }
 
-  var dropzone = document.getElementById("importDropzone");
-  dropzone.addEventListener("click", function () { document.getElementById("importFileInput").click(); });
-  dropzone.addEventListener("dragover", function (e) { e.preventDefault(); dropzone.classList.add("dragover"); });
-  dropzone.addEventListener("dragleave", function () { dropzone.classList.remove("dragover"); });
-  dropzone.addEventListener("drop", function (e) {
-    e.preventDefault(); dropzone.classList.remove("dragover");
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) readCsvFile(e.dataTransfer.files[0]);
-  });
-  document.getElementById("importFileInput").addEventListener("change", function (e) {
-    if (e.target.files && e.target.files[0]) readCsvFile(e.target.files[0]);
-  });
+  function setupCsvImport(cfg) {
+    var rows = [];
+    function reset() {
+      rows = [];
+      document.getElementById(cfg.previewWrapId).hidden = true;
+      document.getElementById(cfg.dropzoneId).hidden = false;
+      document.getElementById(cfg.commitBtnId).hidden = true;
+      document.getElementById(cfg.fileInputId).value = "";
+    }
+    document.getElementById(cfg.openBtnId).addEventListener("click", function () {
+      reset();
+      document.getElementById(cfg.overlayId).hidden = false;
+    });
+    document.getElementById(cfg.closeId).addEventListener("click", function () { document.getElementById(cfg.overlayId).hidden = true; });
+    document.getElementById(cfg.cancelId).addEventListener("click", function () { document.getElementById(cfg.overlayId).hidden = true; });
 
-  function readCsvFile(file) {
-    var reader = new FileReader();
-    reader.onload = function () {
-      api("/api/admin/guests-import", { method: "POST", body: { csv: String(reader.result) } })
-        .then(function (res) { showImportPreview(res); })
-        .catch(function (e) { showToast(e.message || "Could not read that CSV file"); });
-    };
-    reader.readAsText(file);
+    var dz = document.getElementById(cfg.dropzoneId);
+    dz.addEventListener("click", function () { document.getElementById(cfg.fileInputId).click(); });
+    dz.addEventListener("dragover", function (e) { e.preventDefault(); dz.classList.add("dragover"); });
+    dz.addEventListener("dragleave", function () { dz.classList.remove("dragover"); });
+    dz.addEventListener("drop", function (e) {
+      e.preventDefault(); dz.classList.remove("dragover");
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
+    });
+    document.getElementById(cfg.fileInputId).addEventListener("change", function (e) {
+      if (e.target.files && e.target.files[0]) readFile(e.target.files[0]);
+    });
+
+    function readFile(file) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        api(cfg.endpoint, { method: "POST", body: { csv: String(reader.result) } })
+          .then(function (res) { showPreview(res); })
+          .catch(function (e) { showToast(e.message || "Could not read that CSV file"); });
+      };
+      reader.readAsText(file);
+    }
+
+    function showPreview(res) {
+      rows = res.rows.map(function (r) { return Object.assign({}, r, { resolution: r.duplicate ? "skip" : "create" }); });
+      document.getElementById(cfg.dropzoneId).hidden = true;
+      document.getElementById(cfg.previewWrapId).hidden = false;
+      document.getElementById(cfg.commitBtnId).hidden = false;
+      document.getElementById(cfg.summaryId).innerHTML =
+        "<span><strong>" + res.totalRows + "</strong> rows found</span>" +
+        "<span><strong>" + res.duplicateCount + "</strong> possible duplicates</span>" +
+        (res.invalidRows ? "<span><strong>" + res.invalidRows + "</strong> rows missing required details (will be skipped)</span>" : "");
+      render();
+    }
+    function render() {
+      document.getElementById(cfg.rowsId).innerHTML = rows.map(function (r, idx) { return cfg.renderRow(r, idx); }).join("");
+    }
+    document.getElementById(cfg.rowsId).addEventListener("change", function (e) {
+      var sel = e.target.closest(".import-action-select");
+      if (!sel) return;
+      rows[Number(sel.dataset.idx)].resolution = sel.value;
+    });
+    document.getElementById(cfg.commitBtnId).addEventListener("click", function () {
+      var payloadRows = rows.filter(cfg.isValid).map(cfg.buildCommitRow);
+      api(cfg.endpoint, { method: "POST", body: { mode: "commit", rows: payloadRows } })
+        .then(function (res) {
+          showToast(cfg.resultText(res));
+          document.getElementById(cfg.overlayId).hidden = true;
+          return loadAll();
+        }).catch(function (e) { showToast(e.message || "Import failed"); });
+    });
   }
 
-  function showImportPreview(res) {
-    importedRows = res.rows.map(function (r) { return Object.assign({}, r, { resolution: r.duplicate ? "skip" : "create" }); });
-    document.getElementById("importDropzone").hidden = true;
-    document.getElementById("importPreviewWrap").hidden = false;
-    document.getElementById("importCommitBtn").hidden = false;
-    document.getElementById("importSummary").innerHTML =
-      "<span><strong>" + res.totalRows + "</strong> rows found</span>" +
-      "<span><strong>" + res.duplicateCount + "</strong> possible duplicates</span>" +
-      (res.invalidRows ? "<span><strong>" + res.invalidRows + "</strong> rows missing a first name (will be skipped)</span>" : "");
-    renderImportRows();
-  }
-  function renderImportRows() {
-    document.getElementById("importRows").innerHTML = importedRows.map(function (r, idx) {
+  setupCsvImport({
+    openBtnId: "importGuestsBtn", overlayId: "importModalOverlay", closeId: "importModalClose", cancelId: "importCancelBtn",
+    dropzoneId: "importDropzone", fileInputId: "importFileInput", previewWrapId: "importPreviewWrap", summaryId: "importSummary",
+    rowsId: "importRows", commitBtnId: "importCommitBtn", endpoint: "/api/admin/guests-import",
+    isValid: function (r) { return !!r.draft.firstName; },
+    buildCommitRow: function (r) { return { fields: r.fields, resolution: r.resolution, targetId: r.duplicate ? r.duplicate.id : null }; },
+    resultText: function (res) { return "Imported: " + res.created + " created, " + res.updated + " updated, " + res.skipped + " skipped"; },
+    renderRow: function (r, idx) {
       var name = (r.draft.firstName + " " + r.draft.lastName).trim() || "(no name)";
       var statusHtml = r.duplicate
         ? '<span class="pill pill-status-amber">Possible duplicate of ' + escapeHtml(r.duplicate.name) + "</span>"
         : (r.draft.firstName ? '<span class="pill pill-status-green">New guest</span>' : '<span class="pill pill-status-red">Missing name</span>');
-      function opt(value, label) {
-        return "<option value=\"" + value + "\"" + (r.resolution === value ? " selected" : "") + ">" + label + "</option>";
-      }
       var actionOptions = r.duplicate
-        ? opt("skip", "Skip") + opt("update", "Update existing") + opt("create", "Create new anyway")
-        : opt("create", "Create") + opt("skip", "Skip");
+        ? importOpt(r, "skip", "Skip") + importOpt(r, "update", "Update existing") + importOpt(r, "create", "Create new anyway")
+        : importOpt(r, "create", "Create") + importOpt(r, "skip", "Skip");
       return "<tr><td>" + escapeHtml(name) + "</td><td>" + escapeHtml(r.draft.phone || "—") + "</td><td>" + (r.draft.invitedCount || 1) + "</td><td>" + statusHtml + "</td>" +
         '<td><select data-idx="' + idx + '" class="import-action-select" style="border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-family:inherit; font-size:.78rem;">' + actionOptions + "</select></td></tr>";
-    }).join("");
-  }
-  document.getElementById("importRows").addEventListener("change", function (e) {
-    var sel = e.target.closest(".import-action-select");
-    if (!sel) return;
-    importedRows[Number(sel.dataset.idx)].resolution = sel.value;
+    },
   });
-  document.getElementById("importCommitBtn").addEventListener("click", function () {
-    var rows = importedRows.filter(function (r) { return r.draft.firstName; }).map(function (r) {
-      return { fields: r.fields, resolution: r.resolution, targetId: r.duplicate ? r.duplicate.id : null };
-    });
-    api("/api/admin/guests-import", { method: "POST", body: { mode: "commit", rows: rows } })
-      .then(function (res) {
-        showToast("Imported: " + res.created + " created, " + res.updated + " updated, " + res.skipped + " skipped");
-        document.getElementById("importModalOverlay").hidden = true;
-        return loadAll();
-      }).catch(function (e) { showToast(e.message || "Import failed"); });
+
+  setupCsvImport({
+    openBtnId: "importGiftsBtn", overlayId: "giftImportModalOverlay", closeId: "giftImportModalClose", cancelId: "giftImportCancelBtn",
+    dropzoneId: "giftImportDropzone", fileInputId: "giftImportFileInput", previewWrapId: "giftImportPreviewWrap", summaryId: "giftImportSummary",
+    rowsId: "giftImportRows", commitBtnId: "giftImportCommitBtn", endpoint: "/api/admin/gifts",
+    isValid: function (r) { return !!(r.draft.giver && (r.draft.type !== "kind" || r.draft.description)); },
+    buildCommitRow: function (r) { return { fields: r.fields, resolution: r.resolution }; },
+    resultText: function (res) { return "Imported: " + res.created + " added, " + res.skipped + " skipped"; },
+    renderRow: function (r, idx) {
+      var typeLabel = r.draft.type === "kind" ? "In Kind" : "Cash";
+      var amountOrItem = r.draft.type === "kind" ? escapeHtml(r.draft.description || "—") : (r.draft.currency + " " + fmtMoney(r.draft.amount));
+      var valid = r.draft.giver && (r.draft.type !== "kind" || r.draft.description);
+      var statusHtml = r.duplicate
+        ? '<span class="pill pill-status-amber">Possible duplicate</span>'
+        : (valid ? '<span class="pill pill-status-green">New gift</span>' : '<span class="pill pill-status-red">Missing details</span>');
+      var actionOptions = r.duplicate
+        ? importOpt(r, "skip", "Skip") + importOpt(r, "create", "Add anyway")
+        : importOpt(r, "create", "Add") + importOpt(r, "skip", "Skip");
+      return "<tr><td>" + typeLabel + "</td><td>" + escapeHtml(r.draft.giver || "—") + "</td><td>" + fmtDate(r.draft.date) + "</td><td>" + amountOrItem + "</td><td>" + statusHtml + "</td>" +
+        '<td><select data-idx="' + idx + '" class="import-action-select" style="border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-family:inherit; font-size:.78rem;">' + actionOptions + "</select></td></tr>";
+    },
+  });
+
+  setupCsvImport({
+    openBtnId: "importProvidersBtn", overlayId: "providerImportModalOverlay", closeId: "providerImportModalClose", cancelId: "providerImportCancelBtn",
+    dropzoneId: "providerImportDropzone", fileInputId: "providerImportFileInput", previewWrapId: "providerImportPreviewWrap", summaryId: "providerImportSummary",
+    rowsId: "providerImportRows", commitBtnId: "providerImportCommitBtn", endpoint: "/api/admin/providers",
+    isValid: function (r) { return !!r.draft.name; },
+    buildCommitRow: function (r) { return { fields: r.fields, resolution: r.resolution, targetId: r.duplicate ? r.duplicate.id : null }; },
+    resultText: function (res) { return "Imported: " + res.created + " created, " + res.updated + " updated, " + res.skipped + " skipped"; },
+    renderRow: function (r, idx) {
+      var statusHtml = r.duplicate
+        ? '<span class="pill pill-status-amber">Possible duplicate of ' + escapeHtml(r.duplicate.name) + "</span>"
+        : (r.draft.name ? '<span class="pill pill-status-green">New provider</span>' : '<span class="pill pill-status-red">Missing name</span>');
+      var actionOptions = r.duplicate
+        ? importOpt(r, "skip", "Skip") + importOpt(r, "update", "Update existing") + importOpt(r, "create", "Create new anyway")
+        : importOpt(r, "create", "Create") + importOpt(r, "skip", "Skip");
+      return "<tr><td>" + escapeHtml(r.draft.name || "(no name)") + "</td><td>" + escapeHtml(r.draft.category || "—") + "</td><td>" + r.draft.currency + " " + fmtMoney(r.draft.agreedFee) + "</td><td>" + statusHtml + "</td>" +
+        '<td><select data-idx="' + idx + '" class="import-action-select" style="border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-family:inherit; font-size:.78rem;">' + actionOptions + "</select></td></tr>";
+    },
   });
 
   /* ---------------- INIT ---------------- */

@@ -186,7 +186,7 @@
   <aside class="sidebar">
     <div class="brand">Watson &amp; Nyasha<small>Wedding Management Portal</small></div>
     <button class="navitem active" data-tab="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</button>
-    <button class="navitem" data-tab="guests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><circle cx="17.5" cy="8.5" r="2.6"/><path d="M15.5 13.2c2.9.6 5 3 5 6.1"/></svg>Guest List</button>
+    <button class="navitem" data-tab="guests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><circle cx="17.5" cy="8.5" r="2.6"/><path d="M15.5 13.2c2.9.6 5 3 5 6.1"/></svg>Invites &amp; RSVPs</button>
     <button class="navitem" data-tab="tables"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>Tables &amp; Seating</button>
     <button class="navitem" data-tab="checkin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v7M14 20h4"/></svg>Check-in</button>
     <button class="navitem" data-tab="gifts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="9" width="16" height="11" rx="1"/><path d="M4 9h16M12 9v11"/><path d="M12 9c-1.5 0-4-1-4-3.2A2.3 2.3 0 0 1 10.3 3C12 3 12 6 12 9z"/><path d="M12 9c1.5 0 4-1 4-3.2A2.3 2.3 0 0 0 13.7 3C12 3 12 6 12 9z"/></svg>Gifts</button>
@@ -203,7 +203,7 @@
       <div class="brand" style="padding:0; font-size:1rem;">W&amp;N Wedding Management Portal</div>
       <select id="mobileNavSelect">
         <option value="dashboard">Dashboard</option>
-        <option value="guests">Guest List</option>
+        <option value="guests">Invites &amp; RSVPs</option>
         <option value="tables">Tables &amp; Seating</option>
         <option value="checkin">Check-in</option>
         <option value="gifts">Gifts</option>
@@ -225,11 +225,11 @@
 
       <div class="tabpanel" data-panel="guests">
         <div class="page-head">
-          <div><h2>Guest List</h2><p>Log RSVPs you receive by WhatsApp or phone, and manage every invitation.</p></div>
+          <div><h2>Invites &amp; RSVPs</h2><p>Add every invitation — one by one or by CSV — and track each guest's RSVP as it comes in.</p></div>
           <div class="btn-row">
             <button class="btn btn-outline" id="importGuestsBtn">Import CSV</button>
             <a class="btn btn-outline" href="/api/admin/export?type=guests&format=csv">Export CSV</a>
-            <button class="btn btn-primary" id="addGuestBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Guest</button>
+            <button class="btn btn-primary" id="addGuestBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Invite</button>
           </div>
         </div>
         <div class="toolbar">
@@ -281,7 +281,11 @@
       <div class="tabpanel" data-panel="gifts">
         <div class="page-head">
           <div><h2>Gifts</h2><p>Record cash gifts and gifts in kind, before or after the wedding.</p></div>
-          <button class="btn btn-primary" id="addGiftBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Gift</button>
+          <div class="btn-row">
+            <button class="btn btn-outline" id="importGiftsBtn">Import CSV</button>
+            <a class="btn btn-outline" href="/api/admin/export?type=gifts&format=csv">Export CSV</a>
+            <button class="btn btn-primary" id="addGiftBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Gift</button>
+          </div>
         </div>
         <div class="stat-grid" id="giftStatGrid"></div>
         <div class="table-wrap">
@@ -299,7 +303,11 @@
       <div class="tabpanel" data-panel="providers">
         <div class="page-head">
           <div><h2>Service Providers</h2><p>Track suppliers, agreed fees, and payment status at a glance.</p></div>
-          <button class="btn btn-primary" id="addProviderBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Provider</button>
+          <div class="btn-row">
+            <button class="btn btn-outline" id="importProvidersBtn">Import CSV</button>
+            <a class="btn btn-outline" href="/api/admin/export?type=providers&format=csv">Export CSV</a>
+            <button class="btn btn-primary" id="addProviderBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Provider</button>
+          </div>
         </div>
         <div class="stat-grid" id="providerStatGrid"></div>
         <div class="table-wrap">
@@ -431,6 +439,64 @@
     <div class="modal-actions">
       <button class="btn btn-outline" id="importCancelBtn">Cancel</button>
       <button class="btn btn-primary" id="importCommitBtn" hidden>Import Guests</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="giftImportModalOverlay" hidden>
+  <div class="modal modal-wide">
+    <button class="modal-close" id="giftImportModalClose" aria-label="Close">&times;</button>
+    <h3>Import Gifts from CSV</h3>
+    <p class="modal-sub">Download the template, fill it in, then upload it here. Possible duplicates (same giver, date and amount or item) are flagged for your review before anything is saved.</p>
+    <div class="btn-row" style="margin-bottom:16px;">
+      <a class="btn btn-outline btn-sm" href="/assets/gift-import-template.csv" download>Download CSV Template</a>
+    </div>
+    <div id="giftImportDropzone" class="dropzone">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+      <p><strong>Drag &amp; drop</strong> your CSV here, or click to choose a file</p>
+      <input type="file" id="giftImportFileInput" accept=".csv,text/csv" hidden>
+    </div>
+    <div id="giftImportPreviewWrap" hidden>
+      <div class="import-summary" id="giftImportSummary"></div>
+      <div class="table-wrap" style="max-height:340px; overflow-y:auto;">
+        <table class="data">
+          <thead><tr><th>Type</th><th>Giver</th><th>Date</th><th>Amount / Item</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="giftImportRows"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="giftImportCancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="giftImportCommitBtn" hidden>Import Gifts</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="providerImportModalOverlay" hidden>
+  <div class="modal modal-wide">
+    <button class="modal-close" id="providerImportModalClose" aria-label="Close">&times;</button>
+    <h3>Import Service Providers from CSV</h3>
+    <p class="modal-sub">Download the template, fill it in, then upload it here. Possible duplicates are flagged for your review before anything is saved.</p>
+    <div class="btn-row" style="margin-bottom:16px;">
+      <a class="btn btn-outline btn-sm" href="/assets/provider-import-template.csv" download>Download CSV Template</a>
+    </div>
+    <div id="providerImportDropzone" class="dropzone">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+      <p><strong>Drag &amp; drop</strong> your CSV here, or click to choose a file</p>
+      <input type="file" id="providerImportFileInput" accept=".csv,text/csv" hidden>
+    </div>
+    <div id="providerImportPreviewWrap" hidden>
+      <div class="import-summary" id="providerImportSummary"></div>
+      <div class="table-wrap" style="max-height:340px; overflow-y:auto;">
+        <table class="data">
+          <thead><tr><th>Name</th><th>Category</th><th>Agreed Fee</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="providerImportRows"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="providerImportCancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="providerImportCommitBtn" hidden>Import Providers</button>
     </div>
   </div>
 </div>

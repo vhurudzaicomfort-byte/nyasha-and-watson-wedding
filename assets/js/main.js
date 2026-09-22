@@ -326,6 +326,13 @@
       ctx.beginPath(); ctx.moveTo(w / 2 - halfGap - len, y); ctx.lineTo(w / 2 - halfGap, y); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(w / 2 + halfGap, y); ctx.lineTo(w / 2 + halfGap + len, y); ctx.stroke();
     }
+    function drawRings(x, y, r, offset, color, lw) {
+      ctx.strokeStyle = color; ctx.lineWidth = lw;
+      ctx.beginPath(); ctx.arc(x - offset, y, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + offset, y, r, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    drawRings(w / 2, 76, 15, 10, "#B08A46", 2.6);
 
     ctx.fillStyle = "#8B7A6E"; ctx.font = '500 20px "Poppins", sans-serif';
     ctx.fillText("T O G E T H E R   W I T H   T H E I R   F A M I L I E S", w / 2, 108);
