@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nyasha &amp; Watson — 5 December 2026</title>
+<meta name="description" content="You are warmly invited to the wedding of Nyasha Mazuruse & Watson Chimombe — Saturday, 5 December 2026, Colne Valley Nature Reserve Park, Harare, Zimbabwe.">
+<meta property="og:title" content="Nyasha & Watson — 5 December 2026">
+<meta property="og:description" content="You are warmly invited to our wedding at Colne Valley Nature Reserve Park, Harare.">
+<meta property="og:image" content="/assets/img/invitation-card.png">
+<meta name="theme-color" content="#3E1730">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#128140;</text></svg>">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- botanical sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="botanical" viewBox="0 0 200 230">
+    <g class="leaf-vein">
+      <path d="M8 220 C 20 170 45 130 70 95"/>
+      <path d="M20 205 C 45 165 75 130 110 90"/>
+      <path d="M35 190 C 65 150 95 115 135 80"/>
+    </g>
+    <path class="leaf-plum" d="M6 222 C 4 176 28 132 66 100 C 78 128 70 176 40 206 C 30 216 16 222 6 222 Z"/>
+    <path class="leaf-coral" d="M22 208 C 30 162 60 122 102 96 C 108 128 92 172 58 200 C 46 210 32 210 22 208 Z"/>
+    <path class="leaf-gold" d="M40 190 C 55 148 90 112 132 88 C 132 118 112 158 80 184 C 68 192 52 192 40 190 Z"/>
+    <path class="leaf-coral-soft" d="M60 172 C 80 136 112 104 150 82 C 146 110 128 146 98 168 C 86 176 70 176 60 172 Z"/>
+    <path class="leaf-plum" d="M84 156 C 102 122 130 96 166 78 C 158 104 142 134 116 152 C 106 158 92 158 84 156 Z" opacity=".7"/>
+    <circle cx="70" cy="98" r="3.2" class="leaf-gold"/>
+    <circle cx="96" cy="86" r="2.4" class="leaf-coral"/>
+    <circle cx="118" cy="76" r="2" class="leaf-gold"/>
+  </symbol>
+</svg>
+
+<!-- ================= OPENING COVER ================= -->
+<div id="cover" role="dialog" aria-label="Wedding invitation cover">
+  <svg class="corner corner--tr" aria-hidden="true"><use href="#botanical"/></svg>
+  <svg class="corner corner--bl" aria-hidden="true"><use href="#botanical"/></svg>
+  <div class="cover-card">
+    <div class="cover-frame" aria-hidden="true"></div>
+    <div class="cover-eyebrow">Together with their families</div>
+    <h1 class="cover-names">Nyasha<span class="cover-amp">&nbsp;&amp;&nbsp;</span>Watson</h1>
+    <div class="cover-date">Saturday · 5 December 2026</div>
+    <div class="cover-venue">Colne Valley Nature Reserve Park, Harare</div>
+    <button class="open-btn" id="openInviteBtn" type="button">
+      Open Invitation
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+    <div class="cover-hint">Tap to reveal your invitation</div>
+  </div>
+</div>
+
+<!-- ================= NAV ================= -->
+<nav class="topnav" aria-label="Primary">
+  <a href="#home" class="brand">Nyasha <b>&amp;</b> Watson</a>
+  <ul class="navlinks">
+    <li><a href="#home">Home</a></li>
+    <li><a href="#our-day">Our Day</a></li>
+    <li><a href="#venue">Venue</a></li>
+    <li><a href="#programme">Programme</a></li>
+    <li><a href="#attire">Attire</a></li>
+    <li><a href="#card">Invitation Card</a></li>
+  </ul>
+  <a href="#rsvp" class="nav-cta">RSVP</a>
+</nav>
+
+<nav class="bottomnav" aria-label="Primary">
+  <ul>
+    <li><a href="#home" data-sec="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>Home</a></li>
+    <li><a href="#venue" data-sec="venue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg>Venue</a></li>
+    <li><a href="#programme" data-sec="programme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Day</a></li>
+    <li><a href="#rsvp" data-sec="rsvp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>RSVP</a></li>
+  </ul>
+</nav>
+
+<!-- ================= HOME / HERO ================= -->
+<section id="home">
+  <div class="wrap">
+    <div class="hero-eyebrow">Together with their families</div>
+    <h1 class="hero-names">Nyasha<span class="hero-amp">&nbsp;&amp;&nbsp;</span>Watson</h1>
+    <p class="hero-sub">Saturday, 5 December 2026 <span>&nbsp;·&nbsp;</span> Colne Valley Nature Reserve Park, Harare</p>
+
+    <div class="countdown" id="countdown" aria-label="Countdown to the wedding">
+      <div class="cd-unit"><div class="cd-num" id="cd-days">–</div><div class="cd-label">Days</div></div>
+      <div class="cd-unit"><div class="cd-num" id="cd-hours">–</div><div class="cd-label">Hours</div></div>
+      <div class="cd-unit"><div class="cd-num" id="cd-mins">–</div><div class="cd-label">Minutes</div></div>
+      <div class="cd-unit"><div class="cd-num" id="cd-secs">–</div><div class="cd-label">Seconds</div></div>
+    </div>
+
+    <div class="btn-row hero-cta">
+      <a href="#rsvp" class="btn btn-primary">Kindly RSVP</a>
+      <a href="#programme" class="btn btn-outline">View Programme</a>
+    </div>
+  </div>
+</section>
+
+<!-- ================= OUR DAY ================= -->
+<section id="our-day" style="background:var(--ivory-deep)">
+  <div class="wrap-narrow">
+    <div class="head">
+      <div class="eyebrow">Our Wedding</div>
+      <h2>A Little Love Note</h2>
+    </div>
+    <div class="message-card">
+      <p>With grateful hearts and full of joy, we invite you to be part of the day we say "I do." Surrounded by the indigenous trees and birdsong of Colne Valley, we want the people who have shaped our story to stand with us as we begin the next one &mdash; together.</p>
+      <p style="margin-top:18px;">Your presence, laughter and blessing are the greatest gifts we could ask for. We can't wait to celebrate with you.</p>
+      <div class="message-sign">Nyasha &amp; Watson</div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-card"><div class="ic-label">Date</div><div class="ic-value">5 December 2026</div><div class="ic-note">Saturday</div></div>
+      <div class="info-card"><div class="ic-label">Venue</div><div class="ic-value">Colne Valley Nature Reserve Park</div><div class="ic-note">Chisipite, Harare</div></div>
+      <div class="info-card"><div class="ic-label">RSVP By</div><div class="ic-value">—</div><div class="tbc">Date to be confirmed</div></div>
+      <div class="info-card"><div class="ic-label">Ceremony</div><div class="ic-value">—</div><div class="tbc">Time to be confirmed</div></div>
+      <div class="info-card"><div class="ic-label">Reception</div><div class="ic-value">—</div><div class="tbc">Time to be confirmed</div></div>
+      <div class="info-card"><div class="ic-label">Dress Code</div><div class="ic-value">—</div><div class="tbc">To be confirmed</div></div>
+      <div class="info-card"><div class="ic-label">Parking</div><div class="ic-value">—</div><div class="tbc">Details to follow</div></div>
+      <div class="info-card"><div class="ic-label">Accommodation</div><div class="ic-value">—</div><div class="tbc">Details to follow</div></div>
+      <div class="info-card"><div class="ic-label">Questions?</div><div class="ic-value">—</div><div class="tbc">Contact details to follow</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= VENUE ================= -->
+<section id="venue">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow">Venue &amp; Directions</div>
+      <h2>Colne Valley Nature Reserve Park</h2>
+      <p class="lede">A tranquil nature reserve on the edge of Harare, chosen for its indigenous trees, birdlife and open sky.</p>
+    </div>
+    <div class="venue-card">
+      <div class="venue-top">
+        <div class="venue-facts">
+          <div class="venue-fact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg>7 Bay Noakes, Colne Valley, Chisipite, Harare</div>
+          <div class="venue-fact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12l2-2 4 4 12-12 2 2-14 14z"/></svg>~10km from Harare CBD</div>
+        </div>
+        <p class="venue-desc">Colne Valley is a private nature reserve home to indigenous flora and over twenty species of birds &mdash; a quiet, green setting for our celebration.</p>
+      </div>
+      <div class="venue-map">
+        <iframe title="Map to Colne Valley Nature Reserve Park" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+          src="https://www.google.com/maps?q=7+Bay+Noakes,+Colne+Valley,+Chisipite,+Harare,+Zimbabwe&output=embed"></iframe>
+      </div>
+      <div class="venue-actions">
+        <a class="btn btn-primary" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=7%20Bay%20Noakes%2C%20Colne%20Valley%2C%20Chisipite%2C%20Harare%2C%20Zimbabwe">
+          Get Directions
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a class="btn btn-ghost" target="_blank" rel="noopener" href="https://www.bing.com/maps/default.aspx?v=2&pc=FACEBK&mid=8100&where1=7%20Bay%20Noakes%2C%20Colne%20Valley%2C%20Chisipite%2C%20Harare%2C%20Zimbabwe&FORM=FBKPL1&mkt=en-US">Open in Bing Maps</a>
+        <a class="btn btn-ghost" target="_blank" rel="noopener" href="https://www.facebook.com/share/19TTMeMaYH/?mibextid=wwXIfr">Venue on Facebook</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PROGRAMME ================= -->
+<section id="programme" style="background:var(--ivory-deep)">
+  <div class="wrap-narrow">
+    <div class="head">
+      <div class="eyebrow">The Wedding Day</div>
+      <h2>Order of Events</h2>
+      <p class="lede">A draft outline of the day &mdash; exact times will be confirmed closer to the wedding.</p>
+    </div>
+    <div class="timeline" id="programmeList"></div>
+    <p class="programme-note">All times above are provisional and will be finalised nearer the date.</p>
+  </div>
+</section>
+
+<!-- ================= ATTIRE ================= -->
+<section id="attire">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow">Dress Code &amp; Colours</div>
+      <h2>What to Wear</h2>
+    </div>
+    <div class="attire-grid">
+      <div class="attire-card">
+        <div class="ic-label">Dress Code</div>
+        <div class="ic-value" style="margin-top:10px;">—</div>
+        <div class="tbc">To be confirmed</div>
+        <p style="margin-top:18px; color:var(--text-muted); font-size:.9rem;">We'll share full dress-code guidance here as the date gets closer. In the meantime, come as you'd like to be seen in our photographs.</p>
+      </div>
+      <div class="attire-card">
+        <div class="ic-label">Our Colour Story</div>
+        <p style="margin-top:10px; color:var(--text-muted); font-size:.88rem;">If you'd like to complement our palette, here's our colour story for the day.</p>
+        <div class="swatches">
+          <div class="swatch"><div class="swatch-chip" style="background:#9C7089"></div><div class="swatch-name">Muted Plum</div></div>
+          <div class="swatch"><div class="swatch-chip" style="background:#E8D9BE"></div><div class="swatch-name">Soft Champagne</div></div>
+          <div class="swatch"><div class="swatch-chip" style="background:#E8916B"></div><div class="swatch-name">Peach Coral</div></div>
+          <div class="swatch"><div class="swatch-chip" style="background:#FBF8F3; border:1px solid #e4d5be;"></div><div class="swatch-name">Ivory</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= INVITATION CARD ================= -->
+<section id="card" style="background:var(--ivory-deep)">
+  <svg class="corner corner--tr" aria-hidden="true" style="opacity:.5"><use href="#botanical"/></svg>
+  <div class="wrap-narrow save-card-wrap">
+    <div class="head">
+      <div class="eyebrow">Keep It Close</div>
+      <h2>Your Digital Invitation Card</h2>
+      <p class="lede">A keepsake 1080 &times; 1350 card with our QR code, wedding details and Bible verse &mdash; save it to your phone or share it in a chat.</p>
+    </div>
+    <div class="card-stage">
+      <div class="card-frame"><canvas id="inviteCanvas" width="1080" height="1350"></canvas></div>
+    </div>
+    <div class="btn-row" style="justify-content:center; margin-top:28px;">
+      <button class="btn btn-primary" id="saveCardBtn">
+        Download Invitation Card
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RSVP ================= -->
+<section id="rsvp">
+  <svg class="corner corner--tr" aria-hidden="true" style="opacity:.5"><use href="#botanical"/></svg>
+  <div class="wrap-narrow">
+    <div class="head">
+      <div class="eyebrow">Kindly Respond</div>
+      <h2>RSVP</h2>
+      <p class="lede">We'd love to know if you'll be celebrating with us.</p>
+    </div>
+
+    <div class="rsvp-shell">
+      <div class="rsvp-progress" id="rsvpProgress">
+        <div class="rp-seg done" data-step="0"></div>
+        <div class="rp-seg" data-step="1"></div>
+        <div class="rp-seg" data-step="2"></div>
+        <div class="rp-seg" data-step="3"></div>
+      </div>
+      <div class="rsvp-body">
+
+        <div class="rsvp-step" data-step="0">
+          <h3 class="step-title">Let's start with you</h3>
+          <p class="step-sub">Tell us who's replying.</p>
+          <div class="field"><label for="g-name">Full name</label><input type="text" id="g-name" autocomplete="name" required></div>
+          <div class="field"><label for="g-phone">Phone number <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);">(optional)</span></label><input type="tel" id="g-phone" autocomplete="tel"></div>
+          <div class="rsvp-nav"><span></span><button class="btn btn-primary" id="toStep1">Continue</button></div>
+        </div>
+
+        <div class="rsvp-step" data-step="1" hidden>
+          <h3 class="step-title">Will you be attending?</h3>
+          <p class="step-sub">Choose the option that fits best.</p>
+          <div class="choice-cards" id="attendChoices">
+            <label class="choice-card" data-val="attending"><input type="radio" name="attend" value="attending"><div><div class="cc-title">Joyfully Accepting</div><div class="cc-sub">Count me in &mdash; I'll be there</div></div></label>
+            <label class="choice-card" data-val="maybe"><input type="radio" name="attend" value="maybe"><div><div class="cc-title">Not Sure Yet</div><div class="cc-sub">I'll confirm as soon as I can</div></div></label>
+            <label class="choice-card" data-val="not_attending"><input type="radio" name="attend" value="not_attending"><div><div class="cc-title">Regretfully Declining</div><div class="cc-sub">I won't be able to make it</div></div></label>
+          </div>
+          <div class="rsvp-nav"><button class="link-btn" id="back1">Back</button><button class="btn btn-primary" id="toStep2" disabled>Continue</button></div>
+        </div>
+
+        <div class="rsvp-step" data-step="2" hidden>
+          <div id="branchAttending" hidden>
+            <h3 class="step-title">Party size</h3>
+            <p class="step-sub">Including yourself, how many will attend?</p>
+            <div class="stepper"><button type="button" id="decGuests" aria-label="Decrease">&minus;</button><div class="stepper-count" id="guestCount">1</div><button type="button" id="incGuests" aria-label="Increase">+</button></div>
+            <div class="field"><label for="g-plusone">Plus-one / additional guest names <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);">(optional)</span></label><input type="text" id="g-plusone" placeholder="e.g. Tariro Moyo"></div>
+            <div class="field"><label>Dietary requirements</label>
+              <div class="chip-group" id="dietChips">
+                <div class="chip selected" data-val="None">No restrictions</div>
+                <div class="chip" data-val="Vegetarian">Vegetarian</div>
+                <div class="chip" data-val="Vegan">Vegan</div>
+                <div class="chip" data-val="Halal">Halal</div>
+                <div class="chip" data-val="Gluten-free">Gluten-free</div>
+                <div class="chip" data-val="Nut allergy">Nut allergy</div>
+                <div class="chip" data-val="Other">Other</div>
+              </div>
+            </div>
+            <div class="field" id="dietOtherWrap" hidden><label for="g-diet-other">Please specify</label><input type="text" id="g-diet-other"></div>
+            <div class="field"><label for="g-message">Message for the couple <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);">(optional)</span></label><textarea id="g-message" placeholder="Any well wishes, questions, or notes for Nyasha & Watson"></textarea></div>
+          </div>
+          <div id="branchMaybe" hidden>
+            <h3 class="step-title">Thank you for letting us know</h3>
+            <p class="step-sub">We understand plans can take time to confirm.</p>
+            <div class="field"><label for="g-message-maybe">Anything you'd like to add? <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);">(optional)</span></label><textarea id="g-message-maybe" placeholder="We'll follow up with you closer to the date"></textarea></div>
+          </div>
+          <div id="branchDecline" hidden>
+            <h3 class="step-title">We'll miss you</h3>
+            <p class="step-sub">Thank you for letting us know.</p>
+            <div class="field"><label for="g-message-decline">A message for the couple <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);">(optional)</span></label><textarea id="g-message-decline" placeholder="Well wishes or a reason, if you'd like to share"></textarea></div>
+          </div>
+          <div class="rsvp-nav"><button class="link-btn" id="back2">Back</button><button class="btn btn-primary" id="toStep3">Review</button></div>
+        </div>
+
+        <div class="rsvp-step" data-step="3" hidden>
+          <div id="reviewPane">
+            <h3 class="step-title">Review your RSVP</h3>
+            <p class="step-sub">Please check the details below before sending.</p>
+            <div id="summaryList" style="margin-top:20px;"></div>
+            <div class="rsvp-nav">
+              <button class="link-btn" id="back3">Back</button>
+              <button class="btn btn-primary" id="sendRsvp">
+                Send RSVP via WhatsApp
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.39 1.26 4.8L2 22l5.42-1.36a9.9 9.9 0 0 0 4.62 1.14h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2zm5.6 14.17c-.24.67-1.4 1.29-1.93 1.35-.5.06-1.03.24-3.45-.72-2.9-1.15-4.77-4.08-4.92-4.27-.14-.19-1.18-1.57-1.18-3 0-1.42.75-2.11 1.02-2.4.27-.29.58-.36.78-.36.19 0 .39 0 .55.01.18.01.42-.07.65.5.24.58.82 2 .89 2.15.07.14.11.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.13-.28.28-.12.55.16.27.71 1.17 1.52 1.9 1.05.94 1.93 1.23 2.2 1.37.27.14.43.12.59-.07.16-.19.68-.79.86-1.06.18-.27.36-.22.6-.13.24.09 1.53.72 1.79.85.26.13.43.19.5.3.06.11.06.63-.18 1.3z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="confirmPane" hidden>
+            <div class="confirm-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <h3 class="step-title" style="text-align:center;">Thank you<span id="confirmName"></span></h3>
+            <p class="step-sub" style="text-align:center;">Your RSVP has been prepared and sent to WhatsApp. We can't wait to celebrate with you.</p>
+            <div class="btn-row" style="justify-content:center; margin-top:26px;">
+              <a class="btn btn-outline" href="#calendar">Add to Calendar</a>
+              <a class="btn btn-outline" href="#card">View Invitation Card</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <p class="rsvp-deadline">Kindly respond by <span class="tbc" style="margin-top:0;">RSVP date to be confirmed</span></p>
+  </div>
+</section>
+
+<!-- ================= CALENDAR ================= -->
+<section id="calendar" style="background:var(--ivory-deep)">
+  <div class="wrap-narrow">
+    <div class="head">
+      <div class="eyebrow">Save the Date</div>
+      <h2>Add to Your Calendar</h2>
+      <p class="lede">We'll update the exact ceremony and reception times here once confirmed.</p>
+    </div>
+    <div class="btn-row" style="justify-content:center;">
+      <a class="btn btn-gold" id="gcalBtn" target="_blank" rel="noopener">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        Add to Google Calendar
+      </a>
+      <button class="btn btn-outline" id="icsBtn">Download .ics (Apple / Outlook)</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SHARE ================= -->
+<section id="share">
+  <div class="wrap-narrow">
+    <div class="head"><div class="eyebrow">Spread the Word</div><h2>Share the Invitation</h2></div>
+    <div class="share-grid">
+      <a class="share-btn" id="shareWhatsapp" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.39 1.26 4.8L2 22l5.42-1.36a9.9 9.9 0 0 0 4.62 1.14h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2z"/></svg>WhatsApp</a>
+      <button class="share-btn" id="shareCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="12" height="12" rx="1"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copy Link</button>
+      <a class="share-btn" id="shareEmail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Email</a>
+      <a class="share-btn" id="shareSms"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>SMS</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-names">Nyasha<span class="footer-amp">&nbsp;&amp;&nbsp;</span>Watson</div>
+  <div class="footer-note">5 December 2026 &middot; Colne Valley Nature Reserve Park &middot; Harare, Zimbabwe</div>
+  <div class="footer-note" style="margin-top:16px;">With love and gratitude for you being part of our story.</div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="qrTemp" style="display:none;"></div>
+
+<script src="assets/js/qrcode.min.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
