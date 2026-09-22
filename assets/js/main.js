@@ -272,71 +272,84 @@
     ctx.strokeStyle = "#B08A46"; ctx.lineWidth = 3; ctx.strokeRect(34, 34, w - 68, h - 68);
     ctx.strokeStyle = "#E4D2B0"; ctx.lineWidth = 1; ctx.strokeRect(50, 50, w - 100, h - 100);
     ctx.textAlign = "center";
+    ctx.lineJoin = "round";
+
+    function boldScript(text, x, y, font, fill, strokeW) {
+      ctx.font = font;
+      ctx.strokeStyle = fill; ctx.lineWidth = strokeW; ctx.strokeText(text, x, y);
+      ctx.fillStyle = fill; ctx.fillText(text, x, y);
+    }
+    function centeredRule(y, halfGap, len, color) {
+      ctx.strokeStyle = color; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(w / 2 - halfGap - len, y); ctx.lineTo(w / 2 - halfGap, y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(w / 2 + halfGap, y); ctx.lineTo(w / 2 + halfGap + len, y); ctx.stroke();
+    }
 
     ctx.fillStyle = "#8B7A6E"; ctx.font = '500 20px "Poppins", sans-serif';
     ctx.fillText("T O G E T H E R   W I T H   T H E I R   F A M I L I E S", w / 2, 108);
     ctx.font = 'italic 400 22px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
     ctx.fillText("You are warmly invited to the wedding of", w / 2, 145);
 
-    ctx.fillStyle = "#3E1730"; ctx.font = '400 118px "Great Vibes", cursive';
-    ctx.fillText("Nyasha", w / 2, 265);
-    ctx.font = '600 26px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
-    ctx.fillText("M A Z U R U S E", w / 2, 308);
+    boldScript("Nyasha", w / 2, 255, '400 104px "Great Vibes", cursive', "#3E1730", 3.6);
+    ctx.font = '600 24px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
+    ctx.fillText("M A Z U R U S E", w / 2, 343);
 
-    ctx.fillStyle = "#D97F55"; ctx.font = '400 66px "Great Vibes", cursive';
-    ctx.fillText("&", w / 2, 372);
+    boldScript("&", w / 2, 400, '400 56px "Great Vibes", cursive', "#D97F55", 2.4);
 
-    ctx.fillStyle = "#3E1730"; ctx.font = '400 118px "Great Vibes", cursive';
-    ctx.fillText("Watson", w / 2, 495);
-    ctx.font = '600 26px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
-    ctx.fillText("C H I M O M B E", w / 2, 538);
+    boldScript("Watson", w / 2, 520, '400 104px "Great Vibes", cursive', "#3E1730", 3.6);
+    ctx.font = '600 24px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
+    ctx.fillText("C H I N ' O M B E", w / 2, 608);
 
-    ctx.strokeStyle = "#E4D2B0"; ctx.beginPath(); ctx.moveTo(w / 2 - 150, 572); ctx.lineTo(w / 2 + 150, 572); ctx.stroke();
-    ctx.font = 'italic 400 23px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
-    ctx.fillText("As they celebrate their love", w / 2, 608);
-    ctx.fillText("and begin a new chapter together", w / 2, 637);
+    ctx.strokeStyle = "#E4D2B0"; ctx.beginPath(); ctx.moveTo(w / 2 - 140, 642); ctx.lineTo(w / 2 + 140, 642); ctx.stroke();
+    ctx.font = 'italic 400 21px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
+    ctx.fillText("As they celebrate their love", w / 2, 676);
+    ctx.fillText("and begin a new chapter together", w / 2, 702);
 
-    // date block
-    ctx.font = '500 22px "Poppins", sans-serif'; ctx.fillStyle = "#5A2444";
-    ctx.fillText("S A T U R D A Y", w / 2 - 245, 700);
-    ctx.fillText("D E C E M B E R   2 0 2 6", w / 2 + 235, 700);
-    ctx.strokeStyle = "#D97F55"; ctx.beginPath(); ctx.moveTo(w / 2 - 385, 693); ctx.lineTo(w / 2 - 320, 693); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(w / 2 + 320, 693); ctx.lineTo(w / 2 + 385, 693); ctx.stroke();
-    ctx.fillStyle = "#D97F55"; ctx.font = '600 58px "Bodoni Moda", serif';
-    ctx.fillText("05", w / 2, 768);
+    // date block — width of the date line is measured so the flanking rules never cross the text
+    ctx.font = '500 19px "Poppins", sans-serif';
+    ctx.letterSpacing = "2px";
+    var dateLine = "SATURDAY   ·   DECEMBER 2026";
+    var dateW = ctx.measureText(dateLine).width;
+    ctx.fillStyle = "#5A2444";
+    ctx.fillText(dateLine, w / 2, 754);
+    centeredRule(748, dateW / 2 + 24, 60, "#D97F55");
+    ctx.letterSpacing = "0px";
 
-    ctx.fillStyle = "#5A2444"; ctx.font = '600 25px "Bodoni Moda", serif';
-    ctx.fillText("COLNE VALLEY NATURE RESERVE PARK", w / 2, 828);
-    ctx.fillStyle = "#8B7A6E"; ctx.font = '400 19px "Poppins", sans-serif';
-    ctx.fillText("7 Bay Noakes, Colne Valley, Chisipite,", w / 2, 858);
-    ctx.fillText("Harare, Zimbabwe", w / 2, 882);
+    ctx.fillStyle = "#D97F55"; ctx.font = '600 128px "Bodoni Moda", serif';
+    ctx.fillText("05", w / 2, 872);
 
-    ctx.strokeStyle = "#E4D2B0"; ctx.beginPath(); ctx.moveTo(w / 2 - 150, 910); ctx.lineTo(w / 2 + 150, 910); ctx.stroke();
+    ctx.fillStyle = "#5A2444"; ctx.font = '600 24px "Bodoni Moda", serif';
+    ctx.fillText("COLNE VALLEY NATURE RESERVE PARK", w / 2, 928);
+    ctx.fillStyle = "#8B7A6E"; ctx.font = '400 18px "Poppins", sans-serif';
+    ctx.fillText("7 Bay Noakes, Colne Valley, Chisipite,", w / 2, 956);
+    ctx.fillText("Harare, Zimbabwe", w / 2, 978);
 
-    ctx.fillStyle = "#5A2444"; ctx.font = 'italic 400 23px "Bodoni Moda", serif';
-    ctx.fillText('"Above all, love each other deeply,', w / 2, 944);
-    ctx.fillText("because love covers over a multitude of sins.\"", w / 2, 972);
-    ctx.font = '600 17px "Poppins", sans-serif'; ctx.fillStyle = "#8B7A6E";
-    ctx.fillText("1   P E T E R   4 : 8", w / 2, 1000);
+    ctx.strokeStyle = "#E4D2B0"; ctx.beginPath(); ctx.moveTo(w / 2 - 140, 1002); ctx.lineTo(w / 2 + 140, 1002); ctx.stroke();
+
+    ctx.fillStyle = "#5A2444"; ctx.font = 'italic 400 20px "Bodoni Moda", serif';
+    ctx.fillText('"Above all, love each other deeply,', w / 2, 1032);
+    ctx.fillText("because love covers over a multitude of sins.\"", w / 2, 1056);
+    ctx.font = '600 15px "Poppins", sans-serif'; ctx.fillStyle = "#8B7A6E";
+    ctx.fillText("1   P E T E R   4 : 8", w / 2, 1080);
 
     if (guestName) {
-      ctx.font = '500 13px "Poppins", sans-serif'; ctx.fillStyle = "#B08A46";
-      ctx.fillText("R E S E R V E D   F O R", w / 2, 1030);
-      ctx.font = 'italic 400 25px "Bodoni Moda", serif'; ctx.fillStyle = "#3E1730";
-      ctx.fillText(guestName, w / 2, 1058);
+      ctx.font = '500 12px "Poppins", sans-serif'; ctx.fillStyle = "#B08A46";
+      ctx.fillText("R E S E R V E D   F O R", w / 2, 1102);
+      ctx.font = 'italic 400 22px "Bodoni Moda", serif'; ctx.fillStyle = "#3E1730";
+      ctx.fillText(guestName, w / 2, 1126);
     }
-    ctx.font = '500 14px "Poppins", sans-serif'; ctx.fillStyle = "#8B7A6E";
-    ctx.fillText("S T R I C T L Y   B Y   I N V I T A T I O N   O N L Y", w / 2, 1088);
+    ctx.font = '500 13px "Poppins", sans-serif'; ctx.fillStyle = "#8B7A6E";
+    ctx.fillText("S T R I C T L Y   B Y   I N V I T A T I O N   O N L Y", w / 2, 1148);
 
-    var qs = 150;
-    var qrTop = 1114;
+    var qs = 128;
+    var qrTop = 1166;
     if (qrImg) {
       ctx.drawImage(qrImg, w / 2 - qs / 2, qrTop, qs, qs);
     } else {
       ctx.strokeStyle = "#E4D2B0"; ctx.strokeRect(w / 2 - qs / 2, qrTop, qs, qs);
     }
-    ctx.fillStyle = "#8B7A6E"; ctx.font = '500 16px "Poppins", sans-serif';
-    ctx.fillText("SCAN FOR RSVP & WEDDING DETAILS", w / 2, qrTop + qs + 28);
+    ctx.fillStyle = "#8B7A6E"; ctx.font = '500 15px "Poppins", sans-serif';
+    ctx.fillText("SCAN FOR RSVP & WEDDING DETAILS", w / 2, qrTop + qs + 26);
   }
 
   var cachedQrImg = null, cachedFloralImg = null;

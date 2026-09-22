@@ -1,6 +1,6 @@
 # Nyasha & Watson — Wedding Invitation
 
-A static, mobile-first digital wedding invitation for Nyasha Mazuruse & Watson Chimombe — Saturday, 5 December 2026, Colne Valley Nature Reserve Park, Harare, Zimbabwe.
+A static, mobile-first digital wedding invitation for Nyasha Mazuruse & Watson Chin'ombe — Saturday, 5 December 2026, Colne Valley Nature Reserve Park, Harare, Zimbabwe.
 
 Plain HTML/CSS/JS, no build step, no backend. Self-hosted fonts (Bodoni Moda, Poppins, Great Vibes) and a vendored QR library — nothing loads from a third-party CDN at runtime.
 
