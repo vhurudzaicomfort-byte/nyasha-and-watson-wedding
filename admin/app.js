@@ -3,6 +3,10 @@
 
   var guests = [];
   var tables = [];
+  var gifts = [];
+  var providers = [];
+  var currencies = ["USD"];
+  var paymentMethods = ["Cash"];
 
   var toastTimer;
   function showToast(msg) {
@@ -14,6 +18,14 @@
 
   function escapeHtml(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function fullName(g) { return ((g.firstName || "") + " " + (g.lastName || "")).trim() || "(unnamed guest)"; }
+  function fmtMoney(n) { return (Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function fmtDate(s) { if (!s) return "—"; try { return new Date(s).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); } catch (e) { return s; } }
+  function statusPillClass(status) {
+    if (status === "Fully Paid") return "pill-status-green";
+    if (status === "Partially Paid" || status === "Due Soon") return "pill-status-amber";
+    if (status === "Not Paid" || status === "Overdue") return "pill-status-red";
+    return "pill-status-neutral";
+  }
   function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
 
   /* ---------------- API helper ---------------- */
@@ -58,13 +70,16 @@
 
   /* ---------------- LOAD + RENDER ---------------- */
   function loadAll() {
-    return Promise.all([api("/api/admin/guests"), api("/api/admin/tables")]).then(function (res) {
+    return Promise.all([api("/api/admin/guests"), api("/api/admin/tables"), api("/api/admin/gifts"), api("/api/admin/providers")]).then(function (res) {
       guests = res[0].guests; tables = res[1].tables;
+      gifts = res[2].gifts; currencies = res[2].currencies; paymentMethods = res[2].paymentMethods;
+      providers = res[3].providers;
       renderAll();
     });
   }
   function renderAll() {
     renderDashboard(); renderGuestTable(); renderTables(); populateFilterTables();
+    renderGifts(); renderProviders();
   }
 
   function occupiedSeats(t) {
@@ -86,6 +101,26 @@
     var responded = attending.length + maybe.length + not.length;
     var rate = total ? Math.round((responded / total) * 100) : 0;
 
+    var cashByCurrency = {};
+    var kindCount = 0;
+    gifts.forEach(function (g) {
+      if (g.type === "cash") cashByCurrency[g.currency] = (cashByCurrency[g.currency] || 0) + (Number(g.amount) || 0);
+      else kindCount++;
+    });
+    var cashTotalStr = Object.keys(cashByCurrency).map(function (c) { return c + " " + fmtMoney(cashByCurrency[c]); }).join(" · ") || "—";
+
+    var provAgreedByCurrency = {}, provPaidByCurrency = {}, provOutstandingByCurrency = {};
+    var overdueCount = 0, dueSoonCount = 0;
+    providers.forEach(function (p) {
+      var cur = p.currency || "USD";
+      provAgreedByCurrency[cur] = (provAgreedByCurrency[cur] || 0) + (Number(p.agreedFee) || 0);
+      provPaidByCurrency[cur] = (provPaidByCurrency[cur] || 0) + (Number(p.amountPaid) || 0);
+      provOutstandingByCurrency[cur] = (provOutstandingByCurrency[cur] || 0) + (Number(p.outstanding) || 0);
+      if (p.status === "Overdue") overdueCount++;
+      if (p.status === "Due Soon") dueSoonCount++;
+    });
+    var outstandingStr = Object.keys(provOutstandingByCurrency).map(function (c) { return c + " " + fmtMoney(provOutstandingByCurrency[c]); }).join(" · ") || "—";
+
     document.getElementById("statGrid").innerHTML = [
       stat("Total Invited (records)", total, invitedCount + " people across all invitations"),
       stat("Attending", attending.length, attendingCount + " people confirmed", true),
@@ -94,7 +129,11 @@
       stat("Pending", pending.length),
       stat("Tables", tables.length, seatOccupied + " / " + seatCapacity + " seats filled"),
       stat("Checked In", checkedIn, (total - checkedIn) + " not yet arrived"),
-      stat("RSVP Rate", rate + "%", responded + " of " + total + " responded")
+      stat("RSVP Rate", rate + "%", responded + " of " + total + " responded"),
+      stat("Cash Gifts", cashTotalStr, gifts.filter(function (g) { return g.type === "cash"; }).length + " gifts recorded"),
+      stat("Gifts in Kind", kindCount, "items received"),
+      stat("Providers Outstanding", outstandingStr, providers.length + " providers tracked"),
+      stat("Payments Due", overdueCount + dueSoonCount, overdueCount + " overdue · " + dueSoonCount + " due soon", overdueCount > 0)
     ].join("");
 
     var rows = [["Attending", attending.length, total], ["Maybe", maybe.length, total], ["Not Attending", not.length, total], ["Pending", pending.length, total]];
@@ -116,6 +155,19 @@
     document.getElementById("dietBars").innerHTML = dietEntries.length
       ? dietEntries.map(function (e) { return barRow([e[0], e[1], maxDiet]); }).join("")
       : '<p style="color:var(--text-muted); font-size:.84rem;">No dietary requirements logged yet.</p>';
+
+    var giftCurrencyEntries = Object.keys(cashByCurrency).map(function (c) { return [c, cashByCurrency[c]]; });
+    var maxGift = Math.max.apply(null, giftCurrencyEntries.map(function (e) { return e[1]; }).concat([1]));
+    var giftBarsHtml = giftCurrencyEntries.map(function (e) { return barRow([e[0], fmtMoney(e[1]), maxGift]); }).join("");
+    if (kindCount) giftBarsHtml += barRow(["Gifts in kind", kindCount, Math.max(kindCount, maxGift)]);
+    document.getElementById("giftBars").innerHTML = giftBarsHtml || '<p style="color:var(--text-muted); font-size:.84rem;">No gifts recorded yet.</p>';
+
+    var provEntries = Object.keys(provAgreedByCurrency).map(function (c) {
+      return [c + " agreed / paid", provAgreedByCurrency[c] ? Math.round((provPaidByCurrency[c] || 0) / provAgreedByCurrency[c] * 100) : 0, 100];
+    });
+    document.getElementById("providerBars").innerHTML = provEntries.length
+      ? provEntries.map(barRow).join("") + '<p style="margin-top:6px; font-size:.76rem; color:var(--text-muted);">Percent of agreed fee paid so far, by currency.</p>'
+      : '<p style="color:var(--text-muted); font-size:.84rem;">No service providers recorded yet.</p>';
   }
   function stat(label, val, sub, accent) {
     return '<div class="stat-card' + (accent ? " accent" : "") + '"><div class="sc-label">' + label + '</div><div class="sc-val">' + val + "</div>" + (sub ? '<div class="sc-sub">' + sub + "</div>" : "") + "</div>";
@@ -165,16 +217,21 @@
         "<td>" + (tbl ? escapeHtml(tbl.name) : '<span style="color:var(--text-muted)">Unassigned</span>') + "</td>" +
         '<td style="max-width:160px; font-size:.74rem; color:var(--text-muted);">' + escapeHtml(g.dietary || "—") + "</td>" +
         '<td><span class="pill ' + (g.checkedIn ? "pill-checked" : "pill-notchecked") + '">' + (g.checkedIn ? "Checked in" : "Not yet") + "</span></td>" +
-        '<td><div class="row-actions">' + iconBtn("edit", g.id, "Edit") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Delete") + "</div></td>" +
+        '<td><div class="row-actions">' + iconBtn("edit", g.id, "Edit") + iconBtn("link", g.id, "Copy invite link") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Delete") + "</div></td>" +
         "</tr>";
     }).join("");
   }
   function iconBtn(action, id, title) {
     var icons = {
       edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+      link: '<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>',
       badge: '<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 18h8"/>',
       checkin: '<path d="M20 6L9 17l-5-5"/>',
-      delete: '<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/>'
+      delete: '<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/>',
+      "gift-edit": '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+      "gift-delete": '<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/>',
+      "provider-open": '<path d="M9 18l6-6-6-6"/>',
+      "provider-delete": '<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/>'
     };
     return '<button class="icon-btn" data-action="' + action + '" data-id="' + id + '" title="' + title + '" aria-label="' + title + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">' + icons[action] + "</svg></button>";
   }
@@ -191,10 +248,18 @@
     var g = guests.find(function (x) { return x.id === id; });
     if (!g) return;
     if (action === "edit") openGuestModal(g);
+    else if (action === "link") copyInviteLink(g);
     else if (action === "badge") openBadgeModal(g);
     else if (action === "checkin") toggleCheckin(g);
     else if (action === "delete") deleteGuest(g);
   });
+
+  function copyInviteLink(g) {
+    var url = location.origin + "/?g=" + encodeURIComponent(g.id);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { showToast("Invite link copied for " + fullName(g)); }).catch(function () { prompt("Copy this link:", url); });
+    } else { prompt("Copy this link:", url); }
+  }
 
   function toggleCheckin(g) {
     var next = !g.checkedIn;
@@ -527,11 +592,328 @@
     scanRAF = requestAnimationFrame(scanLoop);
   }
 
+  /* ---------------- GIFTS ---------------- */
+  function populateSelect(el, options, selected) {
+    el.innerHTML = options.map(function (o) { return '<option value="' + o + '"' + (o === selected ? " selected" : "") + ">" + o + "</option>"; }).join("");
+  }
+
+  function renderGifts() {
+    document.getElementById("giftsEmpty").hidden = gifts.length !== 0;
+    var cashTotal = gifts.filter(function (g) { return g.type === "cash"; }).length;
+    var kindTotal = gifts.filter(function (g) { return g.type === "kind"; }).length;
+    var byCurrency = {};
+    gifts.forEach(function (g) { if (g.type === "cash") byCurrency[g.currency] = (byCurrency[g.currency] || 0) + (Number(g.amount) || 0); });
+    var totalsStr = Object.keys(byCurrency).map(function (c) { return c + " " + fmtMoney(byCurrency[c]); }).join("  ·  ") || "—";
+    document.getElementById("giftStatGrid").innerHTML = [
+      stat("Total Gifts", gifts.length),
+      stat("Cash Gifts", cashTotal, totalsStr, true),
+      stat("Gifts in Kind", kindTotal),
+    ].join("");
+
+    document.getElementById("giftRows").innerHTML = gifts.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); }).map(function (g) {
+      var amountStr = g.type === "cash" ? (g.currency + " " + fmtMoney(g.amount)) : (g.estimatedValue != null ? "~" + (g.estimatedCurrency || "") + " " + fmtMoney(g.estimatedValue) : "—");
+      return "<tr>" +
+        "<td>" + (g.type === "cash" ? "Cash" : "In Kind") + "</td>" +
+        "<td><div class=\"g-name\">" + escapeHtml(g.giver) + "</div>" + (g.type === "kind" ? '<div class="g-sub">' + escapeHtml(g.description || "") + "</div>" : "") + "</td>" +
+        "<td>" + fmtDate(g.date) + "</td>" +
+        "<td>" + amountStr + "</td>" +
+        "<td>" + escapeHtml(g.type === "cash" ? (g.paymentMethod || "") : "—") + "</td>" +
+        "<td style=\"max-width:180px; font-size:.74rem; color:var(--text-muted);\">" + escapeHtml(g.notes || "—") + "</td>" +
+        "<td><div class=\"row-actions\">" + iconBtn("gift-edit", g.id, "Edit") + iconBtn("gift-delete", g.id, "Delete") + "</div></td>" +
+        "</tr>";
+    }).join("");
+  }
+  document.getElementById("giftRows").addEventListener("click", function (e) {
+    var btn = e.target.closest(".icon-btn");
+    if (!btn) return;
+    var g = gifts.find(function (x) { return x.id === btn.dataset.id; });
+    if (!g) return;
+    if (btn.dataset.action === "gift-edit") openGiftModal(g);
+    else if (btn.dataset.action === "gift-delete") {
+      askConfirm("Remove this gift record?", "This cannot be undone.").then(function (ok) {
+        if (!ok) return;
+        api("/api/admin/gifts?id=" + g.id, { method: "DELETE" }).then(function () { showToast("Gift removed"); return loadAll(); });
+      });
+    }
+  });
+
+  var editingGiftId = null;
+  function openGiftModal(g) {
+    editingGiftId = g ? g.id : null;
+    document.getElementById("giftModalTitle").textContent = g ? "Edit Gift" : "Add Gift";
+    populateSelect(document.getElementById("gift-currency"), currencies, g ? g.currency : "USD");
+    populateSelect(document.getElementById("gift-value-currency"), currencies, g ? g.estimatedCurrency : "USD");
+    populateSelect(document.getElementById("gift-method"), paymentMethods, g ? g.paymentMethod : paymentMethods[0]);
+    var type = g ? g.type : "cash";
+    document.querySelectorAll('input[name="gift-type"]').forEach(function (r) { r.checked = r.value === type; });
+    toggleGiftFields(type);
+    document.getElementById("gift-giver").value = g ? g.giver : "";
+    document.getElementById("gift-date").value = g ? g.date : new Date().toISOString().slice(0, 10);
+    document.getElementById("gift-amount").value = g ? g.amount || "" : "";
+    document.getElementById("gift-description").value = g ? g.description || "" : "";
+    document.getElementById("gift-value").value = g && g.estimatedValue != null ? g.estimatedValue : "";
+    document.getElementById("gift-notes").value = g ? g.notes || "" : "";
+    document.getElementById("giftModalOverlay").hidden = false;
+  }
+  function toggleGiftFields(type) {
+    document.getElementById("giftCashFields").style.display = type === "cash" ? "grid" : "none";
+    document.getElementById("giftKindFields").style.display = type === "kind" ? "grid" : "none";
+  }
+  document.querySelectorAll('input[name="gift-type"]').forEach(function (r) { r.addEventListener("change", function () { toggleGiftFields(r.value); }); });
+  document.getElementById("addGiftBtn").addEventListener("click", function () { openGiftModal(null); });
+  document.getElementById("giftModalClose").addEventListener("click", function () { document.getElementById("giftModalOverlay").hidden = true; });
+  document.getElementById("giftModalCancel").addEventListener("click", function () { document.getElementById("giftModalOverlay").hidden = true; });
+  document.getElementById("giftModalSave").addEventListener("click", function () {
+    var type = document.querySelector('input[name="gift-type"]:checked').value;
+    var body = {
+      type: type,
+      giver: document.getElementById("gift-giver").value.trim(),
+      date: document.getElementById("gift-date").value,
+      notes: document.getElementById("gift-notes").value.trim(),
+    };
+    if (type === "cash") {
+      body.amount = document.getElementById("gift-amount").value;
+      body.currency = document.getElementById("gift-currency").value;
+      body.paymentMethod = document.getElementById("gift-method").value;
+    } else {
+      body.description = document.getElementById("gift-description").value.trim();
+      body.estimatedValue = document.getElementById("gift-value").value || null;
+      body.estimatedCurrency = document.getElementById("gift-value-currency").value;
+    }
+    var req = editingGiftId ? api("/api/admin/gifts?id=" + editingGiftId, { method: "PATCH", body: body }) : api("/api/admin/gifts", { method: "POST", body: body });
+    req.then(function () { showToast("Gift saved"); document.getElementById("giftModalOverlay").hidden = true; return loadAll(); })
+      .catch(function (e) { showToast(e.message || "Could not save gift"); });
+  });
+
+  /* ---------------- SERVICE PROVIDERS ---------------- */
+  function renderProviders() {
+    document.getElementById("providersEmpty").hidden = providers.length !== 0;
+    var totalAgreed = {}, totalPaid = {}, totalOutstanding = {};
+    var overdue = 0;
+    providers.forEach(function (p) {
+      var c = p.currency || "USD";
+      totalAgreed[c] = (totalAgreed[c] || 0) + (Number(p.agreedFee) || 0);
+      totalPaid[c] = (totalPaid[c] || 0) + (Number(p.amountPaid) || 0);
+      totalOutstanding[c] = (totalOutstanding[c] || 0) + (Number(p.outstanding) || 0);
+      if (p.status === "Overdue") overdue++;
+    });
+    function fmtByCurrency(obj) { return Object.keys(obj).map(function (c) { return c + " " + fmtMoney(obj[c]); }).join(" · ") || "—"; }
+    document.getElementById("providerStatGrid").innerHTML = [
+      stat("Providers", providers.length),
+      stat("Agreed Total", fmtByCurrency(totalAgreed)),
+      stat("Paid To Date", fmtByCurrency(totalPaid), null, true),
+      stat("Outstanding", fmtByCurrency(totalOutstanding), overdue + " overdue"),
+    ].join("");
+
+    document.getElementById("providerRows").innerHTML = providers.map(function (p) {
+      return "<tr>" +
+        "<td><div class=\"g-name\">" + escapeHtml(p.name) + "</div><div class=\"g-sub\">" + escapeHtml(p.contactName || p.phone || p.email || "") + "</div></td>" +
+        "<td>" + escapeHtml(p.category || "—") + "</td>" +
+        "<td>" + (p.currency || "") + " " + fmtMoney(p.agreedFee) + "</td>" +
+        "<td>" + (p.currency || "") + " " + fmtMoney(p.amountPaid) + "</td>" +
+        "<td>" + (p.currency || "") + " " + fmtMoney(p.outstanding) + "</td>" +
+        "<td><span class=\"pill " + statusPillClass(p.status) + "\">" + p.status + "</span></td>" +
+        "<td>" + fmtDate(p.paymentDeadline) + "</td>" +
+        "<td><div class=\"row-actions\">" + iconBtn("provider-open", p.id, "Open") + iconBtn("provider-delete", p.id, "Delete") + "</div></td>" +
+        "</tr>";
+    }).join("");
+  }
+  document.getElementById("providerRows").addEventListener("click", function (e) {
+    var btn = e.target.closest(".icon-btn");
+    if (!btn) return;
+    var p = providers.find(function (x) { return x.id === btn.dataset.id; });
+    if (!p) return;
+    if (btn.dataset.action === "provider-open") openProviderModal(p);
+    else if (btn.dataset.action === "provider-delete") {
+      askConfirm("Delete " + p.name + "?", "This removes the provider and its full payment history.").then(function (ok) {
+        if (!ok) return;
+        api("/api/admin/providers?id=" + p.id, { method: "DELETE" }).then(function () { showToast("Provider removed"); return loadAll(); });
+      });
+    }
+  });
+
+  var editingProviderId = null;
+  function openProviderModal(p) {
+    editingProviderId = p ? p.id : null;
+    document.getElementById("providerModalTitle").textContent = p ? "Edit " + p.name : "Add Service Provider";
+    populateSelect(document.getElementById("prov-currency"), currencies, p ? p.currency : "USD");
+    document.getElementById("prov-name").value = p ? p.name : "";
+    document.getElementById("prov-category").value = p ? p.category : "";
+    document.getElementById("prov-phone").value = p ? p.phone : "";
+    document.getElementById("prov-email").value = p ? p.email : "";
+    document.getElementById("prov-fee").value = p ? p.agreedFee : "";
+    document.getElementById("prov-deadline").value = p ? p.paymentDeadline || "" : "";
+    document.getElementById("prov-notes").value = p ? p.notes : "";
+    document.getElementById("providerModalDelete").hidden = !p;
+    document.getElementById("providerPaymentsSection").hidden = !p;
+    if (p) {
+      populateSelect(document.getElementById("pay-currency"), currencies, p.currency);
+      populateSelect(document.getElementById("pay-method"), paymentMethods, paymentMethods[0]);
+      document.getElementById("pay-date").value = new Date().toISOString().slice(0, 10);
+      renderProviderPayments(p);
+    }
+    document.getElementById("providerModalOverlay").hidden = false;
+  }
+  function renderProviderPayments(p) {
+    var comp = { amountPaid: p.amountPaid, outstanding: p.outstanding, status: p.status };
+    document.getElementById("providerBalanceSummary").innerHTML =
+      "Paid <strong>" + p.currency + " " + fmtMoney(comp.amountPaid) + "</strong> of <strong>" + p.currency + " " + fmtMoney(p.agreedFee) + "</strong> — outstanding <strong>" + p.currency + " " + fmtMoney(comp.outstanding) + "</strong> — <span class=\"pill " + statusPillClass(comp.status) + "\">" + comp.status + "</span>" +
+      (p.otherCurrencyPaid && p.otherCurrencyPaid.length ? "<br><span style=\"color:var(--text-muted);\">Also received payments in " + p.otherCurrencyPaid.join(", ") + " (kept separate — not converted).</span>" : "");
+    var payments = p.payments || [];
+    document.getElementById("providerPaymentsList").innerHTML = payments.length ? payments.map(function (pay) {
+      return '<div class="payment-row"><span>' + fmtDate(pay.date) + " — " + pay.currency + " " + fmtMoney(pay.amount) + " (" + escapeHtml(pay.method) + ")" + (pay.notes ? " — " + escapeHtml(pay.notes) : "") + '</span><button class="pr-del" data-payid="' + pay.id + '">Remove</button></div>';
+    }).join("") : '<p style="font-size:.8rem; color:var(--text-muted);">No payments recorded yet.</p>';
+  }
+  document.getElementById("providerPaymentsList").addEventListener("click", function (e) {
+    var btn = e.target.closest(".pr-del");
+    if (!btn || !editingProviderId) return;
+    api("/api/admin/providers?id=" + editingProviderId, { method: "PATCH", body: { action: "delete-payment", paymentId: btn.dataset.payid } })
+      .then(function (res) {
+        var p = providers.find(function (x) { return x.id === editingProviderId; });
+        Object.assign(p, res.provider);
+        renderProviderPayments(p);
+        showToast("Payment removed");
+        return loadAll();
+      });
+  });
+  document.getElementById("addPaymentBtn").addEventListener("click", function () {
+    var amount = Number(document.getElementById("pay-amount").value);
+    if (!amount || amount <= 0) { showToast("Enter a payment amount"); return; }
+    api("/api/admin/providers?id=" + editingProviderId, {
+      method: "PATCH",
+      body: { action: "add-payment", amount: amount, currency: document.getElementById("pay-currency").value, method: document.getElementById("pay-method").value, date: document.getElementById("pay-date").value }
+    }).then(function (res) {
+      showToast("Payment recorded");
+      document.getElementById("pay-amount").value = "";
+      return loadAll().then(function () {
+        var p = providers.find(function (x) { return x.id === editingProviderId; });
+        if (p) renderProviderPayments(p);
+      });
+    }).catch(function (e) { showToast(e.message || "Could not record payment"); });
+  });
+
+  document.getElementById("addProviderBtn").addEventListener("click", function () { openProviderModal(null); });
+  document.getElementById("providerModalClose").addEventListener("click", function () { document.getElementById("providerModalOverlay").hidden = true; });
+  document.getElementById("providerModalSave").addEventListener("click", function () {
+    var body = {
+      name: document.getElementById("prov-name").value.trim(),
+      category: document.getElementById("prov-category").value.trim(),
+      phone: document.getElementById("prov-phone").value.trim(),
+      email: document.getElementById("prov-email").value.trim(),
+      agreedFee: document.getElementById("prov-fee").value,
+      currency: document.getElementById("prov-currency").value,
+      paymentDeadline: document.getElementById("prov-deadline").value || null,
+      notes: document.getElementById("prov-notes").value.trim(),
+    };
+    if (!body.name) { document.getElementById("prov-name").focus(); return; }
+    var req = editingProviderId ? api("/api/admin/providers?id=" + editingProviderId, { method: "PATCH", body: body }) : api("/api/admin/providers", { method: "POST", body: body });
+    req.then(function (res) {
+      showToast("Provider saved");
+      if (!editingProviderId) { editingProviderId = res.provider.id; }
+      return loadAll();
+    }).then(function () {
+      var p = providers.find(function (x) { return x.id === editingProviderId; });
+      if (p) openProviderModal(p);
+    }).catch(function (e) { showToast(e.message || "Could not save provider"); });
+  });
+  document.getElementById("providerModalDelete").addEventListener("click", function () {
+    if (!editingProviderId) return;
+    askConfirm("Delete this provider?", "This removes the provider and its full payment history.").then(function (ok) {
+      if (!ok) return;
+      api("/api/admin/providers?id=" + editingProviderId, { method: "DELETE" }).then(function () {
+        showToast("Provider removed");
+        document.getElementById("providerModalOverlay").hidden = true;
+        return loadAll();
+      });
+    });
+  });
+
+  /* ---------------- CSV IMPORT ---------------- */
+  var importedRows = [];
+  document.getElementById("importGuestsBtn").addEventListener("click", function () {
+    resetImportModal();
+    document.getElementById("importModalOverlay").hidden = false;
+  });
+  document.getElementById("importModalClose").addEventListener("click", function () { document.getElementById("importModalOverlay").hidden = true; });
+  document.getElementById("importCancelBtn").addEventListener("click", function () { document.getElementById("importModalOverlay").hidden = true; });
+
+  function resetImportModal() {
+    importedRows = [];
+    document.getElementById("importPreviewWrap").hidden = true;
+    document.getElementById("importDropzone").hidden = false;
+    document.getElementById("importCommitBtn").hidden = true;
+    document.getElementById("importFileInput").value = "";
+  }
+
+  var dropzone = document.getElementById("importDropzone");
+  dropzone.addEventListener("click", function () { document.getElementById("importFileInput").click(); });
+  dropzone.addEventListener("dragover", function (e) { e.preventDefault(); dropzone.classList.add("dragover"); });
+  dropzone.addEventListener("dragleave", function () { dropzone.classList.remove("dragover"); });
+  dropzone.addEventListener("drop", function (e) {
+    e.preventDefault(); dropzone.classList.remove("dragover");
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) readCsvFile(e.dataTransfer.files[0]);
+  });
+  document.getElementById("importFileInput").addEventListener("change", function (e) {
+    if (e.target.files && e.target.files[0]) readCsvFile(e.target.files[0]);
+  });
+
+  function readCsvFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      api("/api/admin/guests-import", { method: "POST", body: { csv: String(reader.result) } })
+        .then(function (res) { showImportPreview(res); })
+        .catch(function (e) { showToast(e.message || "Could not read that CSV file"); });
+    };
+    reader.readAsText(file);
+  }
+
+  function showImportPreview(res) {
+    importedRows = res.rows.map(function (r) { return Object.assign({}, r, { resolution: r.duplicate ? "skip" : "create" }); });
+    document.getElementById("importDropzone").hidden = true;
+    document.getElementById("importPreviewWrap").hidden = false;
+    document.getElementById("importCommitBtn").hidden = false;
+    document.getElementById("importSummary").innerHTML =
+      "<span><strong>" + res.totalRows + "</strong> rows found</span>" +
+      "<span><strong>" + res.duplicateCount + "</strong> possible duplicates</span>" +
+      (res.invalidRows ? "<span><strong>" + res.invalidRows + "</strong> rows missing a first name (will be skipped)</span>" : "");
+    renderImportRows();
+  }
+  function renderImportRows() {
+    document.getElementById("importRows").innerHTML = importedRows.map(function (r, idx) {
+      var name = (r.draft.firstName + " " + r.draft.lastName).trim() || "(no name)";
+      var statusHtml = r.duplicate
+        ? '<span class="pill pill-status-amber">Possible duplicate of ' + escapeHtml(r.duplicate.name) + "</span>"
+        : (r.draft.firstName ? '<span class="pill pill-status-green">New guest</span>' : '<span class="pill pill-status-red">Missing name</span>');
+      function opt(value, label) {
+        return "<option value=\"" + value + "\"" + (r.resolution === value ? " selected" : "") + ">" + label + "</option>";
+      }
+      var actionOptions = r.duplicate
+        ? opt("skip", "Skip") + opt("update", "Update existing") + opt("create", "Create new anyway")
+        : opt("create", "Create") + opt("skip", "Skip");
+      return "<tr><td>" + escapeHtml(name) + "</td><td>" + escapeHtml(r.draft.phone || "—") + "</td><td>" + (r.draft.invitedCount || 1) + "</td><td>" + statusHtml + "</td>" +
+        '<td><select data-idx="' + idx + '" class="import-action-select" style="border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-family:inherit; font-size:.78rem;">' + actionOptions + "</select></td></tr>";
+    }).join("");
+  }
+  document.getElementById("importRows").addEventListener("change", function (e) {
+    var sel = e.target.closest(".import-action-select");
+    if (!sel) return;
+    importedRows[Number(sel.dataset.idx)].resolution = sel.value;
+  });
+  document.getElementById("importCommitBtn").addEventListener("click", function () {
+    var rows = importedRows.filter(function (r) { return r.draft.firstName; }).map(function (r) {
+      return { fields: r.fields, resolution: r.resolution, targetId: r.duplicate ? r.duplicate.id : null };
+    });
+    api("/api/admin/guests-import", { method: "POST", body: { mode: "commit", rows: rows } })
+      .then(function (res) {
+        showToast("Imported: " + res.created + " created, " + res.updated + " updated, " + res.skipped + " skipped");
+        document.getElementById("importModalOverlay").hidden = true;
+        return loadAll();
+      }).catch(function (e) { showToast(e.message || "Import failed"); });
+  });
+
   /* ---------------- INIT ---------------- */
-  api("/api/admin/session").then(function (res) {
-    if (!res.authed) { location.href = "/admin/login.html"; return; }
-    document.getElementById("loadingScreen").hidden = true;
-    document.getElementById("appRoot").hidden = false;
-    loadAll().catch(function () { showToast("Could not load guest data"); });
-  }).catch(function () { location.href = "/admin/login.html"; });
+  // The page itself is already gated by middleware.js (redirects to /admin/login.html
+  // before this ever loads), so there's no separate session check here — just render
+  // and start fetching. If a session has since expired, api() below redirects on 401.
+  loadAll().catch(function () { showToast("Could not load guest data"); });
 })();

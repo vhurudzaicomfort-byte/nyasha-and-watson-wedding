@@ -3,6 +3,8 @@
 
   /* ---------------- CONFIG ---------------- */
   var RSVP_WHATSAPP_NUMBER = "263772692738";
+  var cardWhatsappLink = document.getElementById("cardWhatsappLink");
+  if (cardWhatsappLink) cardWhatsappLink.href = "https://wa.me/" + RSVP_WHATSAPP_NUMBER + "?text=" + encodeURIComponent("Hello Nyasha & Watson, I have a question about your wedding:");
   var WEDDING_DATE_ISO = "2026-12-05T09:00:00+02:00"; // Harare (CAT, UTC+2) — ceremony at 9:00 AM
   var VENUE_NAME = "Colne Valley Nature Reserve Park";
   var VENUE_ADDRESS = "7 Bay Noakes, Colne Valley, Chisipite, Harare, Zimbabwe";
@@ -58,6 +60,28 @@
   }
   tick();
   setInterval(tick, 1000);
+
+  /* ---------------- GUEST PERSONALISATION ---------------- */
+  // A personalised link looks like ?g=<guestId> (copied from the admin Guest List).
+  // The generic link with no ?g= param is the "master" invitation.
+  var guestToken = new URLSearchParams(location.search).get("g") || "";
+  var maxGuestsAllowed = 10;
+  if (guestToken) {
+    fetch("/api/rsvp?token=" + encodeURIComponent(guestToken)).then(function (r) { return r.json(); }).then(function (info) {
+      if (!info || !info.found) return;
+      maxGuestsAllowed = Math.max(1, (info.invitedCount || 1) + (info.plusOneAllowed ? 1 : 0));
+      var full = ((info.firstName || "") + " " + (info.lastName || "")).trim();
+      var nameInput = document.getElementById("g-name");
+      if (full && nameInput && !nameInput.value) nameInput.value = full;
+      var cardNameInput = document.getElementById("g-card-name");
+      if (full && cardNameInput && !cardNameInput.value) { cardNameInput.value = full; cardNameInput.dispatchEvent(new Event("input")); }
+      var hint = document.getElementById("inviteHint");
+      if (hint) {
+        hint.hidden = false;
+        hint.textContent = "Welcome, " + (info.firstName || "friend") + " — your invitation includes " + maxGuestsAllowed + (maxGuestsAllowed > 1 ? " guests." : " guest.");
+      }
+    }).catch(function () {});
+  }
 
   /* ---------------- PROGRAMME RENDER ---------------- */
   document.getElementById("programmeList").innerHTML = PROGRAMME.map(function (item) {
@@ -141,7 +165,7 @@
   document.getElementById("back2").addEventListener("click", function () { showStep(1); });
 
   var guestCountEl = document.getElementById("guestCount");
-  document.getElementById("incGuests").addEventListener("click", function () { state.guests = Math.min(10, state.guests + 1); guestCountEl.textContent = state.guests; });
+  document.getElementById("incGuests").addEventListener("click", function () { state.guests = Math.min(maxGuestsAllowed, state.guests + 1); guestCountEl.textContent = state.guests; });
   document.getElementById("decGuests").addEventListener("click", function () { state.guests = Math.max(1, state.guests - 1); guestCountEl.textContent = state.guests; });
 
   var dietChips = document.getElementById("dietChips");
@@ -198,6 +222,25 @@
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
   document.getElementById("sendRsvp").addEventListener("click", function () {
+    var btn = document.getElementById("sendRsvp");
+    btn.disabled = true;
+
+    var dietStr = state.diet.map(function (d) { return d === "Other" && state.dietOther ? state.dietOther : d; }).join(", ");
+
+    // 1) Persist the RSVP to the guest record (creates or updates it in the admin's guest list).
+    var payload = {
+      token: guestToken || undefined,
+      name: state.name,
+      phone: state.phone,
+      attend: state.attend,
+      guests: state.guests,
+      plusOneName: state.plusone,
+      dietary: state.attend === "attending" ? dietStr : "",
+      message: state.message,
+    };
+    fetch("/api/rsvp", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).catch(function () {});
+
+    // 2) Also hand off to WhatsApp so the couple gets an immediate message too.
     var lines = [];
     lines.push("Hello Nyasha & Watson! This is my RSVP for your wedding on 5 December 2026:");
     lines.push("");
@@ -207,7 +250,6 @@
     if (state.attend === "attending") {
       lines.push("Party size: " + state.guests);
       if (state.plusone) lines.push("Additional guest(s): " + state.plusone);
-      var dietStr = state.diet.map(function (d) { return d === "Other" && state.dietOther ? state.dietOther : d; }).join(", ");
       lines.push("Dietary requirements: " + dietStr);
     }
     if (state.message) lines.push("Message: " + state.message);
@@ -217,6 +259,7 @@
     document.getElementById("reviewPane").hidden = true;
     document.getElementById("confirmPane").hidden = false;
     document.getElementById("confirmName").textContent = ", " + state.name;
+    btn.disabled = false;
   });
 
   /* ---------------- INVITATION CARD (canvas, live preview + download) ---------------- */
@@ -387,7 +430,8 @@
       if (!blob) return;
       var url = URL.createObjectURL(blob);
       var a = document.createElement("a");
-      a.href = url; a.download = "Nyasha-Watson-Invitation.png";
+      var guestName = (document.getElementById("g-card-name").value || "").trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
+      a.href = url; a.download = "Nyasha-Watson-Invitation" + (guestName ? "-" + guestName : "") + ".png";
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
       showToast("Invitation card downloaded");

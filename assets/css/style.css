@@ -107,6 +107,7 @@ section{ padding-block:96px; position:relative; }
 .name-part{ display:inline-block; white-space:nowrap; }
 .hero-sub{ margin-top:18px; font-family:'Bodoni Moda',serif; font-size:1.05rem; color:var(--plum-2); letter-spacing:.04em; }
 .hero-sub span{ color:var(--text-muted); font-family:'Poppins',sans-serif; }
+.invite-hint{ margin-top:14px; display:inline-block; padding:8px 18px; font-size:.8rem; color:var(--plum); background:var(--champagne); border:1px solid var(--champagne-line); border-radius:99px; }
 
 .countdown{ display:flex; justify-content:center; gap:14px; margin-top:44px; flex-wrap:wrap; }
 .cd-unit{ background:var(--surface); border:1px solid var(--border); min-width:84px; padding:16px 10px; box-shadow:var(--shadow-card); }
@@ -214,6 +215,10 @@ section{ padding-block:96px; position:relative; }
 .rsvp-deadline{ text-align:center; margin-top:20px; font-size:.78rem; color:var(--text-muted); }
 
 .save-card-wrap{ text-align:center; }
+.card-links{ display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:22px; }
+.card-link{ display:inline-flex; align-items:center; gap:7px; padding:10px 16px; font-size:.74rem; letter-spacing:.06em; text-transform:uppercase; color:var(--plum-2); text-decoration:none; border:1px solid var(--border); background:var(--surface); }
+.card-link:hover{ border-color:var(--gold); color:var(--plum); }
+.card-link svg{ width:15px; height:15px; color:var(--coral); flex:none; }
 
 .invite-only-note{ text-align:center; margin-top:32px; font-size:.78rem; letter-spacing:.06em; color:var(--text-muted); font-style:italic; }
 
