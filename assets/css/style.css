@@ -46,8 +46,8 @@ section{ padding-block:96px; position:relative; }
 /* floral corner accents */
 .corner{ position:absolute; width:210px; height:auto; pointer-events:none; opacity:.95; z-index:1; }
 @media (max-width:640px){ .corner{ width:130px; } }
-.corner--tr{ top:-12px; right:-12px; transform:rotate(180deg); }
-.corner--bl{ bottom:-12px; left:-12px; }
+.corner--tr{ top:-12px; right:-12px; }
+.corner--bl{ bottom:-12px; left:-12px; transform:rotate(180deg); }
 
 /* opening cover */
 #cover{ position:fixed; inset:0; z-index:999;

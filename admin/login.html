@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — W&amp;N Wedding Desk</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{ --ivory:#FBF7F0; --plum:#3E1730; --plum-2:#5A2444; --gold:#B08A46; --border:#E4D5BE; --surface:#FFFDF9; --error:#A73E3E; --error-bg:#F6E3E1; }
+  *{box-sizing:border-box;}
+  body{ margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--ivory); font-family:'Jost',sans-serif; font-weight:300; color:#3A2430; padding:20px; }
+  .card{ width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:38px 32px; box-shadow:0 18px 44px -22px rgba(62,23,48,.35); }
+  h1{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:1.7rem; color:var(--plum); margin:0 0 4px; text-align:center; }
+  p.sub{ text-align:center; font-size:.82rem; color:#8B7A6E; margin:0 0 26px; }
+  label{ display:block; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--plum-2); margin-bottom:8px; }
+  input{ width:100%; border:1px solid var(--border); background:var(--ivory); padding:12px 14px; font-size:.9rem; border-radius:6px; font-family:inherit; color:#3A2430; }
+  input:focus{ outline:2px solid var(--gold); outline-offset:1px; }
+  button{ width:100%; margin-top:18px; background:var(--plum); color:#fff; border:none; padding:13px; border-radius:6px; font-size:.8rem; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; font-family:inherit; }
+  button:hover{ background:var(--plum-2); }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  .error{ margin-top:14px; padding:10px 12px; background:var(--error-bg); color:var(--error); border-radius:6px; font-size:.82rem; display:none; }
+  .error.show{ display:block; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Nyasha &amp; Watson</h1>
+  <p class="sub">Wedding Desk — private guest &amp; table manager</p>
+  <form id="loginForm">
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" autocomplete="current-password" required autofocus>
+    <button type="submit" id="submitBtn">Sign In</button>
+    <div class="error" id="errorMsg"></div>
+  </form>
+</div>
+<script>
+  var form = document.getElementById('loginForm');
+  var btn = document.getElementById('submitBtn');
+  var err = document.getElementById('errorMsg');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    err.classList.remove('show');
+    btn.disabled = true; btn.textContent = 'Signing In…';
+    fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: document.getElementById('password').value })
+    }).then(function (res) {
+      if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || 'Sign in failed'); });
+      return res.json();
+    }).then(function () {
+      var params = new URLSearchParams(location.search);
+      location.href = params.get('next') || '/admin/index.html';
+    }).catch(function (e) {
+      err.textContent = e.message || 'Incorrect password';
+      err.classList.add('show');
+      btn.disabled = false; btn.textContent = 'Sign In';
+    });
+  });
+</script>
+</body>
+</html>

@@ -257,13 +257,12 @@
     ctx.fillStyle = "#FBF7F0"; ctx.fillRect(0, 0, w, h);
 
     if (floralImg) {
-      var iw = 360, ih = Math.round(iw * floralImg.naturalHeight / floralImg.naturalWidth);
-      // bottom-left: bleeds off the left/bottom edges, densest bloom near the corner
-      ctx.drawImage(floralImg, -50, h - ih + 50, iw, ih);
-      // top-right: same artwork rotated 180° about its own centre so the dense bloom
-      // (originally bottom-left in the source image) lands in the top-right corner
+      var iw = 340, ih = Math.round(iw * floralImg.naturalHeight / floralImg.naturalWidth);
+      // top-right: the artwork's bloom sits near its own top, so this bleeds off the top/right edges as-is
+      ctx.drawImage(floralImg, w - iw + 60, -40, iw, ih);
+      // bottom-left: same artwork rotated 180° about its own centre so the bloom lands in the bottom-left corner
       ctx.save();
-      ctx.translate(w - 130, 89);
+      ctx.translate(iw / 2 - 60, h - ih / 2 + 40);
       ctx.rotate(Math.PI);
       ctx.drawImage(floralImg, -iw / 2, -ih / 2, iw, ih);
       ctx.restore();

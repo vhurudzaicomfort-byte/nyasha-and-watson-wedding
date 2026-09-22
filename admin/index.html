@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>W&amp;N Wedding Desk</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="/assets/js/qrcode.min.js"></script>
+<script src="/assets/js/jsQR.min.js"></script>
+<style>
+  :root{
+    --ivory:#FBF7F0; --ivory-deep:#F3ECDF; --champagne:#F1E3CC; --champagne-line:#E4D2B0;
+    --plum:#3E1730; --plum-2:#5A2444; --plum-soft:#9C7089; --coral:#D97F55; --coral-soft:#EAB08C;
+    --gold:#B08A46; --gold-bright:#C9A25E; --text:#3A2430; --text-muted:#8B7A6E;
+    --border:#E4D5BE; --surface:#FFFDF9; --success:#5C7A5C; --success-bg:#E7EFE3;
+    --warning:#B9803D; --warning-bg:#FBEEDF; --error:#A73E3E; --error-bg:#F6E3E1;
+    --sidebar:#2E1226;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--ivory-deep); color:var(--text); font-family:'Jost',sans-serif; font-weight:300; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3,h4{ font-family:'Cormorant Garamond',serif; font-weight:600; color:var(--plum); margin:0; }
+  p{ margin:0; line-height:1.6; }
+  button{ font-family:inherit; }
+  @media (prefers-reduced-motion: reduce){ *{ transition-duration:.001ms !important; } }
+
+  .app{ display:flex; min-height:100vh; }
+  .sidebar{ width:230px; flex:none; background:var(--sidebar); color:#E9D9CE; padding:26px 16px; display:flex; flex-direction:column; gap:6px; position:sticky; top:0; height:100vh; }
+  @media (max-width:860px){ .sidebar{ display:none; } }
+  .brand{ font-family:'Cormorant Garamond',serif; font-size:1.15rem; color:#fff; padding:0 10px 22px; }
+  .brand small{ display:block; font-family:'Jost',sans-serif; font-size:.62rem; letter-spacing:.16em; text-transform:uppercase; color:#C6A6BA; margin-top:4px; }
+  .navitem{ display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:8px; cursor:pointer; font-size:.82rem; color:#E9D9CE; text-decoration:none; background:none; border:none; width:100%; text-align:left; }
+  .navitem svg{ width:17px; height:17px; flex:none; opacity:.8; }
+  .navitem:hover{ background:rgba(255,255,255,.06); }
+  .navitem.active{ background:rgba(255,255,255,.12); color:#fff; }
+  .sidebar-foot{ margin-top:auto; font-size:.68rem; color:#9C7C90; padding:0 10px; line-height:1.5; }
+  .logout-btn{ margin-top:8px; background:none; border:1px solid rgba(255,255,255,.25); color:#E9D9CE; padding:8px 12px; border-radius:6px; font-size:.7rem; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; }
+  .logout-btn:hover{ background:rgba(255,255,255,.08); }
+
+  .topbar{ display:none; align-items:center; justify-content:space-between; padding:14px 18px; background:var(--sidebar); color:#fff; position:sticky; top:env(safe-area-inset-top,0px); z-index:30; }
+  @media (max-width:860px){ .topbar{ display:flex; } }
+  .topbar select{ background:rgba(255,255,255,.1); color:#fff; border:1px solid rgba(255,255,255,.2); padding:8px 10px; font-size:.78rem; border-radius:6px; }
+
+  .main{ flex:1; min-width:0; padding:30px 34px 90px; }
+  @media (max-width:640px){ .main{ padding:20px 16px 90px; } }
+
+  .page-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:26px; }
+  .page-head h2{ font-size:1.9rem; }
+  .page-head p{ color:var(--text-muted); font-size:.86rem; margin-top:4px; }
+
+  .btn{ display:inline-flex; align-items:center; gap:8px; padding:11px 20px; font-size:.76rem; letter-spacing:.06em; border:1px solid transparent; cursor:pointer; border-radius:6px; text-decoration:none; transition:all .18s ease; white-space:nowrap; }
+  .btn-primary{ background:var(--plum); color:#fff; } .btn-primary:hover{ background:var(--plum-2); }
+  .btn-outline{ background:var(--surface); color:var(--plum); border-color:var(--border); } .btn-outline:hover{ border-color:var(--plum); }
+  .btn-danger{ background:var(--error-bg); color:var(--error); border-color:#eccfcb; } .btn-danger:hover{ background:#f2d9d6; }
+  .btn-sm{ padding:7px 13px; font-size:.7rem; }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+  .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:28px; }
+  .stat-card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px 18px; }
+  .stat-card .sc-label{ font-size:.64rem; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); }
+  .stat-card .sc-val{ font-family:'Cormorant Garamond',serif; font-size:2.1rem; color:var(--plum); margin-top:6px; font-variant-numeric:tabular-nums; }
+  .stat-card .sc-sub{ font-size:.72rem; color:var(--text-muted); margin-top:2px; }
+  .stat-card.accent{ border-color:var(--gold); }
+
+  .panel{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px; margin-bottom:22px; }
+  .panel h3{ font-size:1.2rem; margin-bottom:14px; }
+
+  .bars{ display:flex; flex-direction:column; gap:12px; }
+  .bar-row{ display:flex; align-items:center; gap:12px; font-size:.78rem; }
+  .bar-row .br-label{ width:110px; flex:none; color:var(--text-muted); }
+  .bar-track{ flex:1; height:9px; background:var(--ivory-deep); border-radius:99px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:99px; background:var(--gold); }
+  .bar-row .br-val{ width:38px; text-align:right; color:var(--plum-2); font-variant-numeric:tabular-nums; }
+
+  .tabpanel{ display:none; } .tabpanel.active{ display:block; }
+
+  .toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+  .toolbar input[type=search], .toolbar select{ border:1px solid var(--border); background:var(--surface); padding:10px 12px; font-size:.8rem; border-radius:6px; color:var(--text); font-family:inherit; }
+  .toolbar input[type=search]{ flex:1; min-width:160px; }
+
+  .table-wrap{ overflow-x:auto; border:1px solid var(--border); border-radius:10px; background:var(--surface); }
+  table.data{ width:100%; border-collapse:collapse; font-size:.8rem; min-width:820px; }
+  table.data th{ text-align:left; padding:12px 14px; background:var(--ivory-deep); color:var(--plum-2); font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; border-bottom:1px solid var(--border); position:sticky; top:0; }
+  table.data td{ padding:12px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  table.data tr:last-child td{ border-bottom:none; }
+  table.data tr:hover td{ background:var(--ivory-deep); }
+  .g-name{ font-family:'Cormorant Garamond',serif; font-size:1.02rem; color:var(--plum); }
+  .g-sub{ font-size:.7rem; color:var(--text-muted); margin-top:2px; }
+
+  .pill{ display:inline-block; padding:3px 10px; border-radius:99px; font-size:.66rem; letter-spacing:.05em; text-transform:uppercase; font-weight:500; }
+  .pill-pending{ background:#EFE7DC; color:#8A7455; }
+  .pill-attending{ background:var(--success-bg); color:var(--success); }
+  .pill-maybe{ background:var(--warning-bg); color:var(--warning); }
+  .pill-not_attending{ background:var(--error-bg); color:var(--error); }
+  .pill-checked{ background:var(--plum); color:#fff; }
+  .pill-notchecked{ background:var(--ivory-deep); color:var(--text-muted); }
+
+  .row-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .icon-btn{ border:1px solid var(--border); background:var(--surface); width:32px; height:32px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:var(--plum-2); }
+  .icon-btn:hover{ border-color:var(--plum); color:var(--plum); }
+  .icon-btn svg{ width:15px; height:15px; }
+
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--text-muted); }
+  .empty-state svg{ width:40px; height:40px; color:var(--plum-soft); margin-bottom:14px; }
+  .empty-state h4{ font-size:1.2rem; color:var(--plum); margin-bottom:6px; }
+  .empty-state p{ font-size:.84rem; max-width:44ch; margin:0 auto; }
+
+  .tables-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px; }
+  .table-card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; cursor:pointer; transition:border-color .18s; }
+  .table-card:hover{ border-color:var(--gold); }
+  .table-card.vip{ border-color:var(--gold); background:linear-gradient(180deg, #FBF3E4, var(--surface)); }
+  .table-card.locked{ opacity:.7; }
+  .tc-head{ display:flex; justify-content:space-between; align-items:flex-start; }
+  .tc-name{ font-size:1.25rem; }
+  .tc-badges{ display:flex; gap:6px; }
+  .tc-badge{ font-size:.6rem; letter-spacing:.06em; text-transform:uppercase; padding:2px 7px; border-radius:99px; background:var(--champagne); color:var(--plum-2); }
+  .tc-seats{ display:flex; flex-wrap:wrap; gap:5px; margin-top:14px; }
+  .seat-dot{ width:13px; height:13px; border-radius:50%; border:1.5px solid var(--plum-soft); }
+  .seat-dot.filled{ background:var(--coral); border-color:var(--coral); }
+  .tc-meta{ margin-top:12px; font-size:.74rem; color:var(--text-muted); }
+  .tc-guests{ margin-top:10px; display:flex; flex-direction:column; gap:3px; }
+  .tc-guest{ font-size:.74rem; color:var(--plum-2); }
+
+  .overlay{ position:fixed; inset:0; background:rgba(46,18,38,.5); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
+  .overlay[hidden]{ display:none; }
+  .modal{ background:var(--surface); border-radius:12px; width:100%; max-width:560px; max-height:90vh; overflow-y:auto; padding:28px; }
+  .modal.modal-wide{ max-width:720px; }
+  .modal h3{ font-size:1.4rem; margin-bottom:4px; }
+  .modal .modal-sub{ font-size:.8rem; color:var(--text-muted); margin-bottom:20px; }
+  .modal-close{ float:right; background:none; border:none; cursor:pointer; color:var(--text-muted); width:30px; height:30px; }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:520px){ .form-grid{ grid-template-columns:1fr; } }
+  .form-grid .full{ grid-column:1 / -1; }
+  .field label{ display:block; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--plum-2); margin-bottom:6px; }
+  .field input, .field select, .field textarea{ width:100%; border:1px solid var(--border); background:var(--ivory); padding:10px 12px; font-size:.85rem; border-radius:6px; font-family:inherit; color:var(--text); }
+  .field textarea{ min-height:70px; resize:vertical; }
+  .field.checkline{ display:flex; align-items:center; gap:8px; margin-top:4px; }
+  .field.checkline label{ margin:0; text-transform:none; letter-spacing:0; font-size:.82rem; color:var(--text); }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
+
+  .badge-canvas-wrap{ text-align:center; }
+  #badgeCanvas{ display:none; }
+  .badge-preview{ max-width:300px; width:100%; margin:0 auto; border-radius:10px; box-shadow:0 14px 30px -16px rgba(62,23,48,.4); border:1px solid var(--border); }
+
+  .scan-video{ width:100%; max-width:360px; border-radius:10px; background:#111; margin:0 auto; display:block; }
+  .scan-status{ text-align:center; font-size:.8rem; color:var(--text-muted); margin-top:12px; }
+  .checkin-result{ margin-top:18px; padding:18px; border-radius:10px; background:var(--ivory-deep); border:1px solid var(--border); }
+
+  .toast{ position:fixed; left:50%; bottom:30px; transform:translate(-50%,12px); background:var(--plum); color:#fff; padding:12px 22px; border-radius:8px; font-size:.82rem; opacity:0; pointer-events:none; transition:opacity .22s, transform .22s; z-index:200; }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
+  .confirm-box{ max-width:400px; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  #appRoot[hidden]{ display:none; }
+  .loading-screen{ min-height:100vh; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:.9rem; }
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">Loading Wedding Desk…</div>
+
+<div class="app" id="appRoot" hidden>
+  <aside class="sidebar">
+    <div class="brand">Watson &amp; Nyasha<small>Wedding Command Center</small></div>
+    <button class="navitem active" data-tab="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</button>
+    <button class="navitem" data-tab="guests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><circle cx="17.5" cy="8.5" r="2.6"/><path d="M15.5 13.2c2.9.6 5 3 5 6.1"/></svg>Guest List</button>
+    <button class="navitem" data-tab="tables"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>Tables &amp; Seating</button>
+    <button class="navitem" data-tab="checkin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v7M14 20h4"/></svg>Check-in</button>
+    <button class="navitem" data-tab="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V5a1 1 0 0 1 1-1h11l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M9 13h6M9 17h6M9 9h3"/></svg>Reports</button>
+    <div class="sidebar-foot">
+      5 December 2026<br>Colne Valley Nature Reserve Park<br><br>Private guest &amp; table manager.
+      <button class="logout-btn" id="logoutBtn">Sign Out</button>
+    </div>
+  </aside>
+
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+    <div class="topbar">
+      <div class="brand" style="padding:0; font-size:1rem;">W&amp;N Command Center</div>
+      <select id="mobileNavSelect">
+        <option value="dashboard">Dashboard</option>
+        <option value="guests">Guest List</option>
+        <option value="tables">Tables &amp; Seating</option>
+        <option value="checkin">Check-in</option>
+        <option value="reports">Reports</option>
+      </select>
+    </div>
+
+    <main class="main">
+
+      <div class="tabpanel active" data-panel="dashboard">
+        <div class="page-head"><div><h2>Dashboard</h2><p>A live overview of RSVPs, seating and check-ins.</p></div></div>
+        <div class="stat-grid" id="statGrid"></div>
+        <div class="panel"><h3>RSVP Breakdown</h3><div class="bars" id="rsvpBars"></div></div>
+        <div class="panel"><h3>Dietary Requirements</h3><div class="bars" id="dietBars"></div></div>
+      </div>
+
+      <div class="tabpanel" data-panel="guests">
+        <div class="page-head">
+          <div><h2>Guest List</h2><p>Log RSVPs you receive by WhatsApp or phone, and manage every invitation.</p></div>
+          <button class="btn btn-primary" id="addGuestBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Guest</button>
+        </div>
+        <div class="toolbar">
+          <input type="search" id="guestSearch" placeholder="Search by name, phone or family…">
+          <select id="filterRsvp"><option value="">All RSVP statuses</option><option value="pending">Pending</option><option value="attending">Attending</option><option value="maybe">Maybe</option><option value="not_attending">Not Attending</option></select>
+          <select id="filterTable"><option value="">All tables</option></select>
+          <select id="filterCheckin"><option value="">Check-in: all</option><option value="yes">Checked in</option><option value="no">Not checked in</option></select>
+        </div>
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Guest / Party</th><th>RSVP</th><th>Party</th><th>Table</th><th>Dietary</th><th>Check-in</th><th></th></tr></thead>
+            <tbody id="guestRows"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="guestsEmpty" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/></svg>
+          <h4>No guests yet</h4><p>Add your first guest, or log an RSVP as it comes in over WhatsApp.</p>
+        </div>
+      </div>
+
+      <div class="tabpanel" data-panel="tables">
+        <div class="page-head">
+          <div><h2>Tables &amp; Seating</h2><p>Build your reception layout and assign guests — no table can be overbooked.</p></div>
+          <button class="btn btn-primary" id="addTableBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Table</button>
+        </div>
+        <div class="tables-grid" id="tablesGrid"></div>
+        <div class="empty-state" id="tablesEmpty" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="9"/></svg>
+          <h4>No tables yet</h4><p>Add your first table to start building the seating plan.</p>
+        </div>
+      </div>
+
+      <div class="tabpanel" data-panel="checkin">
+        <div class="page-head"><div><h2>Check-in</h2><p>Scan a guest's QR badge, or search their name at the door.</p></div></div>
+        <div class="panel">
+          <h3>Scan QR Badge</h3>
+          <button class="btn btn-outline" id="scanToggleBtn">Start Camera Scan</button>
+          <video class="scan-video" id="scanVideo" playsinline muted hidden></video>
+          <canvas id="scanCanvas" hidden></canvas>
+          <div class="scan-status" id="scanStatus"></div>
+        </div>
+        <div class="panel">
+          <h3>Search &amp; Check In</h3>
+          <input type="search" id="checkinSearch" placeholder="Search by guest name…" style="width:100%; border:1px solid var(--border); padding:11px 14px; border-radius:6px; font-size:.85rem; font-family:inherit;">
+          <div id="checkinResult"></div>
+        </div>
+      </div>
+
+      <div class="tabpanel" data-panel="reports">
+        <div class="page-head"><div><h2>Reports</h2><p>Download CSV reports for printing or sharing with your venue and caterer.</p></div></div>
+        <div class="panel" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;">
+          <a class="btn btn-outline" href="/api/admin/export?type=rsvp" style="justify-content:flex-start;">RSVP Report (.csv)</a>
+          <a class="btn btn-outline" href="/api/admin/export?type=seating" style="justify-content:flex-start;">Seating Report (.csv)</a>
+          <a class="btn btn-outline" href="/api/admin/export?type=dietary" style="justify-content:flex-start;">Dietary Report (.csv)</a>
+          <a class="btn btn-outline" href="/api/admin/export?type=checkin" style="justify-content:flex-start;">Check-in Report (.csv)</a>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<div class="overlay" id="guestModalOverlay" hidden>
+  <div class="modal">
+    <button class="modal-close" id="guestModalClose" aria-label="Close">&times;</button>
+    <h3 id="guestModalTitle">Add Guest</h3>
+    <p class="modal-sub">Enter the invitation details. You can log their RSVP response as it comes in.</p>
+    <div class="form-grid">
+      <div class="field"><label for="f-first">First name</label><input id="f-first" type="text"></div>
+      <div class="field"><label for="f-last">Last name</label><input id="f-last" type="text"></div>
+      <div class="field"><label for="f-phone">Phone</label><input id="f-phone" type="tel"></div>
+      <div class="field"><label for="f-email">Email</label><input id="f-email" type="email"></div>
+      <div class="field"><label for="f-type">Invitation type</label><select id="f-type"><option value="individual">Individual</option><option value="couple">Couple</option><option value="family">Family</option><option value="group">Group</option></select></div>
+      <div class="field"><label for="f-family">Family / group name</label><input id="f-family" type="text" placeholder="e.g. The Vhurudzai Family"></div>
+      <div class="field"><label for="f-invited">Number invited</label><input id="f-invited" type="number" min="1" value="1"></div>
+      <div class="field"><label for="f-rsvp">RSVP status</label><select id="f-rsvp"><option value="pending">Pending</option><option value="attending">Attending</option><option value="maybe">Maybe</option><option value="not_attending">Not Attending</option></select></div>
+      <div class="field"><label for="f-attending">Attending count</label><input id="f-attending" type="number" min="0" value="0"></div>
+      <div class="field checkline full"><input type="checkbox" id="f-plusone"><label for="f-plusone">Plus-one allowed</label></div>
+      <div class="field full"><label for="f-dietary">Dietary requirements</label><textarea id="f-dietary" placeholder="e.g. Comfort: none; Tariro: vegetarian; Michael: nut allergy"></textarea></div>
+      <div class="field full"><label for="f-notes">Notes</label><textarea id="f-notes" placeholder="Anything else worth remembering"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="guestModalCancel">Cancel</button>
+      <button class="btn btn-primary" id="guestModalSave">Save Guest</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="tableModalOverlay" hidden>
+  <div class="modal modal-wide">
+    <button class="modal-close" id="tableModalClose" aria-label="Close">&times;</button>
+    <h3 id="tableModalTitle">Table</h3>
+    <p class="modal-sub" id="tableModalSub">Set capacity and assign guests.</p>
+    <div class="form-grid">
+      <div class="field"><label for="t-name">Table name</label><input id="t-name" type="text" placeholder="e.g. Table 7"></div>
+      <div class="field"><label for="t-capacity">Capacity (seats)</label><input id="t-capacity" type="number" min="1" value="8"></div>
+      <div class="field checkline"><input type="checkbox" id="t-vip"><label for="t-vip">VIP table</label></div>
+      <div class="field checkline"><input type="checkbox" id="t-locked"><label for="t-locked">Locked (no changes)</label></div>
+    </div>
+    <div style="margin-top:18px;">
+      <label style="display:block; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--plum-2); margin-bottom:8px;">Seated (<span id="tSeatedCount">0</span> / <span id="tCapCount">0</span>)</label>
+      <div id="tSeatedList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;"></div>
+      <label style="display:block; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--plum-2); margin-bottom:8px;">Assign a guest</label>
+      <select id="t-assignSelect" style="width:100%; border:1px solid var(--border); padding:10px 12px; border-radius:6px; font-family:inherit;"></select>
+      <button class="btn btn-outline btn-sm" id="t-assignBtn" style="margin-top:10px;">Assign to this table</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="tableModalDelete">Delete Table</button>
+      <button class="btn btn-primary" id="tableModalSave">Save Table</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="badgeModalOverlay" hidden>
+  <div class="modal">
+    <button class="modal-close" id="badgeModalClose" aria-label="Close">&times;</button>
+    <h3>Guest Badge</h3>
+    <p class="modal-sub">A printable digital pass with QR check-in code.</p>
+    <div class="badge-canvas-wrap">
+      <canvas id="badgeCanvas" width="700" height="960"></canvas>
+      <img id="badgePreview" class="badge-preview" alt="Guest badge preview">
+      <div id="qrTemp" style="display:none;"></div>
+    </div>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="btn btn-primary" id="badgeDownloadBtn">Save Badge Image</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="confirmOverlay" hidden>
+  <div class="modal confirm-box">
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p class="modal-sub" id="confirmBody"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="confirmCancel">Cancel</button>
+      <button class="btn btn-danger" id="confirmOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/admin/app.js"></script>
+</body>
+</html>

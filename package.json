@@ -1,0 +1,9 @@
+{
+  "name": "nyasha-and-watson-wedding",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nyasha & Watson wedding invitation site + private admin API",
+  "dependencies": {
+    "@vercel/blob": "^2.8.0"
+  }
+}
