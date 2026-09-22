@@ -2,21 +2,20 @@
   "use strict";
 
   /* ---------------- CONFIG ---------------- */
-  // TODO: replace with the couple's real WhatsApp number — digits only, country code first, no + or spaces.
-  var RSVP_WHATSAPP_NUMBER = "000000000000";
-  var WEDDING_DATE_ISO = "2026-12-05T00:00:00+02:00"; // Harare (CAT, UTC+2)
+  var RSVP_WHATSAPP_NUMBER = "263772692738";
+  var WEDDING_DATE_ISO = "2026-12-05T09:00:00+02:00"; // Harare (CAT, UTC+2) — ceremony at 9:00 AM
   var VENUE_NAME = "Colne Valley Nature Reserve Park";
   var VENUE_ADDRESS = "7 Bay Noakes, Colne Valley, Chisipite, Harare, Zimbabwe";
 
   var PROGRAMME = [
-    { t: "TBC", title: "Guest Arrival", desc: "Please arrive in good time before the ceremony begins." },
-    { t: "TBC", title: "Ceremony", desc: "Nyasha & Watson exchange their vows." },
-    { t: "TBC", title: "Photographs", desc: "Family and wedding party photographs." },
-    { t: "TBC", title: "Cocktail Reception", desc: "Drinks and canapés while the newlyweds are photographed." },
-    { t: "TBC", title: "Reception & Speeches", desc: "Guests are seated; speeches and toasts follow." },
-    { t: "TBC", title: "Dinner", desc: "A shared meal to celebrate the day." },
-    { t: "TBC", title: "Cake Cutting & First Dance", desc: "A sweet moment before the dance floor opens." },
-    { t: "TBC", title: "Celebration", desc: "Dancing and celebration continue into the evening." }
+    { t: "8:30 AM", title: "Guest Arrival", desc: "Please arrive in good time before the ceremony begins." },
+    { t: "9:00 AM", title: "Ceremony", desc: "Nyasha & Watson exchange their vows." },
+    { t: "10:00 AM", title: "Photographs", desc: "Family and wedding party photographs." },
+    { t: "11:00 AM", title: "Cocktail Reception", desc: "Drinks and canapés while the newlyweds are photographed." },
+    { t: "12:30 PM", title: "Reception & Speeches", desc: "Guests are seated; speeches and toasts follow." },
+    { t: "1:30 PM", title: "Lunch", desc: "A shared meal to celebrate the day." },
+    { t: "2:30 PM", title: "Cake Cutting & First Dance", desc: "A sweet moment before the dance floor opens." },
+    { t: "3:00 PM", title: "Celebration", desc: "Dancing and celebration continue into the afternoon." }
   ];
 
   /* ---------------- COVER ---------------- */
@@ -67,12 +66,13 @@
 
   /* ---------------- CALENDAR LINKS ---------------- */
   function pad(n) { return String(n).padStart(2, "0"); }
+  function toUtcStamp(d) { return d.getUTCFullYear() + pad(d.getUTCMonth() + 1) + pad(d.getUTCDate()) + "T" + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + "00Z"; }
   var wd = new Date(WEDDING_DATE_ISO);
-  var startStr = wd.getFullYear() + pad(wd.getMonth() + 1) + pad(wd.getDate());
-  var endD = new Date(wd.getTime() + 86400000);
-  var endStr = endD.getFullYear() + pad(endD.getMonth() + 1) + pad(endD.getDate());
+  var endD = new Date(wd.getTime() + 8 * 3600000); // ceremony 9:00 AM through ~5:00 PM
+  var startStr = toUtcStamp(wd);
+  var endStr = toUtcStamp(endD);
   var calTitle = "Nyasha & Watson's Wedding";
-  var calDetails = "Ceremony and reception times to be confirmed. We can't wait to celebrate with you!";
+  var calDetails = "Ceremony at 9:00 AM, reception to follow. Strictly by invitation only. We can't wait to celebrate with you!";
   var gcalUrl = "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(calTitle) +
     "&dates=" + startStr + "/" + endStr +
     "&details=" + encodeURIComponent(calDetails) +
@@ -81,15 +81,14 @@
 
   document.getElementById("icsBtn").addEventListener("click", function () {
     var uid = "nyasha-watson-wedding-" + Date.now() + "@invitation";
-    var now = new Date();
-    var stamp = now.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    var stamp = toUtcStamp(new Date());
     var ics = [
       "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Nyasha & Watson Wedding//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
       "BEGIN:VEVENT",
       "UID:" + uid,
       "DTSTAMP:" + stamp,
-      "DTSTART;VALUE=DATE:" + startStr,
-      "DTEND;VALUE=DATE:" + endStr,
+      "DTSTART:" + startStr,
+      "DTEND:" + endStr,
       "SUMMARY:" + calTitle,
       "DESCRIPTION:" + calDetails.replace(/,/g, "\\,"),
       "LOCATION:" + (VENUE_NAME + ", " + VENUE_ADDRESS).replace(/,/g, "\\,"),
@@ -244,88 +243,131 @@
     });
   }
 
-  function drawCard(ctx, w, h, qrImg) {
+  function loadImage(src) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { resolve(null); };
+      img.src = src;
+    });
+  }
+
+  function drawCard(ctx, w, h, qrImg, floralImg, guestName) {
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = "#FBF7F0"; ctx.fillRect(0, 0, w, h);
+
+    if (floralImg) {
+      var iw = 360, ih = Math.round(iw * floralImg.naturalHeight / floralImg.naturalWidth);
+      // bottom-left: bleeds off the left/bottom edges, densest bloom near the corner
+      ctx.drawImage(floralImg, -50, h - ih + 50, iw, ih);
+      // top-right: same artwork rotated 180° about its own centre so the dense bloom
+      // (originally bottom-left in the source image) lands in the top-right corner
+      ctx.save();
+      ctx.translate(w - 130, 89);
+      ctx.rotate(Math.PI);
+      ctx.drawImage(floralImg, -iw / 2, -ih / 2, iw, ih);
+      ctx.restore();
+    }
+
     ctx.strokeStyle = "#B08A46"; ctx.lineWidth = 3; ctx.strokeRect(34, 34, w - 68, h - 68);
     ctx.strokeStyle = "#E4D2B0"; ctx.lineWidth = 1; ctx.strokeRect(50, 50, w - 100, h - 100);
     ctx.textAlign = "center";
 
-    ctx.fillStyle = "#8B7A6E"; ctx.font = '500 21px "Poppins", sans-serif';
-    ctx.fillText("T O G E T H E R   W I T H   T H E I R   F A M I L I E S", w / 2, 128);
-    ctx.font = 'italic 400 24px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
-    ctx.fillText("You are warmly invited to the wedding of", w / 2, 165);
+    ctx.fillStyle = "#8B7A6E"; ctx.font = '500 20px "Poppins", sans-serif';
+    ctx.fillText("T O G E T H E R   W I T H   T H E I R   F A M I L I E S", w / 2, 108);
+    ctx.font = 'italic 400 22px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
+    ctx.fillText("You are warmly invited to the wedding of", w / 2, 145);
 
-    ctx.fillStyle = "#3E1730"; ctx.font = '400 132px "Great Vibes", cursive';
-    ctx.fillText("Nyasha", w / 2, 300);
-    ctx.font = '600 30px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
-    ctx.fillText("M A Z U R U S E", w / 2, 350);
+    ctx.fillStyle = "#3E1730"; ctx.font = '400 118px "Great Vibes", cursive';
+    ctx.fillText("Nyasha", w / 2, 265);
+    ctx.font = '600 26px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
+    ctx.fillText("M A Z U R U S E", w / 2, 308);
 
-    ctx.fillStyle = "#D97F55"; ctx.font = '400 78px "Great Vibes", cursive';
-    ctx.fillText("&", w / 2, 425);
+    ctx.fillStyle = "#D97F55"; ctx.font = '400 66px "Great Vibes", cursive';
+    ctx.fillText("&", w / 2, 372);
 
-    ctx.fillStyle = "#3E1730"; ctx.font = '400 132px "Great Vibes", cursive';
-    ctx.fillText("Watson", w / 2, 560);
-    ctx.font = '600 30px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
-    ctx.fillText("C H I M O M B E", w / 2, 610);
+    ctx.fillStyle = "#3E1730"; ctx.font = '400 118px "Great Vibes", cursive';
+    ctx.fillText("Watson", w / 2, 495);
+    ctx.font = '600 26px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
+    ctx.fillText("C H I M O M B E", w / 2, 538);
 
-    ctx.strokeStyle = "#E4D2B0"; ctx.beginPath(); ctx.moveTo(w / 2 - 170, 648); ctx.lineTo(w / 2 + 170, 648); ctx.stroke();
-    ctx.font = 'italic 400 26px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
-    ctx.fillText("As they celebrate their love", w / 2, 686);
-    ctx.fillText("and begin a new chapter together", w / 2, 718);
+    ctx.strokeStyle = "#E4D2B0"; ctx.beginPath(); ctx.moveTo(w / 2 - 150, 572); ctx.lineTo(w / 2 + 150, 572); ctx.stroke();
+    ctx.font = 'italic 400 23px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
+    ctx.fillText("As they celebrate their love", w / 2, 608);
+    ctx.fillText("and begin a new chapter together", w / 2, 637);
 
     // date block
-    ctx.font = '500 24px "Poppins", sans-serif'; ctx.fillStyle = "#5A2444";
-    ctx.fillText("S A T U R D A Y", w / 2 - 255, 782);
-    ctx.fillText("D E C E M B E R   2 0 2 6", w / 2 + 245, 782);
-    ctx.strokeStyle = "#D97F55"; ctx.beginPath(); ctx.moveTo(w / 2 - 400, 775); ctx.lineTo(w / 2 - 330, 775); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(w / 2 + 330, 775); ctx.lineTo(w / 2 + 400, 775); ctx.stroke();
-    ctx.fillStyle = "#D97F55"; ctx.font = '600 66px "Bodoni Moda", serif';
-    ctx.fillText("05", w / 2, 810);
+    ctx.font = '500 22px "Poppins", sans-serif'; ctx.fillStyle = "#5A2444";
+    ctx.fillText("S A T U R D A Y", w / 2 - 245, 700);
+    ctx.fillText("D E C E M B E R   2 0 2 6", w / 2 + 235, 700);
+    ctx.strokeStyle = "#D97F55"; ctx.beginPath(); ctx.moveTo(w / 2 - 385, 693); ctx.lineTo(w / 2 - 320, 693); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w / 2 + 320, 693); ctx.lineTo(w / 2 + 385, 693); ctx.stroke();
+    ctx.fillStyle = "#D97F55"; ctx.font = '600 58px "Bodoni Moda", serif';
+    ctx.fillText("05", w / 2, 768);
 
-    ctx.fillStyle = "#5A2444"; ctx.font = '600 28px "Bodoni Moda", serif';
-    ctx.fillText("COLNE VALLEY NATURE RESERVE PARK", w / 2, 878);
-    ctx.fillStyle = "#8B7A6E"; ctx.font = '400 22px "Poppins", sans-serif';
-    ctx.fillText("7 Bay Noakes, Colne Valley, Chisipite,", w / 2, 910);
-    ctx.fillText("Harare, Zimbabwe", w / 2, 938);
+    ctx.fillStyle = "#5A2444"; ctx.font = '600 25px "Bodoni Moda", serif';
+    ctx.fillText("COLNE VALLEY NATURE RESERVE PARK", w / 2, 828);
+    ctx.fillStyle = "#8B7A6E"; ctx.font = '400 19px "Poppins", sans-serif';
+    ctx.fillText("7 Bay Noakes, Colne Valley, Chisipite,", w / 2, 858);
+    ctx.fillText("Harare, Zimbabwe", w / 2, 882);
 
-    ctx.strokeStyle = "#E4D2B0"; ctx.beginPath(); ctx.moveTo(w / 2 - 170, 968); ctx.lineTo(w / 2 + 170, 968); ctx.stroke();
+    ctx.strokeStyle = "#E4D2B0"; ctx.beginPath(); ctx.moveTo(w / 2 - 150, 910); ctx.lineTo(w / 2 + 150, 910); ctx.stroke();
 
-    ctx.fillStyle = "#5A2444"; ctx.font = 'italic 400 25px "Bodoni Moda", serif';
-    ctx.fillText('"Above all, love each other deeply,', w / 2, 1006);
-    ctx.fillText("because love covers over a multitude of sins.\"", w / 2, 1036);
-    ctx.font = '600 20px "Poppins", sans-serif'; ctx.fillStyle = "#8B7A6E";
-    ctx.fillText("1   P E T E R   4 : 8", w / 2, 1068);
+    ctx.fillStyle = "#5A2444"; ctx.font = 'italic 400 23px "Bodoni Moda", serif';
+    ctx.fillText('"Above all, love each other deeply,', w / 2, 944);
+    ctx.fillText("because love covers over a multitude of sins.\"", w / 2, 972);
+    ctx.font = '600 17px "Poppins", sans-serif'; ctx.fillStyle = "#8B7A6E";
+    ctx.fillText("1   P E T E R   4 : 8", w / 2, 1000);
 
-    var qs = 168;
-    var qrTop = 1104;
+    if (guestName) {
+      ctx.font = '500 13px "Poppins", sans-serif'; ctx.fillStyle = "#B08A46";
+      ctx.fillText("R E S E R V E D   F O R", w / 2, 1030);
+      ctx.font = 'italic 400 25px "Bodoni Moda", serif'; ctx.fillStyle = "#3E1730";
+      ctx.fillText(guestName, w / 2, 1058);
+    }
+    ctx.font = '500 14px "Poppins", sans-serif'; ctx.fillStyle = "#8B7A6E";
+    ctx.fillText("S T R I C T L Y   B Y   I N V I T A T I O N   O N L Y", w / 2, 1088);
+
+    var qs = 150;
+    var qrTop = 1114;
     if (qrImg) {
       ctx.drawImage(qrImg, w / 2 - qs / 2, qrTop, qs, qs);
     } else {
       ctx.strokeStyle = "#E4D2B0"; ctx.strokeRect(w / 2 - qs / 2, qrTop, qs, qs);
     }
-    ctx.fillStyle = "#8B7A6E"; ctx.font = '500 17px "Poppins", sans-serif';
-    ctx.fillText("SCAN FOR RSVP & WEDDING DETAILS", w / 2, qrTop + qs + 30);
+    ctx.fillStyle = "#8B7A6E"; ctx.font = '500 16px "Poppins", sans-serif';
+    ctx.fillText("SCAN FOR RSVP & WEDDING DETAILS", w / 2, qrTop + qs + 28);
   }
 
-  var cardReady = false;
+  var cachedQrImg = null, cachedFloralImg = null;
+  var cardCanvas = document.getElementById("inviteCanvas");
+  var cardCtx = cardCanvas.getContext("2d");
+
+  function redrawCard() {
+    if (!cachedQrImg && !cachedFloralImg) return;
+    var name = (document.getElementById("g-card-name").value || "").trim();
+    drawCard(cardCtx, cardCanvas.width, cardCanvas.height, cachedQrImg, cachedFloralImg, name);
+  }
+
   function renderCard() {
-    var canvas = document.getElementById("inviteCanvas");
-    var ctx = canvas.getContext("2d");
     var url = location.origin + location.pathname;
-    Promise.all([loadFonts(), makeQrDataUrl(url)]).then(function (res) {
+    Promise.all([loadFonts(), makeQrDataUrl(url), loadImage("assets/img/floral-corner.png")]).then(function (res) {
+      cachedFloralImg = res[2];
       var qrDataUrl = res[1];
       if (qrDataUrl) {
-        var img = new Image();
-        img.onload = function () { drawCard(ctx, canvas.width, canvas.height, img); cardReady = true; };
-        img.src = qrDataUrl;
+        loadImage(qrDataUrl).then(function (img) { cachedQrImg = img; redrawCard(); });
       } else {
-        drawCard(ctx, canvas.width, canvas.height, null);
-        cardReady = true;
+        redrawCard();
       }
     });
   }
   renderCard();
+
+  /* Keep the RSVP name field and the card's personalisation field in sync */
+  var rsvpNameInput = document.getElementById("g-name");
+  var cardNameInput = document.getElementById("g-card-name");
+  rsvpNameInput.addEventListener("input", function () { cardNameInput.value = rsvpNameInput.value; redrawCard(); });
+  cardNameInput.addEventListener("input", function () { rsvpNameInput.value = cardNameInput.value; redrawCard(); });
 
   document.getElementById("saveCardBtn").addEventListener("click", function () {
     var canvas = document.getElementById("inviteCanvas");
@@ -338,18 +380,6 @@
       setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
       showToast("Invitation card downloaded");
     }, "image/png");
-  });
-
-  /* ---------------- SHARE ---------------- */
-  var pageUrl = location.href;
-  var shareMsg = "You're invited to celebrate the wedding of Nyasha & Watson on 5 December 2026 at Colne Valley Nature Reserve Park, Harare. View the invitation and RSVP here: " + pageUrl;
-  document.getElementById("shareWhatsapp").href = "https://wa.me/?text=" + encodeURIComponent(shareMsg);
-  document.getElementById("shareEmail").href = "mailto:?subject=" + encodeURIComponent("Nyasha & Watson's Wedding") + "&body=" + encodeURIComponent(shareMsg);
-  document.getElementById("shareSms").href = "sms:?body=" + encodeURIComponent(shareMsg);
-  document.getElementById("shareCopy").addEventListener("click", function () {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(pageUrl).then(function () { showToast("Link copied"); }).catch(function () { showToast("Could not copy link"); });
-    } else { showToast("Could not copy link"); }
   });
 
   var toastTimer;

@@ -8,23 +8,21 @@ Plain HTML/CSS/JS, no build step, no backend. Self-hosted fonts (Bodoni Moda, Po
 
 ```
 index.html            Full guest experience: cover, hero/countdown, our day, venue+map,
-                       programme, attire/colours, invitation card, RSVP, calendar, share
+                       programme, attire/colours, invitation card, RSVP, calendar
 assets/css/style.css   Design system + all styles
 assets/js/main.js      Countdown, RSVP wizard, calendar links, invitation card canvas
 assets/js/qrcode.min.js  Vendored QR code generator (davidshimjs/qrcodejs, MIT)
 assets/fonts/          Self-hosted Bodoni Moda, Poppins, Great Vibes (SIL OFL)
+assets/img/            Floral artwork (Pixabay Content License) + social preview image
 ```
 
 ## Before sending this to guests
 
-1. **Set the RSVP WhatsApp number.** Open `assets/js/main.js` and replace the placeholder near
-   the top:
-   ```js
-   var RSVP_WHATSAPP_NUMBER = "000000000000"; // digits only, country code first, no + or spaces
-   ```
-2. **Fill in the TBC details** once confirmed: ceremony time, reception time, dress code,
-   RSVP-by date, parking and accommodation notes. These appear in the "Our Day" and "Attire"
-   sections of `index.html` (look for the `tbc` badges) and can be edited directly.
+Still open — accommodation details and a contact person/number for questions. These appear
+as `tbc` badges in the "Our Day" section of `index.html` and can be edited directly once known.
+
+Everything else (RSVP WhatsApp number, ceremony/reception times, dress code, parking, RSVP-by
+date, programme) is already filled in.
 
 ## Local development
 
