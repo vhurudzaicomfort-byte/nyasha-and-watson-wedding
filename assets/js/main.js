@@ -127,7 +127,7 @@
   });
 
   /* ---------------- RSVP WIZARD ---------------- */
-  var state = { step: 0, name: "", phone: "", attend: "", guests: 1, plusone: "", diet: ["None"], dietOther: "", message: "" };
+  var state = { step: 0, name: "", phone: "", attend: "", guests: 1, plusone: "", message: "" };
   var stepsEls = document.querySelectorAll(".rsvp-step");
   var segs = document.querySelectorAll(".rp-seg");
 
@@ -168,28 +168,9 @@
   document.getElementById("incGuests").addEventListener("click", function () { state.guests = Math.min(maxGuestsAllowed, state.guests + 1); guestCountEl.textContent = state.guests; });
   document.getElementById("decGuests").addEventListener("click", function () { state.guests = Math.max(1, state.guests - 1); guestCountEl.textContent = state.guests; });
 
-  var dietChips = document.getElementById("dietChips");
-  dietChips.querySelectorAll(".chip").forEach(function (chip) {
-    chip.addEventListener("click", function () {
-      var val = chip.dataset.val;
-      if (val === "None") {
-        dietChips.querySelectorAll(".chip").forEach(function (c) { c.classList.remove("selected"); });
-        chip.classList.add("selected");
-        state.diet = ["None"];
-      } else {
-        dietChips.querySelector('.chip[data-val="None"]').classList.remove("selected");
-        chip.classList.toggle("selected");
-        state.diet = Array.from(dietChips.querySelectorAll(".chip.selected")).map(function (c) { return c.dataset.val; });
-        if (state.diet.length === 0) { dietChips.querySelector('.chip[data-val="None"]').classList.add("selected"); state.diet = ["None"]; }
-      }
-      document.getElementById("dietOtherWrap").hidden = state.diet.indexOf("Other") === -1;
-    });
-  });
-
   document.getElementById("toStep3").addEventListener("click", function () {
     if (state.attend === "attending") {
       state.plusone = document.getElementById("g-plusone").value.trim();
-      state.dietOther = document.getElementById("g-diet-other").value.trim();
       state.message = document.getElementById("g-message").value.trim();
     } else if (state.attend === "maybe") {
       state.message = document.getElementById("g-message-maybe").value.trim();
@@ -211,8 +192,6 @@
     if (state.attend === "attending") {
       rows.push(["Party size", state.guests + (state.guests > 1 ? " guests" : " guest")]);
       if (state.plusone) rows.push(["Additional guest(s)", state.plusone]);
-      var dietStr = state.diet.map(function (d) { return d === "Other" && state.dietOther ? state.dietOther : d; }).join(", ");
-      rows.push(["Dietary", dietStr]);
     }
     if (state.message) rows.push(["Message", state.message]);
     document.getElementById("summaryList").innerHTML = rows.map(function (r) {
@@ -225,8 +204,6 @@
     var btn = document.getElementById("sendRsvp");
     btn.disabled = true;
 
-    var dietStr = state.diet.map(function (d) { return d === "Other" && state.dietOther ? state.dietOther : d; }).join(", ");
-
     // 1) Persist the RSVP to the guest record (creates or updates it in the admin's guest list).
     var payload = {
       token: guestToken || undefined,
@@ -235,7 +212,6 @@
       attend: state.attend,
       guests: state.guests,
       plusOneName: state.plusone,
-      dietary: state.attend === "attending" ? dietStr : "",
       message: state.message,
     };
     fetch("/api/rsvp", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).catch(function () {});
@@ -250,7 +226,6 @@
     if (state.attend === "attending") {
       lines.push("Party size: " + state.guests);
       if (state.plusone) lines.push("Additional guest(s): " + state.plusone);
-      lines.push("Dietary requirements: " + dietStr);
     }
     if (state.message) lines.push("Message: " + state.message);
     var text = lines.join("\n");
@@ -332,7 +307,7 @@
       ctx.beginPath(); ctx.arc(x + offset, y, r, 0, Math.PI * 2); ctx.stroke();
     }
 
-    drawRings(w / 2, 76, 15, 10, "#B08A46", 2.6);
+    drawRings(w / 2, 68, 11, 8, "#B08A46", 2.4);
 
     ctx.fillStyle = "#8B7A6E"; ctx.font = '500 20px "Poppins", sans-serif';
     ctx.fillText("T O G E T H E R   W I T H   T H E I R   F A M I L I E S", w / 2, 108);
@@ -390,15 +365,18 @@
     ctx.font = '500 13px "Poppins", sans-serif'; ctx.fillStyle = "#8B7A6E";
     ctx.fillText("S T R I C T L Y   B Y   I N V I T A T I O N   O N L Y", w / 2, 1148);
 
-    var qs = 128;
-    var qrTop = 1166;
+    // Caption sits above the QR code (not below it) so nothing renders past the
+    // card's inner border — the frame previously struck straight through this line.
+    ctx.font = '500 14px "Poppins", sans-serif'; ctx.fillStyle = "#8B7A6E";
+    ctx.fillText("SCAN FOR RSVP & WEDDING DETAILS", w / 2, 1176);
+
+    var qs = 104;
+    var qrTop = 1190;
     if (qrImg) {
       ctx.drawImage(qrImg, w / 2 - qs / 2, qrTop, qs, qs);
     } else {
       ctx.strokeStyle = "#E4D2B0"; ctx.strokeRect(w / 2 - qs / 2, qrTop, qs, qs);
     }
-    ctx.fillStyle = "#8B7A6E"; ctx.font = '500 15px "Poppins", sans-serif';
-    ctx.fillText("SCAN FOR RSVP & WEDDING DETAILS", w / 2, qrTop + qs + 26);
   }
 
   var cachedQrImg = null, cachedFloralImg = null;

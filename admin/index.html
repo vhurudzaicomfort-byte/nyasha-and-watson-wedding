@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>W&amp;N Wedding Desk</title>
 <meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%233E1730%22/><text x=%2250%22 y=%2266%22 font-family=%22Georgia,%20serif%22 font-size=%2240%22 fill=%22%23E8D9BE%22 text-anchor=%22middle%22>N%26W</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -116,22 +117,6 @@
   .empty-state h4{ font-size:1.2rem; color:var(--plum); margin-bottom:6px; }
   .empty-state p{ font-size:.84rem; max-width:44ch; margin:0 auto; }
 
-  .tables-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px; }
-  .table-card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; cursor:pointer; transition:border-color .18s; }
-  .table-card:hover{ border-color:var(--gold); }
-  .table-card.vip{ border-color:var(--gold); background:linear-gradient(180deg, #FBF3E4, var(--surface)); }
-  .table-card.locked{ opacity:.7; }
-  .tc-head{ display:flex; justify-content:space-between; align-items:flex-start; }
-  .tc-name{ font-size:1.25rem; }
-  .tc-badges{ display:flex; gap:6px; }
-  .tc-badge{ font-size:.6rem; letter-spacing:.06em; text-transform:uppercase; padding:2px 7px; border-radius:99px; background:var(--champagne); color:var(--plum-2); }
-  .tc-seats{ display:flex; flex-wrap:wrap; gap:5px; margin-top:14px; }
-  .seat-dot{ width:13px; height:13px; border-radius:50%; border:1.5px solid var(--plum-soft); }
-  .seat-dot.filled{ background:var(--coral); border-color:var(--coral); }
-  .tc-meta{ margin-top:12px; font-size:.74rem; color:var(--text-muted); }
-  .tc-guests{ margin-top:10px; display:flex; flex-direction:column; gap:3px; }
-  .tc-guest{ font-size:.74rem; color:var(--plum-2); }
-
   .overlay{ position:fixed; inset:0; background:rgba(46,18,38,.5); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
   .overlay[hidden]{ display:none; }
   .modal{ background:var(--surface); border-radius:12px; width:100%; max-width:560px; max-height:90vh; overflow-y:auto; padding:28px; }
@@ -146,6 +131,7 @@
   .field input, .field select, .field textarea{ width:100%; border:1px solid var(--border); background:var(--ivory); padding:10px 12px; font-size:.85rem; border-radius:6px; font-family:inherit; color:var(--text); }
   .field textarea{ min-height:70px; resize:vertical; }
   .field.checkline{ display:flex; align-items:center; gap:8px; margin-top:4px; }
+  .field.checkline input{ width:auto; flex:none; }
   .field.checkline label{ margin:0; text-transform:none; letter-spacing:0; font-size:.82rem; color:var(--text); }
   .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
 
@@ -187,7 +173,6 @@
     <div class="brand">Watson &amp; Nyasha<small>Wedding Management Portal</small></div>
     <button class="navitem active" data-tab="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</button>
     <button class="navitem" data-tab="guests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><circle cx="17.5" cy="8.5" r="2.6"/><path d="M15.5 13.2c2.9.6 5 3 5 6.1"/></svg>Invites &amp; RSVPs</button>
-    <button class="navitem" data-tab="tables"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>Tables &amp; Seating</button>
     <button class="navitem" data-tab="checkin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v7M14 20h4"/></svg>Check-in</button>
     <button class="navitem" data-tab="gifts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="9" width="16" height="11" rx="1"/><path d="M4 9h16M12 9v11"/><path d="M12 9c-1.5 0-4-1-4-3.2A2.3 2.3 0 0 1 10.3 3C12 3 12 6 12 9z"/><path d="M12 9c1.5 0 4-1 4-3.2A2.3 2.3 0 0 0 13.7 3C12 3 12 6 12 9z"/></svg>Gifts</button>
     <button class="navitem" data-tab="providers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"/><path d="M3 12h18"/></svg>Service Providers</button>
@@ -204,7 +189,6 @@
       <select id="mobileNavSelect">
         <option value="dashboard">Dashboard</option>
         <option value="guests">Invites &amp; RSVPs</option>
-        <option value="tables">Tables &amp; Seating</option>
         <option value="checkin">Check-in</option>
         <option value="gifts">Gifts</option>
         <option value="providers">Service Providers</option>
@@ -215,10 +199,9 @@
     <main class="main">
 
       <div class="tabpanel active" data-panel="dashboard">
-        <div class="page-head"><div><h2>Dashboard</h2><p>A live overview of RSVPs, seating and check-ins.</p></div></div>
+        <div class="page-head"><div><h2>Dashboard</h2><p>A live overview of RSVPs, gifts and check-ins.</p></div></div>
         <div class="stat-grid" id="statGrid"></div>
         <div class="panel"><h3>RSVP Breakdown</h3><div class="bars" id="rsvpBars"></div></div>
-        <div class="panel"><h3>Dietary Requirements</h3><div class="bars" id="dietBars"></div></div>
         <div class="panel"><h3>Gifts</h3><div class="bars" id="giftBars"></div></div>
         <div class="panel"><h3>Service Provider Payments</h3><div class="bars" id="providerBars"></div></div>
       </div>
@@ -235,30 +218,17 @@
         <div class="toolbar">
           <input type="search" id="guestSearch" placeholder="Search by name, phone or family…">
           <select id="filterRsvp"><option value="">All RSVP statuses</option><option value="pending">Pending</option><option value="attending">Attending</option><option value="maybe">Maybe</option><option value="not_attending">Not Attending</option></select>
-          <select id="filterTable"><option value="">All tables</option></select>
           <select id="filterCheckin"><option value="">Check-in: all</option><option value="yes">Checked in</option><option value="no">Not checked in</option></select>
         </div>
         <div class="table-wrap">
           <table class="data">
-            <thead><tr><th>Guest / Party</th><th>RSVP</th><th>Party</th><th>Table</th><th>Dietary</th><th>Check-in</th><th></th></tr></thead>
+            <thead><tr><th>Guest / Party</th><th>RSVP</th><th>Party</th><th>Check-in</th><th></th></tr></thead>
             <tbody id="guestRows"></tbody>
           </table>
         </div>
         <div class="empty-state" id="guestsEmpty" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/></svg>
           <h4>No guests yet</h4><p>Add your first guest, or log an RSVP as it comes in over WhatsApp.</p>
-        </div>
-      </div>
-
-      <div class="tabpanel" data-panel="tables">
-        <div class="page-head">
-          <div><h2>Tables &amp; Seating</h2><p>Build your reception layout and assign guests — no table can be overbooked.</p></div>
-          <button class="btn btn-primary" id="addTableBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Table</button>
-        </div>
-        <div class="tables-grid" id="tablesGrid"></div>
-        <div class="empty-state" id="tablesEmpty" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="9"/></svg>
-          <h4>No tables yet</h4><p>Add your first table to start building the seating plan.</p>
         </div>
       </div>
 
@@ -325,12 +295,10 @@
       <div class="tabpanel" data-panel="reports">
         <div class="page-head"><div><h2>Reports</h2><p>Branded CSV or PDF reports for printing or sharing with your venue, caterer and suppliers.</p></div></div>
         <div class="panel">
-          <h3>Guests &amp; Seating</h3>
+          <h3>Guests</h3>
           <div class="report-grid">
             <div class="report-row"><span>RSVP Report</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=rsvp&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=rsvp&format=pdf">PDF</a></div>
             <div class="report-row"><span>Full Guest List</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=guests&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=guests&format=pdf">PDF</a></div>
-            <div class="report-row"><span>Seating Report</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=seating&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=seating&format=pdf">PDF</a></div>
-            <div class="report-row"><span>Dietary Report</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=dietary&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=dietary&format=pdf">PDF</a></div>
             <div class="report-row"><span>Check-in Report</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=checkin&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=checkin&format=pdf">PDF</a></div>
           </div>
         </div>
@@ -363,37 +331,11 @@
       <div class="field"><label for="f-rsvp">RSVP status</label><select id="f-rsvp"><option value="pending">Pending</option><option value="attending">Attending</option><option value="maybe">Maybe</option><option value="not_attending">Not Attending</option></select></div>
       <div class="field"><label for="f-attending">Attending count</label><input id="f-attending" type="number" min="0" value="0"></div>
       <div class="field checkline full"><input type="checkbox" id="f-plusone"><label for="f-plusone">Plus-one allowed</label></div>
-      <div class="field full"><label for="f-dietary">Dietary requirements</label><textarea id="f-dietary" placeholder="e.g. Comfort: none; Tariro: vegetarian; Michael: nut allergy"></textarea></div>
       <div class="field full"><label for="f-notes">Notes</label><textarea id="f-notes" placeholder="Anything else worth remembering"></textarea></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" id="guestModalCancel">Cancel</button>
       <button class="btn btn-primary" id="guestModalSave">Save Guest</button>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="tableModalOverlay" hidden>
-  <div class="modal modal-wide">
-    <button class="modal-close" id="tableModalClose" aria-label="Close">&times;</button>
-    <h3 id="tableModalTitle">Table</h3>
-    <p class="modal-sub" id="tableModalSub">Set capacity and assign guests.</p>
-    <div class="form-grid">
-      <div class="field"><label for="t-name">Table name</label><input id="t-name" type="text" placeholder="e.g. Table 7"></div>
-      <div class="field"><label for="t-capacity">Capacity (seats)</label><input id="t-capacity" type="number" min="1" value="8"></div>
-      <div class="field checkline"><input type="checkbox" id="t-vip"><label for="t-vip">VIP table</label></div>
-      <div class="field checkline"><input type="checkbox" id="t-locked"><label for="t-locked">Locked (no changes)</label></div>
-    </div>
-    <div style="margin-top:18px;">
-      <label style="display:block; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--plum-2); margin-bottom:8px;">Seated (<span id="tSeatedCount">0</span> / <span id="tCapCount">0</span>)</label>
-      <div id="tSeatedList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;"></div>
-      <label style="display:block; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--plum-2); margin-bottom:8px;">Assign a guest</label>
-      <select id="t-assignSelect" style="width:100%; border:1px solid var(--border); padding:10px 12px; border-radius:6px; font-family:inherit;"></select>
-      <button class="btn btn-outline btn-sm" id="t-assignBtn" style="margin-top:10px;">Assign to this table</button>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-danger" id="tableModalDelete">Delete Table</button>
-      <button class="btn btn-primary" id="tableModalSave">Save Table</button>
     </div>
   </div>
 </div>

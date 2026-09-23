@@ -25,9 +25,7 @@ module.exports = async function handler(req, res) {
       plusOneAllowed: !!body.plusOneAllowed,
       rsvpStatus: body.rsvpStatus || "pending",
       attendingCount: Number(body.attendingCount) || 0,
-      dietary: String(body.dietary || "").trim(),
       notes: String(body.notes || "").trim(),
-      tableId: null,
       checkedIn: false,
       checkInTime: null,
       createdAt: new Date().toISOString(),
@@ -51,8 +49,8 @@ module.exports = async function handler(req, res) {
     if (idx === -1) { res.status(404).json({ error: "Guest not found" }); return; }
     var patch = req.body || {};
     var allowed = ["firstName", "lastName", "phone", "email", "invitationType", "familyName",
-      "invitedCount", "plusOneAllowed", "rsvpStatus", "attendingCount", "dietary", "notes",
-      "tableId", "checkedIn", "checkInTime", "rsvpAt"];
+      "invitedCount", "plusOneAllowed", "rsvpStatus", "attendingCount", "notes",
+      "checkedIn", "checkInTime", "rsvpAt"];
     allowed.forEach(function (k) {
       if (Object.prototype.hasOwnProperty.call(patch, k)) data3.guests[idx][k] = patch[k];
     });

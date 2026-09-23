@@ -49,7 +49,7 @@ function computeProviderStatus(provider) {
 }
 
 function buildReport(type, data) {
-  var guests = data.guests, tables = data.tables, gifts = data.gifts || [], providers = data.providers || [];
+  var guests = data.guests, gifts = data.gifts || [], providers = data.providers || [];
   var columns, rows, filename, title, weights;
 
   if (type === "rsvp") {
@@ -57,38 +57,18 @@ function buildReport(type, data) {
     weights = [2, 1.4, 1, 1, 0.7, 0.9, 0.8, 1.3];
     rows = guests.map(function (g) { return [fullName(g), g.phone || "", g.invitationType || "", (g.rsvpStatus || "pending").replace("_", " "), g.invitedCount || 1, g.attendingCount || 0, g.plusOneAllowed ? "Yes" : "No", g.rsvpAt ? g.rsvpAt.slice(0, 10) : ""]; });
     filename = "RSVP-Report"; title = "RSVP Report";
-  } else if (type === "seating") {
-    columns = ["Table", "Capacity", "VIP", "Guest", "Party Size"];
-    weights = [1.1, 0.8, 0.6, 2, 0.9];
-    rows = [];
-    tables.forEach(function (t) {
-      var seated = guests.filter(function (g) { return g.tableId === t.id; });
-      if (!seated.length) rows.push([t.name, t.capacity, t.vip ? "Yes" : "No", "—", "—"]);
-      seated.forEach(function (g) { rows.push([t.name, t.capacity, t.vip ? "Yes" : "No", fullName(g), g.attendingCount || g.invitedCount || 1]); });
-    });
-    filename = "Seating-Report"; title = "Seating Report";
-  } else if (type === "dietary") {
-    columns = ["Guest", "Table", "Dietary Requirements"];
-    weights = [1.6, 1, 2.4];
-    rows = [];
-    guests.forEach(function (g) {
-      if (g.dietary) { var t = tables.find(function (x) { return x.id === g.tableId; }); rows.push([fullName(g), t ? t.name : "—", g.dietary]); }
-    });
-    filename = "Dietary-Report"; title = "Dietary Requirements";
   } else if (type === "checkin") {
-    columns = ["Guest", "Table", "Checked In", "Check-in Time"];
-    weights = [1.8, 1.2, 0.9, 1.3];
+    columns = ["Guest", "Checked In", "Check-in Time"];
+    weights = [2, 0.9, 1.3];
     rows = guests.map(function (g) {
-      var t = tables.find(function (x) { return x.id === g.tableId; });
-      return [fullName(g), t ? t.name : "—", g.checkedIn ? "Yes" : "No", g.checkInTime ? new Date(g.checkInTime).toLocaleString() : ""];
+      return [fullName(g), g.checkedIn ? "Yes" : "No", g.checkInTime ? new Date(g.checkInTime).toLocaleString() : ""];
     });
     filename = "Checkin-Report"; title = "Check-in Report";
   } else if (type === "guests") {
-    columns = ["Name", "Phone", "Email", "Type", "Family", "Invited", "RSVP", "Attending", "Dietary", "Table", "Checked In", "Notes"];
-    weights = [1.5, 1.1, 1.4, 0.8, 1.2, 0.6, 0.9, 0.8, 1.3, 1, 0.8, 1.4];
+    columns = ["Name", "Phone", "Email", "Type", "Family", "Invited", "RSVP", "Attending", "Checked In", "Notes"];
+    weights = [1.7, 1.2, 1.5, 0.8, 1.3, 0.6, 0.9, 0.8, 0.8, 1.6];
     rows = guests.map(function (g) {
-      var t = tables.find(function (x) { return x.id === g.tableId; });
-      return [fullName(g), g.phone || "", g.email || "", g.invitationType || "", g.familyName || "", g.invitedCount || 1, (g.rsvpStatus || "pending").replace("_", " "), g.attendingCount || 0, g.dietary || "", t ? t.name : "", g.checkedIn ? "Yes" : "No", g.notes || ""];
+      return [fullName(g), g.phone || "", g.email || "", g.invitationType || "", g.familyName || "", g.invitedCount || 1, (g.rsvpStatus || "pending").replace("_", " "), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
     });
     filename = "Guest-List"; title = "Full Guest List";
   } else if (type === "gifts") {

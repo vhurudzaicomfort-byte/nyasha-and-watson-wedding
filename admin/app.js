@@ -2,7 +2,6 @@
   "use strict";
 
   var guests = [];
-  var tables = [];
   var gifts = [];
   var providers = [];
   var currencies = ["USD"];
@@ -70,21 +69,16 @@
 
   /* ---------------- LOAD + RENDER ---------------- */
   function loadAll() {
-    return Promise.all([api("/api/admin/guests"), api("/api/admin/tables"), api("/api/admin/gifts"), api("/api/admin/providers")]).then(function (res) {
-      guests = res[0].guests; tables = res[1].tables;
-      gifts = res[2].gifts; currencies = res[2].currencies; paymentMethods = res[2].paymentMethods;
-      providers = res[3].providers;
+    return Promise.all([api("/api/admin/guests"), api("/api/admin/gifts"), api("/api/admin/providers")]).then(function (res) {
+      guests = res[0].guests;
+      gifts = res[1].gifts; currencies = res[1].currencies; paymentMethods = res[1].paymentMethods;
+      providers = res[2].providers;
       renderAll();
     });
   }
   function renderAll() {
-    renderDashboard(); renderGuestTable(); renderTables(); populateFilterTables();
+    renderDashboard(); renderGuestTable();
     renderGifts(); renderProviders();
-  }
-
-  function occupiedSeats(t) {
-    return guests.filter(function (g) { return g.tableId === t.id; })
-      .reduce(function (s, g) { return s + (Number(g.attendingCount) || Number(g.invitedCount) || 1); }, 0);
   }
 
   function renderDashboard() {
@@ -95,8 +89,6 @@
     var pending = guests.filter(function (g) { return !g.rsvpStatus || g.rsvpStatus === "pending"; });
     var attendingCount = attending.reduce(function (s, g) { return s + (Number(g.attendingCount) || 0); }, 0);
     var invitedCount = guests.reduce(function (s, g) { return s + (Number(g.invitedCount) || 1); }, 0);
-    var seatCapacity = tables.reduce(function (s, t) { return s + (Number(t.capacity) || 0); }, 0);
-    var seatOccupied = tables.reduce(function (s, t) { return s + occupiedSeats(t); }, 0);
     var checkedIn = guests.filter(function (g) { return g.checkedIn; }).length;
     var responded = attending.length + maybe.length + not.length;
     var rate = total ? Math.round((responded / total) * 100) : 0;
@@ -127,7 +119,6 @@
       stat("Maybe", maybe.length),
       stat("Not Attending", not.length),
       stat("Pending", pending.length),
-      stat("Tables", tables.length, seatOccupied + " / " + seatCapacity + " seats filled"),
       stat("Checked In", checkedIn, (total - checkedIn) + " not yet arrived"),
       stat("RSVP Rate", rate + "%", responded + " of " + total + " responded"),
       stat("Cash Gifts", cashTotalStr, gifts.filter(function (g) { return g.type === "cash"; }).length + " gifts recorded"),
@@ -138,23 +129,6 @@
 
     var rows = [["Attending", attending.length, total], ["Maybe", maybe.length, total], ["Not Attending", not.length, total], ["Pending", pending.length, total]];
     document.getElementById("rsvpBars").innerHTML = rows.map(barRow).join("") || emptyBars();
-
-    var dietCounts = {};
-    guests.forEach(function (g) {
-      if (!g.dietary) return;
-      String(g.dietary).split(/[;,\n]/).forEach(function (part) {
-        var m = part.split(":"); var val = (m.length > 1 ? m[1] : m[0]).trim();
-        if (!val) return;
-        var key = val.toLowerCase();
-        if (key === "none" || key === "no restrictions") return;
-        dietCounts[val] = (dietCounts[val] || 0) + 1;
-      });
-    });
-    var dietEntries = Object.keys(dietCounts).map(function (k) { return [k, dietCounts[k]]; });
-    var maxDiet = Math.max.apply(null, dietEntries.map(function (e) { return e[1]; }).concat([1]));
-    document.getElementById("dietBars").innerHTML = dietEntries.length
-      ? dietEntries.map(function (e) { return barRow([e[0], e[1], maxDiet]); }).join("")
-      : '<p style="color:var(--text-muted); font-size:.84rem;">No dietary requirements logged yet.</p>';
 
     var giftCurrencyEntries = Object.keys(cashByCurrency).map(function (c) { return [c, cashByCurrency[c]]; });
     var maxGift = Math.max.apply(null, giftCurrencyEntries.map(function (e) { return e[1]; }).concat([1]));
@@ -180,17 +154,9 @@
   function emptyBars() { return '<p style="color:var(--text-muted); font-size:.84rem;">No RSVPs logged yet.</p>'; }
 
   /* ---------------- GUEST TABLE ---------------- */
-  function populateFilterTables() {
-    var sel = document.getElementById("filterTable");
-    var current = sel.value;
-    sel.innerHTML = '<option value="">All tables</option>' + tables.map(function (t) { return '<option value="' + t.id + '">' + escapeHtml(t.name) + "</option>"; }).join("");
-    sel.value = current;
-  }
-
   function renderGuestTable() {
     var q = (document.getElementById("guestSearch").value || "").toLowerCase();
     var fRsvp = document.getElementById("filterRsvp").value;
-    var fTable = document.getElementById("filterTable").value;
     var fCheckin = document.getElementById("filterCheckin").value;
 
     var rows = guests.filter(function (g) {
@@ -199,7 +165,6 @@
         if (hay.indexOf(q) === -1) return false;
       }
       if (fRsvp && (g.rsvpStatus || "pending") !== fRsvp) return false;
-      if (fTable && g.tableId !== fTable) return false;
       if (fCheckin === "yes" && !g.checkedIn) return false;
       if (fCheckin === "no" && g.checkedIn) return false;
       return true;
@@ -208,14 +173,11 @@
     document.getElementById("guestsEmpty").hidden = guests.length !== 0;
 
     document.getElementById("guestRows").innerHTML = rows.map(function (g) {
-      var tbl = tables.find(function (t) { return t.id === g.tableId; });
       var status = g.rsvpStatus || "pending";
       return "<tr>" +
         '<td><div class="g-name">' + escapeHtml(fullName(g)) + '</div><div class="g-sub">' + escapeHtml(g.familyName || capitalize(g.invitationType || "individual")) + "</div></td>" +
         '<td><span class="pill pill-' + status + '">' + status.replace("_", " ") + "</span></td>" +
         "<td>" + (g.attendingCount != null && g.attendingCount !== "" ? g.attendingCount : "—") + " / " + (g.invitedCount || 1) + "</td>" +
-        "<td>" + (tbl ? escapeHtml(tbl.name) : '<span style="color:var(--text-muted)">Unassigned</span>') + "</td>" +
-        '<td style="max-width:160px; font-size:.74rem; color:var(--text-muted);">' + escapeHtml(g.dietary || "—") + "</td>" +
         '<td><span class="pill ' + (g.checkedIn ? "pill-checked" : "pill-notchecked") + '">' + (g.checkedIn ? "Checked in" : "Not yet") + "</span></td>" +
         '<td><div class="row-actions">' + iconBtn("edit", g.id, "Edit") + iconBtn("link", g.id, "Copy invite link") + iconBtn("invite", g.id, "Send invite via WhatsApp") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Delete") + "</div></td>" +
         "</tr>";
@@ -239,7 +201,6 @@
 
   document.getElementById("guestSearch").addEventListener("input", renderGuestTable);
   document.getElementById("filterRsvp").addEventListener("change", renderGuestTable);
-  document.getElementById("filterTable").addEventListener("change", renderGuestTable);
   document.getElementById("filterCheckin").addEventListener("change", renderGuestTable);
 
   document.getElementById("guestRows").addEventListener("click", function (e) {
@@ -286,7 +247,7 @@
       .catch(function () { showToast("Could not update check-in"); });
   }
   function deleteGuest(g) {
-    askConfirm("Remove " + fullName(g) + "?", "This removes them from the guest list and any table they are seated at.").then(function (ok) {
+    askConfirm("Remove " + fullName(g) + "?", "This permanently removes them from the guest list.").then(function (ok) {
       if (!ok) return;
       api("/api/admin/guests?id=" + g.id, { method: "DELETE" }).then(function () { showToast("Guest removed"); return loadAll(); }).catch(function () { showToast("Could not remove guest"); });
     });
@@ -307,7 +268,6 @@
     document.getElementById("f-rsvp").value = g ? (g.rsvpStatus || "pending") : "pending";
     document.getElementById("f-attending").value = g ? (g.attendingCount || 0) : 0;
     document.getElementById("f-plusone").checked = g ? !!g.plusOneAllowed : false;
-    document.getElementById("f-dietary").value = g ? (g.dietary || "") : "";
     document.getElementById("f-notes").value = g ? (g.notes || "") : "";
     document.getElementById("guestModalOverlay").hidden = false;
     document.getElementById("f-first").focus();
@@ -331,7 +291,6 @@
       rsvpStatus: document.getElementById("f-rsvp").value,
       attendingCount: Number(document.getElementById("f-attending").value) || 0,
       plusOneAllowed: document.getElementById("f-plusone").checked,
-      dietary: document.getElementById("f-dietary").value.trim(),
       notes: document.getElementById("f-notes").value.trim()
     };
     if (data.rsvpStatus === "attending" && !data.attendingCount) data.attendingCount = data.invitedCount;
@@ -340,121 +299,6 @@
       : api("/api/admin/guests", { method: "POST", body: data });
     req.then(function () { showToast(editingGuestId ? "Guest updated" : "Guest added"); closeGuestModal(); return loadAll(); })
       .catch(function (e) { showToast(e.message || "Could not save guest"); });
-  });
-
-  /* ---------------- TABLES ---------------- */
-  function renderTables() {
-    document.getElementById("tablesEmpty").hidden = tables.length !== 0;
-    document.getElementById("tablesGrid").innerHTML = tables.map(function (t) {
-      var occ = occupiedSeats(t);
-      var cap = Number(t.capacity) || 0;
-      var partyGuests = guests.filter(function (g) { return g.tableId === t.id; });
-      var dots = "";
-      var filled = Math.min(occ, cap);
-      for (var i = 0; i < cap; i++) { dots += '<span class="seat-dot' + (i < filled ? " filled" : "") + '"></span>'; }
-      return '<div class="table-card' + (t.vip ? " vip" : "") + (t.locked ? " locked" : "") + '" data-id="' + t.id + '">' +
-        '<div class="tc-head"><div class="tc-name">' + escapeHtml(t.name) + '</div><div class="tc-badges">' +
-        (t.vip ? '<span class="tc-badge">VIP</span>' : "") + (t.locked ? '<span class="tc-badge">Locked</span>' : "") + "</div></div>" +
-        '<div class="tc-seats">' + dots + "</div>" +
-        '<div class="tc-meta">' + occ + " / " + cap + " seats" + (occ >= cap && cap > 0 ? ' &middot; <strong style="color:var(--error)">FULL</strong>' : "") + "</div>" +
-        '<div class="tc-guests">' + partyGuests.slice(0, 4).map(function (g) { return '<div class="tc-guest">' + escapeHtml(fullName(g)) + "</div>"; }).join("") +
-        (partyGuests.length > 4 ? '<div class="tc-guest">+' + (partyGuests.length - 4) + " more</div>" : "") + "</div>" +
-        "</div>";
-    }).join("");
-  }
-
-  document.getElementById("tablesGrid").addEventListener("click", function (e) {
-    var card = e.target.closest(".table-card");
-    if (!card) return;
-    var t = tables.find(function (x) { return x.id === card.dataset.id; });
-    if (t) openTableModal(t);
-  });
-
-  var editingTableId = null;
-  function openTableModal(t) {
-    editingTableId = t ? t.id : null;
-    document.getElementById("tableModalTitle").textContent = t ? "Edit " + t.name : "Add Table";
-    document.getElementById("t-name").value = t ? t.name : "Table " + (tables.length + 1);
-    document.getElementById("t-capacity").value = t ? t.capacity : 8;
-    document.getElementById("t-vip").checked = t ? !!t.vip : false;
-    document.getElementById("t-locked").checked = t ? !!t.locked : false;
-    document.getElementById("tableModalDelete").hidden = !t;
-    renderTableSeatedList(t);
-    renderAssignSelect(t);
-    document.getElementById("tableModalOverlay").hidden = false;
-  }
-  function closeTableModal() { document.getElementById("tableModalOverlay").hidden = true; editingTableId = null; }
-  document.getElementById("addTableBtn").addEventListener("click", function () { openTableModal(null); });
-  document.getElementById("tableModalClose").addEventListener("click", closeTableModal);
-
-  function renderTableSeatedList(t) {
-    var seated = t ? guests.filter(function (g) { return g.tableId === t.id; }) : [];
-    document.getElementById("tSeatedCount").textContent = t ? occupiedSeats(t) : 0;
-    document.getElementById("tCapCount").textContent = t ? (t.capacity || 0) : (document.getElementById("t-capacity").value || 0);
-    document.getElementById("tSeatedList").innerHTML = seated.length ? seated.map(function (g) {
-      return '<div style="display:flex; justify-content:space-between; align-items:center; background:var(--ivory-deep); padding:8px 10px; border-radius:6px; font-size:.8rem;">' +
-        "<span>" + escapeHtml(fullName(g)) + ' <span style="color:var(--text-muted)">(' + (g.attendingCount || g.invitedCount || 1) + ')</span></span>' +
-        '<button class="btn btn-sm btn-outline" data-unassign="' + g.id + '">Remove</button></div>';
-    }).join("") : '<p style="font-size:.78rem; color:var(--text-muted);">No one seated here yet.</p>';
-  }
-  function renderAssignSelect(t) {
-    var unassigned = guests.filter(function (g) { return !g.tableId && (g.rsvpStatus === "attending" || g.rsvpStatus === "maybe" || !g.rsvpStatus); });
-    var sel = document.getElementById("t-assignSelect");
-    sel.innerHTML = unassigned.length
-      ? unassigned.map(function (g) { return '<option value="' + g.id + '">' + escapeHtml(fullName(g)) + " (" + (g.attendingCount || g.invitedCount || 1) + ")</option>"; }).join("")
-      : '<option value="">No unassigned guests</option>';
-  }
-
-  document.getElementById("tSeatedList").addEventListener("click", function (e) {
-    var btn = e.target.closest("[data-unassign]");
-    if (!btn) return;
-    var gid = btn.dataset.unassign;
-    api("/api/admin/tables?id=" + editingTableId, { method: "PATCH", body: { action: "unassign", guestId: gid } })
-      .then(function () { return loadAll(); })
-      .then(function () {
-        var t = tables.find(function (x) { return x.id === editingTableId; });
-        renderTableSeatedList(t); renderAssignSelect(t);
-        showToast("Removed from table");
-      }).catch(function () { showToast("Could not update"); });
-  });
-
-  document.getElementById("t-assignBtn").addEventListener("click", function () {
-    var gid = document.getElementById("t-assignSelect").value;
-    if (!gid) return;
-    if (!editingTableId) { showToast("Save the table before assigning guests"); return; }
-    api("/api/admin/tables?id=" + editingTableId, { method: "PATCH", body: { action: "assign", guestId: gid } })
-      .then(function () { return loadAll(); })
-      .then(function () {
-        var t = tables.find(function (x) { return x.id === editingTableId; });
-        renderTableSeatedList(t); renderAssignSelect(t);
-        showToast("Guest assigned");
-      }).catch(function (e) { showToast(e.message === "Table full" ? "Table full — not enough seats for this party" : "Could not assign guest"); });
-  });
-
-  document.getElementById("tableModalSave").addEventListener("click", function () {
-    var name = document.getElementById("t-name").value.trim();
-    if (!name) { document.getElementById("t-name").focus(); return; }
-    var data = {
-      name: name,
-      capacity: Math.max(1, Number(document.getElementById("t-capacity").value) || 1),
-      vip: document.getElementById("t-vip").checked,
-      locked: document.getElementById("t-locked").checked
-    };
-    var req = editingTableId
-      ? api("/api/admin/tables?id=" + editingTableId, { method: "PATCH", body: data })
-      : api("/api/admin/tables", { method: "POST", body: data });
-    req.then(function (res) { if (!editingTableId && res.table) editingTableId = res.table.id; showToast("Table saved"); closeTableModal(); return loadAll(); })
-      .catch(function () { showToast("Could not save table"); });
-  });
-
-  document.getElementById("tableModalDelete").addEventListener("click", function () {
-    if (!editingTableId) return;
-    askConfirm("Delete this table?", "Guests seated here will become unassigned.").then(function (ok) {
-      if (!ok) return;
-      api("/api/admin/tables?id=" + editingTableId, { method: "DELETE" })
-        .then(function () { showToast("Table deleted"); closeTableModal(); return loadAll(); })
-        .catch(function () { showToast("Could not delete table"); });
-    });
   });
 
   /* ---------------- BADGE ---------------- */
@@ -487,14 +331,11 @@
       ctx.strokeStyle = "#E4D2B0"; ctx.beginPath(); ctx.moveTo(80, 150); ctx.lineTo(w - 80, 150); ctx.stroke();
       ctx.fillStyle = "#3E1730"; ctx.font = '600 48px "Cormorant Garamond", serif';
       wrapText(ctx, fullName(g), w / 2, 220, w - 140, 52);
-      var tbl = tables.find(function (t) { return t.id === g.tableId; });
-      ctx.fillStyle = "#5A2444"; ctx.font = '500 26px Jost, sans-serif';
-      ctx.fillText(tbl ? tbl.name.toUpperCase() : "TABLE TO BE ASSIGNED", w / 2, 320);
-      ctx.fillStyle = "#8B7A6E"; ctx.font = '400 20px Jost, sans-serif';
-      ctx.fillText("Party of " + (g.attendingCount || g.invitedCount || 1), w / 2, 352);
+      ctx.fillStyle = "#8B7A6E"; ctx.font = '400 22px Jost, sans-serif';
+      ctx.fillText("Party of " + (g.attendingCount || g.invitedCount || 1), w / 2, 330);
       var status = (g.rsvpStatus || "pending").toUpperCase().replace("_", " ");
-      ctx.fillStyle = "#D97F55"; ctx.font = '500 22px Jost, sans-serif';
-      ctx.fillText(status, w / 2, 400);
+      ctx.fillStyle = "#D97F55"; ctx.font = '500 24px Jost, sans-serif';
+      ctx.fillText(status, w / 2, 372);
       if (qrDataUrl) {
         var img = new Image();
         img.onload = function () { ctx.drawImage(img, w / 2 - 140, 440, 280, 280); finishBadge(w, h); };
@@ -550,9 +391,9 @@
     box.innerHTML = matches.length ? matches.map(renderCheckinCard).join("") : '<p style="margin-top:14px; font-size:.84rem; color:var(--text-muted);">No matching guest found.</p>';
   });
   function renderCheckinCard(g) {
-    var tbl = tables.find(function (t) { return t.id === g.tableId; });
+    var status = (g.rsvpStatus || "pending").replace("_", " ");
     return '<div class="checkin-result"><div class="g-name">' + escapeHtml(fullName(g)) + "</div>" +
-      '<div class="g-sub">' + (tbl ? escapeHtml(tbl.name) : "No table assigned") + " &middot; Party of " + (g.attendingCount || g.invitedCount || 1) + " &middot; " + escapeHtml(g.dietary || "No dietary notes") + "</div>" +
+      '<div class="g-sub">Party of ' + (g.attendingCount || g.invitedCount || 1) + " &middot; " + capitalize(status) + "</div>" +
       '<div style="margin-top:10px;"><button class="btn btn-sm ' + (g.checkedIn ? "btn-outline" : "btn-primary") + '" data-checkin-id="' + g.id + '">' + (g.checkedIn ? "Checked in ✓ (tap to undo)" : "Check In") + "</button></div></div>";
   }
   document.getElementById("checkinResult").addEventListener("click", function (e) {

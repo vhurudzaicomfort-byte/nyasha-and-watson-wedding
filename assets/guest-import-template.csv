@@ -1,3 +1,3 @@
-FirstName,LastName,Phone,Email,InvitationType,FamilyName,InvitedCount,PlusOneAllowed,RSVPStatus,Dietary,Notes
-Comfort,Vhurudzai,263772692738,comfort@example.com,individual,,1,No,pending,,Example row — edit or delete
-Tariro,Moyo,,,couple,The Moyo Family,2,Yes,pending,Vegetarian,
+FirstName,LastName,Phone,Email,InvitationType,FamilyName,InvitedCount,PlusOneAllowed,RSVPStatus,Notes
+Comfort,Vhurudzai,263772692738,comfort@example.com,individual,,1,No,pending,Example row — edit or delete
+Tariro,Moyo,,,couple,The Moyo Family,2,Yes,pending,

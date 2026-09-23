@@ -1,7 +1,7 @@
 const { requireAuth } = require("../../lib/auth");
 const { readData, writeData, newId } = require("../../lib/blob-store");
 
-const COLUMNS = ["FirstName", "LastName", "Phone", "Email", "InvitationType", "FamilyName", "InvitedCount", "PlusOneAllowed", "RSVPStatus", "Dietary", "Notes"];
+const COLUMNS = ["FirstName", "LastName", "Phone", "Email", "InvitationType", "FamilyName", "InvitedCount", "PlusOneAllowed", "RSVPStatus", "Notes"];
 
 // Minimal RFC4180-ish CSV parser: handles quoted fields, escaped quotes, commas/newlines inside quotes.
 function parseCsv(text) {
@@ -46,7 +46,6 @@ function toGuestDraft(rowObj) {
     plusOneAllowed: /^(y|yes|true|1)$/i.test((rowObj.PlusOneAllowed || "").trim()),
     rsvpStatus: (rowObj.RSVPStatus || "pending").trim().toLowerCase() || "pending",
     attendingCount: 0,
-    dietary: (rowObj.Dietary || "").trim(),
     notes: (rowObj.Notes || "").trim(),
   };
 }
@@ -77,7 +76,6 @@ module.exports = async function handler(req, res) {
       }
       data.guests.push(Object.assign({
         id: newId("guest"),
-        tableId: null,
         checkedIn: false,
         checkInTime: null,
         createdAt: new Date().toISOString(),

@@ -2,7 +2,7 @@
 // GET  ?token=<guestId>  -> minimal, non-sensitive info to personalise the page.
 // POST { token?, ... }   -> creates or updates a guest record with the RSVP.
 // Deliberately exposes nothing beyond first/last name, invited count and
-// plus-one eligibility on GET — never phone, email, dietary or notes.
+// plus-one eligibility on GET — never phone, email or notes.
 const { readData, writeData, newId } = require("../lib/blob-store");
 
 function splitName(name) {
@@ -32,7 +32,6 @@ module.exports = async function handler(req, res) {
     var body = req.body || {};
     var attend = body.attend === "attending" || body.attend === "maybe" || body.attend === "not_attending" ? body.attend : "pending";
     var message = String(body.message || "").trim();
-    var dietary = String(body.dietary || "").trim();
     var data2 = await readData();
     var guest2 = body.token ? data2.guests.find(function (g) { return g.id === body.token; }) : null;
 
@@ -43,7 +42,6 @@ module.exports = async function handler(req, res) {
       guest2.rsvpStatus = attend;
       guest2.attendingCount = attend === "attending" ? Math.max(1, Math.min(requestedCount, cap)) : 0;
       if (body.plusOneName) guest2.plusOneName = String(body.plusOneName).trim();
-      if (dietary) guest2.dietary = dietary;
       if (message) guest2.notes = (guest2.notes ? guest2.notes + " | " : "") + "RSVP message: " + message;
       if (body.phone) guest2.phone = String(body.phone).trim();
       guest2.rsvpAt = new Date().toISOString();
@@ -68,9 +66,7 @@ module.exports = async function handler(req, res) {
       rsvpStatus: attend,
       attendingCount: attend === "attending" ? requestedCount : 0,
       plusOneName: body.plusOneName ? String(body.plusOneName).trim() : "",
-      dietary: dietary,
       notes: (message ? "RSVP message: " + message : "") + " (self-registered via public RSVP form)",
-      tableId: null,
       checkedIn: false,
       checkInTime: null,
       createdAt: new Date().toISOString(),
