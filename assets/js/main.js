@@ -144,6 +144,8 @@
 
   function renderRsvpAlready() {
     var box = document.getElementById("rsvpAlready");
+    renderRsvpDeadline();
+    if (F.rsvpClosed()) { box.hidden = true; return; }
     if (!guestInfo && pendingRequest) {
       box.innerHTML = pendingRequest.status === "declined"
         ? "Thank you for replying. We couldn't find you on our invitation list, and as this celebration is <strong>strictly by invitation</strong>, we're unable to confirm a place. If you believe this is a mistake, please contact the couple."
@@ -470,7 +472,10 @@
         attend: state.attend, guests: state.guests, plusOneName: state.plusone, message: state.message
       })
     }).then(function (r) {
-      return r.json().then(function (j) { if (!r.ok || !j.ok) throw new Error(j.error || "Could not save your RSVP"); return j; });
+      return r.json().then(function (j) {
+        if (!r.ok || !j.ok) { var err = new Error(j.error || "Could not save your RSVP"); err.closed = !!j.closed; throw err; }
+        return j;
+      });
     });
   }
 
@@ -532,6 +537,7 @@
     submitBtn.textContent = "Submitting…";
     document.getElementById("rsvpError").hidden = true;
     submitRsvp("web").then(function (res) { showConfirm(res, "web"); }).catch(function (e) {
+      if (e && e.closed) { renderRsvpDeadline(); return; }
       var err = document.getElementById("rsvpError");
       err.textContent = (e && e.message && e.message !== "Failed to fetch" ? e.message + ". " : "We couldn't submit your RSVP just now. ") + "Please try again, or use one of the other ways below.";
       err.hidden = false;
@@ -553,7 +559,9 @@
     else if (channel === "sms") location.href = "sms:+" + RSVP_PHONE + "?body=" + encodeURIComponent(text);
     else if (channel === "call") location.href = "tel:+" + RSVP_PHONE;
     else if (channel === "email") location.href = "mailto:" + RSVP_EMAIL + "?subject=" + encodeURIComponent("RSVP — " + state.name) + "&body=" + encodeURIComponent(text);
-    submitRsvp(channel).then(function (res) { showConfirm(res, channel); }).catch(function () { showConfirm(null, channel); });
+    submitRsvp(channel).then(function (res) { showConfirm(res, channel); }).catch(function (e) {
+      if (e && e.closed) renderRsvpDeadline(); else showConfirm(null, channel);
+    });
   });
 
   document.getElementById("changeRsvp").addEventListener("click", function () {
@@ -562,6 +570,55 @@
     showStep(0);
     document.getElementById("rsvp").scrollIntoView({ behavior: "smooth" });
   });
+
+  /* ---------------- RSVP DEADLINE ---------------- */
+  // Replies close automatically at the end of the deadline day; the API uses the
+  // same cut-off and refuses late replies. Until then the note under the form
+  // counts down, and afterwards the form gives way to a "closed" panel.
+  document.querySelectorAll("[data-rsvp-deadline]").forEach(function (el) { el.textContent = F.RSVP_DEADLINE_LABEL; });
+  document.getElementById("closedWhatsapp").href = "https://wa.me/" + RSVP_PHONE;
+  document.getElementById("closedCall").href = "tel:+" + RSVP_PHONE;
+
+  function renderRsvpDeadline() {
+    var closed = F.rsvpClosed();
+    var deadline = "<strong>" + F.RSVP_DEADLINE_LABEL + "</strong>";
+    var note = document.getElementById("rsvpDeadline");
+    if (closed) {
+      note.innerHTML = "RSVP closed on " + deadline + " &middot; strictly by invitation only";
+    } else {
+      var ms = Date.parse(F.RSVP_CLOSES_AT) - Date.now();
+      var days = Math.ceil(ms / 86400000);
+      var left = ms <= 86400000 ? "closes tonight at midnight" : "closes in " + days + " days";
+      note.innerHTML = "Kindly respond by " + deadline + " &middot; RSVP " + left + " &middot; strictly by invitation only";
+    }
+    document.getElementById("rsvpByNote").textContent = closed ? "RSVPs are now closed" : "Kindly respond by this date";
+    document.getElementById("heroRsvp").hidden = closed;
+    document.getElementById("rsvpLede").textContent = closed ? "Thank you for your replies — we can't wait to celebrate with you." : "We'd love to know if you'll be celebrating with us.";
+    document.getElementById("rsvpClosed").hidden = !closed;
+    document.getElementById("rsvpProgress").hidden = closed;
+    document.querySelector(".rsvp-body").hidden = closed;
+    if (!closed) return;
+    document.getElementById("rsvpAlready").hidden = true;
+
+    var mine = document.getElementById("rsvpClosedMine");
+    if (guestInfo && guestInfo.rsvpStatus && guestInfo.rsvpStatus !== "pending") {
+      var party = guestInfo.rsvpStatus === "attending" ? " &middot; party of " + (guestInfo.attendingCount || 1) : "";
+      mine.innerHTML = "Your reply: <strong>" + attendLabel(guestInfo.rsvpStatus) + "</strong>" + party;
+      mine.hidden = false;
+    } else if (!guestInfo && pendingRequest) {
+      mine.innerHTML = pendingRequest.status === "declined"
+        ? "We couldn't find you on our invitation list, so we're unable to confirm a place."
+        : "Your RSVP is <strong>pending approval</strong> &mdash; the couple will be in touch.";
+      mine.hidden = false;
+    } else if (guestInfo) {
+      mine.innerHTML = "We didn't receive a reply from you before the deadline.";
+      mine.hidden = false;
+    } else {
+      mine.hidden = true;
+    }
+  }
+  renderRsvpDeadline();
+  setInterval(renderRsvpDeadline, 60000);
 
   /* ---------------- SHARED CANVAS HELPERS ---------------- */
   function loadFonts() {

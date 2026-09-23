@@ -7,6 +7,7 @@
 //                           by phone, then by exact full name. Anyone we can't
 //                           match isn't on the invite list: their RSVP is held
 //                           as a pending request for the couple to approve.
+//                           Refused (403) once the RSVP deadline has passed.
 const { readData, writeData, newId } = require("../lib/blob-store");
 const Fields = require("../assets/js/guest-fields.js");
 
@@ -65,6 +66,10 @@ module.exports = async function handler(req, res) {
   }
 
   if (req.method === "POST") {
+    if (Fields.rsvpClosed()) {
+      res.status(403).json({ ok: false, closed: true, error: "RSVPs closed on " + Fields.RSVP_DEADLINE_LABEL });
+      return;
+    }
     var body = req.body || {};
     var attend = body.attend === "attending" || body.attend === "maybe" || body.attend === "not_attending" ? body.attend : "";
     if (!attend) { res.status(400).json({ error: "Please choose whether you'll attend" }); return; }

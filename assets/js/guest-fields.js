@@ -86,11 +86,18 @@
   }
   function genderLabel(v) { var g = GENDERS.find(function (x) { return x.value === v; }); return g ? g.label : ""; }
 
+  // RSVPs close at the end of 10 November (Harare time). The site and the API
+  // both read this, so the page and the server always agree.
+  var RSVP_DEADLINE_LABEL = "10 November 2026";
+  var RSVP_CLOSES_AT = "2026-11-11T00:00:00+02:00";
+  function rsvpClosed(now) { return (now == null ? Date.now() : +now) >= Date.parse(RSVP_CLOSES_AT); }
+
   global.WNGuestFields = {
     CATEGORIES: CATEGORIES, GENDERS: GENDERS, INVITATION_TYPES: INVITATION_TYPES,
     CURRENCIES: CURRENCIES, PAYMENT_METHODS: PAYMENT_METHODS, GIFT_TYPES: GIFT_TYPES, PROVIDER_CATEGORIES: PROVIDER_CATEGORIES,
     normGender: normGender, normCategory: normCategory, normInvitationType: normInvitationType, normGiftType: normGiftType,
-    normCurrency: normCurrency, normPaymentMethod: normPaymentMethod, normProviderCategory: normProviderCategory, genderLabel: genderLabel
+    normCurrency: normCurrency, normPaymentMethod: normPaymentMethod, normProviderCategory: normProviderCategory, genderLabel: genderLabel,
+    RSVP_DEADLINE_LABEL: RSVP_DEADLINE_LABEL, RSVP_CLOSES_AT: RSVP_CLOSES_AT, rsvpClosed: rsvpClosed
   };
   if (typeof module !== "undefined" && module.exports) module.exports = global.WNGuestFields;
 })(typeof window !== "undefined" ? window : globalThis);

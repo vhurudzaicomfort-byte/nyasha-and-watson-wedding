@@ -16,7 +16,7 @@
 <link rel="canonical" href="https://nyasha-watson.e-guests.com/">
 <meta name="theme-color" content="#3E1730">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%233E1730%22/><text x=%2250%22 y=%2266%22 font-family=%22Georgia,%20serif%22 font-size=%2240%22 fill=%22%23E8D9BE%22 text-anchor=%22middle%22>N%26W</text></svg>">
-<link rel="stylesheet" href="assets/css/style.css?v=20260923n">
+<link rel="stylesheet" href="assets/css/style.css?v=20260923o">
 </head>
 <body>
 
@@ -79,7 +79,7 @@
     </div>
 
     <div class="btn-row hero-cta">
-      <a href="#rsvp" class="btn btn-primary">Kindly RSVP</a>
+      <a href="#rsvp" class="btn btn-primary" id="heroRsvp">Kindly RSVP</a>
       <a href="#programme" class="btn btn-outline">View Programme</a>
     </div>
   </div>
@@ -103,7 +103,7 @@
     <div class="info-grid">
       <div class="info-card"><div class="ic-label">Date</div><div class="ic-value">5 December 2026</div><div class="ic-note">Saturday</div></div>
       <div class="info-card"><div class="ic-label">Venue</div><div class="ic-value">Colne Valley Nature Reserve Park</div><div class="ic-note">Chisipite, Harare</div></div>
-      <div class="info-card"><div class="ic-label">RSVP By</div><div class="ic-value">10 November 2026</div><div class="ic-note">Kindly respond by this date</div></div>
+      <div class="info-card"><div class="ic-label">RSVP By</div><div class="ic-value">10 November 2026</div><div class="ic-note" id="rsvpByNote">Kindly respond by this date</div></div>
       <div class="info-card"><div class="ic-label">Ceremony</div><div class="ic-value">9:00 AM</div><div class="ic-note">Please arrive in good time</div></div>
       <div class="info-card"><div class="ic-label">Dress Code</div><div class="ic-value">Formal &amp; Smart Casual</div></div>
       <div class="info-card"><div class="ic-label">Parking</div><div class="ic-value">Free &amp; Available</div><div class="ic-note">On-site at the reserve</div></div>
@@ -111,7 +111,15 @@
     <div class="invite-only-note">
       <svg viewBox="0 0 64 34" aria-hidden="true"><circle cx="24" cy="17" r="14" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="40" cy="17" r="14" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>
       <p>This celebration is strictly by invitation only.</p>
-      <span>Kindly bring only the guests named on your invitation.</span>
+      <div class="guidelines">
+        <div class="guidelines-head">Guest Guidelines</div>
+        <ul class="guidelines-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 11l1.8 1.8L21 9.5"/></svg><div><b>Named guests only</b>Seats are reserved for the guests named on your invitation.</div></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M9 15l2 2 4-4"/></svg><div><b>RSVP by <span data-rsvp-deadline>10 November 2026</span></b>Replies close automatically after this date.</div></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><div><b>Arrive by 8:30 AM</b>The ceremony begins at 9:00 AM &mdash; please be seated in good time.</div></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></svg><div><b>Check in on arrival</b>Use Self Check-in on this page, or show your invitation to an usher.</div></li>
+        </ul>
+      </div>
     </div>
   </div>
 </section>
@@ -193,15 +201,16 @@
         <div class="ic-label">Dress Code</div>
         <div class="ic-value" style="margin-top:10px;">Formal &amp; Smart Casual</div>
         <p style="margin-top:18px; color:var(--text-muted); font-size:.9rem;">We'd love for you to dress up with us &mdash; formal or smart casual attire is perfect for the occasion.</p>
+        <p class="attire-tip">Wearing a touch of our colours &mdash; a dress, tie, pocket square or accessory &mdash; is a lovely way to celebrate with us.</p>
       </div>
       <div class="attire-card">
-        <div class="ic-label">Our Colour Story</div>
-        <p style="margin-top:10px; color:var(--text-muted); font-size:.88rem;">If you'd like to complement our palette, here's our colour story for the day.</p>
-        <div class="swatches">
-          <div class="swatch"><div class="swatch-chip" style="background:#9C7089"></div><div class="swatch-name">Muted Plum</div></div>
-          <div class="swatch"><div class="swatch-chip" style="background:#E8D9BE"></div><div class="swatch-name">Soft Champagne</div></div>
-          <div class="swatch"><div class="swatch-chip" style="background:#E8916B"></div><div class="swatch-name">Peach Coral</div></div>
-          <div class="swatch"><div class="swatch-chip" style="background:#FBF8F3; border:1px solid #e4d5be;"></div><div class="swatch-name">Ivory</div></div>
+        <div class="ic-label">Our Colour Palette</div>
+        <p style="margin-top:10px; color:var(--text-muted); font-size:.88rem;">If you'd like to complement our day, these are our colours.</p>
+        <div class="swatches" role="list">
+          <div class="swatch" role="listitem"><div class="swatch-chip" style="--c:#9C7089"></div><div class="swatch-name">Muted Plum</div></div>
+          <div class="swatch" role="listitem"><div class="swatch-chip" style="--c:#E8D9BE"></div><div class="swatch-name">Soft Champagne</div></div>
+          <div class="swatch" role="listitem"><div class="swatch-chip" style="--c:#E8916B"></div><div class="swatch-name">Peach Coral</div></div>
+          <div class="swatch" role="listitem"><div class="swatch-chip is-light" style="--c:#FBF8F3"></div><div class="swatch-name">Ivory</div></div>
         </div>
       </div>
     </div>
@@ -244,13 +253,24 @@
     <div class="head">
       <div class="eyebrow">Kindly Respond</div>
       <h2>RSVP</h2>
-      <p class="lede">We'd love to know if you'll be celebrating with us.</p>
+      <p class="lede" id="rsvpLede">We'd love to know if you'll be celebrating with us.</p>
     </div>
 
     <div class="rsvp-stage">
     <img class="spray spray--tr" src="assets/img/floral-spray.webp" alt="" aria-hidden="true">
     <img class="spray spray--bl" src="assets/img/floral-spray.webp" alt="" aria-hidden="true">
     <div class="rsvp-shell">
+      <div class="rsvp-closed" id="rsvpClosed" hidden>
+        <div class="confirm-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg></div>
+        <h3 class="step-title">RSVPs are now closed</h3>
+        <p class="step-sub">Replies closed on <strong data-rsvp-deadline>10 November 2026</strong>. Thank you to everyone who responded.</p>
+        <div class="rsvp-closed-mine" id="rsvpClosedMine" hidden></div>
+        <p class="rsvp-closed-help">Need to change your reply? Please contact us directly.</p>
+        <div class="btn-row" style="justify-content:center; margin-top:14px;">
+          <a class="btn btn-outline" id="closedWhatsapp" target="_blank" rel="noopener">WhatsApp</a>
+          <a class="btn btn-outline" id="closedCall">Call</a>
+        </div>
+      </div>
       <div class="rsvp-already" id="rsvpAlready" hidden></div>
       <div class="rsvp-progress" id="rsvpProgress">
         <div class="rp-seg done" data-step="0"></div>
@@ -347,7 +367,7 @@
       </div>
     </div>
     </div>
-    <p class="rsvp-deadline">Kindly respond by <strong>10 November 2026</strong> &middot; strictly by invitation only</p>
+    <p class="rsvp-deadline" id="rsvpDeadline">Kindly respond by <strong>10 November 2026</strong> &middot; strictly by invitation only</p>
   </div>
 </section>
 
@@ -380,9 +400,9 @@
 <div id="qrTemp" style="display:none;"></div>
 
 <script src="assets/js/qrcode.min.js"></script>
-<script src="assets/js/countries.js?v=20260923n"></script>
-<script src="assets/js/guest-fields.js?v=20260923n"></script>
-<script src="assets/js/invitation-card.js?v=20260923n"></script>
-<script src="assets/js/main.js?v=20260923n"></script>
+<script src="assets/js/countries.js?v=20260923o"></script>
+<script src="assets/js/guest-fields.js?v=20260923o"></script>
+<script src="assets/js/invitation-card.js?v=20260923o"></script>
+<script src="assets/js/main.js?v=20260923o"></script>
 </body>
 </html>
