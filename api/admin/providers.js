@@ -1,10 +1,25 @@
 const { requireAuth } = require("../../lib/auth");
 const { readData, writeData, newId } = require("../../lib/blob-store");
 
-const CURRENCIES = ["USD", "ZWG", "ZAR", "GBP", "EUR"];
-const PAYMENT_METHODS = ["EcoCash", "InnBucks", "Bank Transfer", "Cash", "World Remit", "Mukuru", "Western Union", "Other"];
+const L = require("../../assets/js/guest-fields.js");
+const { readRows, parseMoney, normDate } = require("../../lib/import-helpers");
+
+const CURRENCIES = L.CURRENCIES;
+const PAYMENT_METHODS = L.PAYMENT_METHODS;
 const DUE_SOON_DAYS = 7;
 const IMPORT_COLUMNS = ["Name", "Category", "ContactName", "Phone", "Email", "AgreedFee", "Currency", "PaymentDeadline", "Notes"];
+// Excel template headers ("Provider Name *", "Agreed Fee") and older CSV ones both map here.
+const HEADER_ALIASES = {
+  name: "Name", providername: "Name", provider: "Name", supplier: "Name", company: "Name",
+  category: "Category", service: "Category", type: "Category",
+  contactname: "ContactName", contactperson: "ContactName", contact: "ContactName",
+  phone: "Phone", phonenumber: "Phone", mobile: "Phone",
+  email: "Email", emailaddress: "Email",
+  agreedfee: "AgreedFee", fee: "AgreedFee", amount: "AgreedFee", price: "AgreedFee", quote: "AgreedFee",
+  currency: "Currency",
+  paymentdeadline: "PaymentDeadline", deadline: "PaymentDeadline", duedate: "PaymentDeadline",
+  notes: "Notes", note: "Notes",
+};
 
 function computeStatus(provider) {
   const payments = provider.payments || [];
@@ -46,48 +61,20 @@ function withComputed(provider) {
   return Object.assign({}, provider, computeStatus(provider));
 }
 
-// Minimal RFC4180-ish CSV parser: handles quoted fields, escaped quotes, commas/newlines inside quotes.
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let field = "";
-  let inQuotes = false;
-  const s = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (s[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
-      } else { field += c; }
-    } else if (c === '"') {
-      inQuotes = true;
-    } else if (c === ",") {
-      row.push(field); field = "";
-    } else if (c === "\n") {
-      row.push(field); field = "";
-      rows.push(row); row = [];
-    } else {
-      field += c;
-    }
-  }
-  if (field.length || row.length) { row.push(field); rows.push(row); }
-  return rows.filter((r) => r.some((c) => c.trim() !== ""));
-}
-
 function normPhone(s) { return String(s || "").replace(/[^\d]/g, ""); }
 function normName(s) { return String(s || "").trim().toLowerCase().replace(/\s+/g, " "); }
 
 function toProviderDraft(rowObj) {
   return {
-    name: (rowObj.Name || "").trim(),
-    category: (rowObj.Category || "").trim(),
-    contactName: (rowObj.ContactName || "").trim(),
-    phone: (rowObj.Phone || "").trim(),
-    email: (rowObj.Email || "").trim(),
-    agreedFee: Number(rowObj.AgreedFee) || 0,
-    currency: (rowObj.Currency || "USD").trim().toUpperCase(),
-    paymentDeadline: (rowObj.PaymentDeadline || "").trim() || null,
-    notes: (rowObj.Notes || "").trim(),
+    name: String(rowObj.Name || "").trim(),
+    category: L.normProviderCategory(rowObj.Category),
+    contactName: String(rowObj.ContactName || "").trim(),
+    phone: String(rowObj.Phone || "").trim(),
+    email: String(rowObj.Email || "").trim(),
+    agreedFee: parseMoney(rowObj.AgreedFee) || 0,
+    currency: L.normCurrency(rowObj.Currency),
+    paymentDeadline: normDate(rowObj.PaymentDeadline) || null,
+    notes: String(rowObj.Notes || "").trim(),
   };
 }
 
@@ -122,15 +109,10 @@ async function handleImport(req, res) {
   // preview mode
   const csvText = String(body.csv || "");
   if (!csvText.trim()) { res.status(400).json({ error: "No CSV content provided" }); return; }
-  const rows = parseCsv(csvText);
-  if (!rows.length) { res.status(400).json({ error: "CSV appears to be empty" }); return; }
+  const { header, records } = readRows(csvText, HEADER_ALIASES);
+  if (!header.length) { res.status(400).json({ error: "The file appears to be empty" }); return; }
 
-  const header = rows[0].map((h) => h.trim());
-  const dataRows = rows.slice(1);
-
-  const preview = dataRows.map((r) => {
-    const fields = {};
-    header.forEach((h, i) => { fields[h] = r[i] !== undefined ? r[i] : ""; });
+  const preview = records.map((fields) => {
     const draft = toProviderDraft(fields);
     const incomingPhone = normPhone(draft.phone);
     const incomingName = normName(draft.name);

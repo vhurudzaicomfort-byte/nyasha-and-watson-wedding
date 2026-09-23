@@ -4,8 +4,6 @@
   /* ---------------- CONFIG ---------------- */
   var RSVP_PHONE = "263772692738"; // international format, no "+" — WhatsApp, SMS and call
   var RSVP_EMAIL = ""; // set the couple's email address here to enable the "Email" RSVP option
-  var cardWhatsappLink = document.getElementById("cardWhatsappLink");
-  if (cardWhatsappLink) cardWhatsappLink.href = "https://wa.me/" + RSVP_PHONE + "?text=" + encodeURIComponent("Hello Nyasha & Watson, I have a question about your wedding:");
   var WEDDING_DATE_ISO = "2026-12-05T09:00:00+02:00"; // Harare (CAT, UTC+2) — ceremony at 9:00 AM
   var WEDDING_DAY_LOCAL = "2026-12-05";
   var VENUE_NAME = "Colne Valley Nature Reserve Park";

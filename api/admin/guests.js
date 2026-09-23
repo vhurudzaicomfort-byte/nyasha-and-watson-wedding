@@ -54,7 +54,7 @@ async function handleRequestAction(body, res) {
         lastName: reqRec.lastName || "",
         phone: reqRec.phone || "",
         email: "",
-        invitationType: party > 1 ? "group" : "individual",
+        invitationType: party > 2 ? "family" : party === 2 ? "couple" : "individual",
         familyName: "",
         invitedFor: Fields.normCategory(body.invitedFor),
         gender: reqRec.gender || "",
@@ -96,6 +96,7 @@ module.exports = async function handler(req, res) {
       var norm = Fields.normCategory(g.invitedFor);
       if (norm !== (g.invitedFor || "")) { g.invitedFor = norm; migrated = true; }
       if ("ageGroup" in g) { delete g.ageGroup; migrated = true; }
+      if (g.invitationType === "group") { g.invitationType = "family"; migrated = true; }
     });
     data.requests.forEach(function (r) { if ("ageGroup" in r) { delete r.ageGroup; migrated = true; } });
     if (migrated) await writeData(data);
@@ -114,7 +115,7 @@ module.exports = async function handler(req, res) {
       lastName: String(body.lastName || "").trim(),
       phone: String(body.phone || "").trim(),
       email: String(body.email || "").trim(),
-      invitationType: body.invitationType || "individual",
+      invitationType: Fields.normInvitationType(body.invitationType),
       familyName: String(body.familyName || "").trim(),
       invitedFor: Fields.normCategory(body.invitedFor),
       gender: Fields.normGender(body.gender),
@@ -149,6 +150,7 @@ module.exports = async function handler(req, res) {
     var patch = Object.assign({}, req.body || {});
     if ("gender" in patch) patch.gender = Fields.normGender(patch.gender);
     if ("invitedFor" in patch) patch.invitedFor = Fields.normCategory(patch.invitedFor);
+    if ("invitationType" in patch) patch.invitationType = Fields.normInvitationType(patch.invitationType);
     if (patch.checkedIn === true && !patch.checkInMethod) patch.checkInMethod = "usher";
     if (patch.checkedIn === false) patch.checkInMethod = "";
     var allowed = ["firstName", "lastName", "phone", "email", "invitationType", "familyName", "invitedFor", "gender",

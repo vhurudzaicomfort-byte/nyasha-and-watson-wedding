@@ -1,36 +1,9 @@
 const { requireAuth } = require("../../lib/auth");
 const { readData, writeData, newId } = require("../../lib/blob-store");
 const Fields = require("../../assets/js/guest-fields.js");
+const { readRows } = require("../../lib/import-helpers");
 
 const COLUMNS = ["FirstName", "LastName", "Phone", "Email", "InvitationType", "FamilyName", "InvitedFor", "Gender", "InvitedCount", "PlusOneAllowed", "RSVPStatus", "Notes"];
-
-// Minimal RFC4180-ish CSV parser: handles quoted fields, escaped quotes, commas/newlines inside quotes.
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let field = "";
-  let inQuotes = false;
-  const s = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (s[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
-      } else { field += c; }
-    } else if (c === '"') {
-      inQuotes = true;
-    } else if (c === ",") {
-      row.push(field); field = "";
-    } else if (c === "\n") {
-      row.push(field); field = "";
-      rows.push(row); row = [];
-    } else {
-      field += c;
-    }
-  }
-  if (field.length || row.length) { row.push(field); rows.push(row); }
-  return rows.filter((r) => r.some((c) => c.trim() !== ""));
-}
 
 // Accept the Excel template's friendly headers ("First Name *", "Number Invited"…) as
 // well as the original CSV ones, matched case- and punctuation-insensitively.
@@ -47,11 +20,6 @@ const HEADER_ALIASES = {
   rsvpstatus: "RSVPStatus", rsvp: "RSVPStatus",
   notes: "Notes", note: "Notes", comments: "Notes",
 };
-function canonicalHeader(h) {
-  const key = String(h || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-  return HEADER_ALIASES[key] || String(h || "").trim();
-}
-const INVITATION_TYPES = ["individual", "couple", "family", "group"];
 
 function normPhone(s) { return String(s || "").replace(/[^\d]/g, ""); }
 function normName(s) { return String(s || "").trim().toLowerCase().replace(/\s+/g, " "); }
@@ -62,7 +30,7 @@ function toGuestDraft(rowObj) {
     lastName: (rowObj.LastName || "").trim(),
     phone: (rowObj.Phone || "").trim(),
     email: (rowObj.Email || "").trim(),
-    invitationType: (function (t) { t = String(t || "").trim().toLowerCase(); return INVITATION_TYPES.indexOf(t) !== -1 ? t : "individual"; })(rowObj.InvitationType),
+    invitationType: Fields.normInvitationType(rowObj.InvitationType),
     familyName: (rowObj.FamilyName || "").trim(),
     invitedFor: Fields.normCategory(rowObj.InvitedFor),
     gender: Fields.normGender(rowObj.Gender),
@@ -117,15 +85,10 @@ module.exports = async function handler(req, res) {
   // preview mode
   const csvText = String(body.csv || "");
   if (!csvText.trim()) { res.status(400).json({ error: "No CSV content provided" }); return; }
-  const rows = parseCsv(csvText);
-  if (!rows.length) { res.status(400).json({ error: "CSV appears to be empty" }); return; }
+  const { header, records } = readRows(csvText, HEADER_ALIASES);
+  if (!header.length) { res.status(400).json({ error: "The file appears to be empty" }); return; }
 
-  const header = rows[0].map(canonicalHeader);
-  const dataRows = rows.slice(1);
-
-  const preview = dataRows.map((r) => {
-    const fields = {};
-    header.forEach((h, i) => { fields[h] = r[i] !== undefined ? r[i] : ""; });
+  const preview = records.map((fields) => {
     const draft = toGuestDraft(fields);
     const incomingPhone = normPhone(draft.phone);
     const incomingName = normName(draft.firstName + " " + draft.lastName);

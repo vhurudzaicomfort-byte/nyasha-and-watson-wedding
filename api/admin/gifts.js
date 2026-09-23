@@ -1,57 +1,47 @@
 const { requireAuth } = require("../../lib/auth");
 const { readData, writeData, newId } = require("../../lib/blob-store");
 
-const CURRENCIES = ["USD", "ZWG", "ZAR", "GBP", "EUR"];
-const PAYMENT_METHODS = ["EcoCash", "InnBucks", "Bank Transfer", "Cash", "World Remit", "Mukuru", "Western Union", "Other"];
-const IMPORT_COLUMNS = ["Type", "Giver", "GiverPhone", "Date", "Amount", "Currency", "PaymentMethod", "Description", "EstimatedValue", "EstimatedCurrency", "Notes"];
+const L = require("../../assets/js/guest-fields.js");
+const { readRows, parseMoney, normDate } = require("../../lib/import-helpers");
 
-// Minimal RFC4180-ish CSV parser: handles quoted fields, escaped quotes, commas/newlines inside quotes.
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let field = "";
-  let inQuotes = false;
-  const s = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (s[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
-      } else { field += c; }
-    } else if (c === '"') {
-      inQuotes = true;
-    } else if (c === ",") {
-      row.push(field); field = "";
-    } else if (c === "\n") {
-      row.push(field); field = "";
-      rows.push(row); row = [];
-    } else {
-      field += c;
-    }
-  }
-  if (field.length || row.length) { row.push(field); rows.push(row); }
-  return rows.filter((r) => r.some((c) => c.trim() !== ""));
-}
+const CURRENCIES = L.CURRENCIES;
+const PAYMENT_METHODS = L.PAYMENT_METHODS;
+const IMPORT_COLUMNS = ["Type", "Giver", "GiverPhone", "Date", "Amount", "Currency", "PaymentMethod", "Description", "EstimatedValue", "EstimatedCurrency", "Notes"];
+// Excel template headers ("Giver *", "Payment Method") and older CSV ones both map here.
+const HEADER_ALIASES = {
+  type: "Type", gifttype: "Type",
+  giver: "Giver", from: "Giver", name: "Giver", givername: "Giver",
+  giverphone: "GiverPhone", phone: "GiverPhone",
+  date: "Date", datereceived: "Date",
+  amount: "Amount", cashamount: "Amount",
+  currency: "Currency",
+  paymentmethod: "PaymentMethod", method: "PaymentMethod",
+  description: "Description", item: "Description",
+  estimatedvalue: "EstimatedValue", value: "EstimatedValue",
+  estimatedcurrency: "EstimatedCurrency", valuecurrency: "EstimatedCurrency",
+  notes: "Notes", note: "Notes",
+};
 
 function normName(s) { return String(s || "").trim().toLowerCase().replace(/\s+/g, " "); }
 
 function toGiftDraft(rowObj) {
-  const type = /^kind$/i.test(String(rowObj.Type || "").trim()) ? "kind" : "cash";
+  // a row with a description but no amount is an in-kind gift even if Type was left blank
+  const type = rowObj.Type ? L.normGiftType(rowObj.Type) : (String(rowObj.Description || "").trim() && parseMoney(rowObj.Amount) == null ? "kind" : "cash");
   const draft = {
     type,
-    giver: (rowObj.Giver || "").trim(),
-    giverPhone: (rowObj.GiverPhone || "").trim(),
-    date: (rowObj.Date || "").trim() || new Date().toISOString().slice(0, 10),
-    notes: (rowObj.Notes || "").trim(),
+    giver: String(rowObj.Giver || "").trim(),
+    giverPhone: String(rowObj.GiverPhone || "").trim(),
+    date: normDate(rowObj.Date) || new Date().toISOString().slice(0, 10),
+    notes: String(rowObj.Notes || "").trim(),
   };
   if (type === "cash") {
-    draft.amount = Number(rowObj.Amount) || 0;
-    draft.currency = (rowObj.Currency || "USD").trim().toUpperCase();
-    draft.paymentMethod = (rowObj.PaymentMethod || "Cash").trim();
+    draft.amount = parseMoney(rowObj.Amount) || 0;
+    draft.currency = L.normCurrency(rowObj.Currency);
+    draft.paymentMethod = L.normPaymentMethod(rowObj.PaymentMethod);
   } else {
-    draft.description = (rowObj.Description || "").trim();
-    draft.estimatedValue = rowObj.EstimatedValue ? Number(rowObj.EstimatedValue) : null;
-    draft.estimatedCurrency = (rowObj.EstimatedCurrency || "USD").trim().toUpperCase();
+    draft.description = String(rowObj.Description || "").trim();
+    draft.estimatedValue = parseMoney(rowObj.EstimatedValue);
+    draft.estimatedCurrency = L.normCurrency(rowObj.EstimatedCurrency);
   }
   return draft;
 }
@@ -78,15 +68,10 @@ async function handleImport(req, res) {
   // preview mode
   const csvText = String(body.csv || "");
   if (!csvText.trim()) { res.status(400).json({ error: "No CSV content provided" }); return; }
-  const rows = parseCsv(csvText);
-  if (!rows.length) { res.status(400).json({ error: "CSV appears to be empty" }); return; }
+  const { header, records } = readRows(csvText, HEADER_ALIASES);
+  if (!header.length) { res.status(400).json({ error: "The file appears to be empty" }); return; }
 
-  const header = rows[0].map((h) => h.trim());
-  const dataRows = rows.slice(1);
-
-  const preview = dataRows.map((r) => {
-    const fields = {};
-    header.forEach((h, i) => { fields[h] = r[i] !== undefined ? r[i] : ""; });
+  const preview = records.map((fields) => {
     const draft = toGiftDraft(fields);
     const incomingKey = normName(draft.giver) + "|" + draft.date + "|" + (draft.type === "cash" ? draft.amount + draft.currency : normName(draft.description));
     const duplicate = data.gifts.find((g) => {

@@ -1,3 +1,1 @@
-Type,Giver,GiverPhone,Date,Amount,Currency,PaymentMethod,Description,EstimatedValue,EstimatedCurrency,Notes
-Cash,The Moyo Family,+263771234567,2026-01-15,150,USD,EcoCash,,,,Example row — cash gift
-Kind,Aunt Grace,,2026-01-16,,,,Kitchen hamper,80,USD,Example row — gift in kind
+Type,Giver,Giver Phone,Date,Amount,Currency,Payment Method,Description,Estimated Value,Estimated Currency,Notes

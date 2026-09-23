@@ -1,6 +1,9 @@
 const { requireAuth } = require("../../lib/auth");
 const { readData } = require("../../lib/blob-store");
 const { buildReportPdf } = require("../../lib/pdf-report");
+const { buildTemplate, buildReport: buildReportXlsx } = require("../../lib/xlsx");
+const { TEMPLATES } = require("../../lib/import-templates");
+const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const WNPhone = require("../../assets/js/countries.js");
 const Fields = require("../../assets/js/guest-fields.js");
 
@@ -18,6 +21,7 @@ function toCsv(rows) {
     }).join(",");
   }).join("\r\n");
 }
+function cap(s) { s = String(s || "").replace("_", " "); return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
 function fullName(g) { return ((g.firstName || "") + " " + (g.lastName || "")).trim() || "(unnamed guest)"; }
 function money(n) { return (Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
@@ -63,13 +67,13 @@ function buildReport(type, data) {
   if (type === "rsvp") {
     columns = ["Name", "Phone", "Invited For", "Gender", "RSVP Status", "Invited", "Attending", "Plus-one", "Responded Via", "Responded At"];
     weights = [1.7, 1.3, 1.2, 0.8, 1, 0.7, 0.8, 0.7, 1, 1.1];
-    rows = guests.map(function (g) { return [fullName(g), phone(g.phone), g.invitedFor || "", Fields.genderLabel(g.gender), (g.rsvpStatus || "pending").replace("_", " "), g.invitedCount || 1, g.attendingCount || 0, g.plusOneAllowed ? "Yes" : "No", channelLabel(g), g.rsvpAt ? g.rsvpAt.slice(0, 10) : ""]; });
+    rows = guests.map(function (g) { return [fullName(g), phone(g.phone), g.invitedFor || "", Fields.genderLabel(g.gender), cap(g.rsvpStatus || "pending"), g.invitedCount || 1, g.attendingCount || 0, g.plusOneAllowed ? "Yes" : "No", channelLabel(g), g.rsvpAt ? g.rsvpAt.slice(0, 10) : ""]; });
     filename = "RSVP-Report"; title = "RSVP Report";
   } else if (type === "checkin") {
     columns = ["Guest", "RSVP", "Party", "Checked In", "Method", "Check-in Time"];
     weights = [2, 1, 0.7, 0.9, 1.4, 1.4];
     rows = guests.map(function (g) {
-      return [fullName(g), (g.rsvpStatus || "pending").replace("_", " "), g.attendingCount || g.invitedCount || 1, g.checkedIn ? "Yes" : "No", methodLabel(g), g.checkInTime ? new Date(g.checkInTime).toLocaleString("en-GB", { timeZone: "Africa/Harare" }) : ""];
+      return [fullName(g), cap(g.rsvpStatus || "pending"), g.attendingCount || g.invitedCount || 1, g.checkedIn ? "Yes" : "No", methodLabel(g), g.checkInTime ? new Date(g.checkInTime).toLocaleString("en-GB", { timeZone: "Africa/Harare" }) : ""];
     });
     filename = "Checkin-Report"; title = "Check-in Report";
   } else if (type === "attending") {
@@ -84,7 +88,7 @@ function buildReport(type, data) {
     columns = ["Name", "Phone", "Email", "Type", "Family", "Invited For", "Gender", "Invited", "RSVP", "Attending", "Checked In", "Notes"];
     weights = [1.5, 1.2, 1.4, 0.7, 1.1, 1.1, 0.7, 0.6, 0.9, 0.7, 0.7, 1.4];
     rows = guests.map(function (g) {
-      return [fullName(g), phone(g.phone), g.email || "", g.invitationType || "", g.familyName || "", g.invitedFor || "", Fields.genderLabel(g.gender), g.invitedCount || 1, (g.rsvpStatus || "pending").replace("_", " "), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
+      return [fullName(g), phone(g.phone), g.email || "", cap(g.invitationType), g.familyName || "", g.invitedFor || "", Fields.genderLabel(g.gender), g.invitedCount || 1, cap(g.rsvpStatus || "pending"), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
     });
     filename = "Invited-Guests"; title = "All Invited Guests";
   } else if (type === "requests") {
@@ -94,7 +98,7 @@ function buildReport(type, data) {
     weights = [1.5, 1.2, 1, 0.6, 1.8, 0.8, 1, 1, 1, 1.4];
     rows = (data.requests || []).slice().sort(function (a, b) { return (b.createdAt || "").localeCompare(a.createdAt || ""); }).map(function (r) {
       var linked = r.guestId && byId[r.guestId] ? fullName(byId[r.guestId]) : "";
-      return [((r.firstName || "") + " " + (r.lastName || "")).trim(), phone(r.phone), (r.attend || "").replace("_", " "), r.attend === "attending" ? (r.guests || 1) : "", r.message || "", CHANNELS[r.channel] || "", (r.createdAt || "").slice(0, 10), REQ_STATUS[r.status] || r.status, (r.decidedAt || "").slice(0, 10), linked];
+      return [((r.firstName || "") + " " + (r.lastName || "")).trim(), phone(r.phone), cap(r.attend), r.attend === "attending" ? (r.guests || 1) : "", r.message || "", CHANNELS[r.channel] || "", (r.createdAt || "").slice(0, 10), REQ_STATUS[r.status] || r.status, (r.decidedAt || "").slice(0, 10), linked];
     });
     filename = "RSVP-Approval-Requests"; title = "RSVP Approval Requests";
   } else if (type === "gifts") {
@@ -115,6 +119,10 @@ function buildReport(type, data) {
       return [p.name || "", p.category || "", (phone(p.phone) || p.email || ""), money(p.agreedFee), p.currency || "", money(comp.amountPaid), money(comp.outstanding), comp.status, p.paymentDeadline || ""];
     });
     filename = "Service-Providers-Report"; title = "Service Provider Payments";
+    var owed = {};
+    providers.forEach(function (p) { var cur = (p.currency || "USD").toUpperCase(); owed[cur] = (owed[cur] || 0) + computeProviderStatus(p).outstanding; });
+    var owedLine = Object.keys(owed).map(function (c) { return c + " " + money(owed[c]); }).join("  ·  ");
+    return { columns: columns, rows: rows, filename: filename, title: title, weights: weights, subtitle: providers.length ? "Outstanding: " + (owedLine || "nothing") : "" };
   } else {
     return null;
   }
@@ -125,9 +133,29 @@ module.exports = async function handler(req, res) {
   if (!requireAuth(req, res)) return;
   var type = req.query.type || "rsvp";
   var format = (req.query.format || "csv").toLowerCase();
+
+  // Excel import templates: ?type=template&for=guests|gifts|providers
+  if (type === "template") {
+    var spec = TEMPLATES[req.query.for];
+    if (!spec) { res.status(400).json({ error: "Unknown template" }); return; }
+    var tpl = await buildTemplate(spec);
+    res.setHeader("Content-Type", XLSX_TYPE);
+    res.setHeader("Content-Disposition", 'attachment; filename="' + spec.file + '"');
+    res.status(200).send(tpl);
+    return;
+  }
+
   var data = await readData();
   var report = buildReport(type, data);
   if (!report) { res.status(400).json({ error: "Unknown report type" }); return; }
+
+  if (format === "xlsx") {
+    var xbuf = await buildReportXlsx({ title: report.title, subtitle: report.subtitle, columns: report.columns, rows: report.rows, sheet: report.title.slice(0, 31) });
+    res.setHeader("Content-Type", XLSX_TYPE);
+    res.setHeader("Content-Disposition", 'attachment; filename="' + report.filename + '.xlsx"');
+    res.status(200).send(xbuf);
+    return;
+  }
 
   if (format === "pdf") {
     try {

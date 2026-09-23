@@ -814,7 +814,12 @@
     document.getElementById("providerModalTitle").textContent = p ? "Edit " + p.name : "Add Service Provider";
     populateSelect(document.getElementById("prov-currency"), currencies, p ? p.currency : "USD");
     document.getElementById("prov-name").value = p ? p.name : "";
-    document.getElementById("prov-category").value = p ? p.category : "";
+    // shared category list; a custom category saved earlier stays selectable
+    var cat = p ? (p.category || "") : "";
+    var cats = FG.PROVIDER_CATEGORIES.slice();
+    if (cat && cats.indexOf(cat) === -1) cats.unshift(cat);
+    document.getElementById("prov-category").innerHTML = '<option value="">Choose a category…</option>' + cats.map(function (c) { return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + "</option>"; }).join("");
+    document.getElementById("prov-category").value = cat;
     WNPhone.populatePhoneWidget(document.getElementById("prov-phone-cc"), document.getElementById("prov-phone"), p ? (p.phone || "") : "");
     document.getElementById("prov-email").value = p ? p.email : "";
     document.getElementById("prov-fee").value = p ? p.agreedFee : "";
@@ -873,7 +878,7 @@
   document.getElementById("providerModalSave").addEventListener("click", function () {
     var body = {
       name: document.getElementById("prov-name").value.trim(),
-      category: document.getElementById("prov-category").value.trim(),
+      category: document.getElementById("prov-category").value,
       phone: WNPhone.readPhoneWidget(document.getElementById("prov-phone-cc"), document.getElementById("prov-phone")),
       email: document.getElementById("prov-email").value.trim(),
       agreedFee: document.getElementById("prov-fee").value,
@@ -932,7 +937,7 @@
     return Promise.all([loadXlsx(), file.arrayBuffer()]).then(function (res) {
       var XLSX = res[0];
       var wb = XLSX.read(res[1], { type: "array" });
-      var sheetName = wb.SheetNames.find(function (n) { return /^guests?$/i.test(n.trim()); }) || wb.SheetNames[0];
+      var sheetName = wb.SheetNames.find(function (n) { return /^(guests?|gifts?|providers?)$/i.test(n.trim()); }) || wb.SheetNames.find(function (n) { return !/^(instructions|lists)$/i.test(n.trim()); }) || wb.SheetNames[0];
       var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, raw: false, defval: "", blankrows: false });
       var filled = function (r) { return r.filter(function (c) { return String(c).trim() !== ""; }).length; };
       var start = rows.findIndex(function (r) { return filled(r) >= 3; });
