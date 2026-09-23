@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="/assets/js/qrcode.min.js"></script>
+<script src="/assets/js/countries.js"></script>
 <script src="/assets/js/jsQR.min.js"></script>
 <style>
   :root{
@@ -132,6 +133,9 @@
   .field textarea{ min-height:70px; resize:vertical; }
   .field.checkline{ display:flex; align-items:center; gap:8px; margin-top:4px; }
   .field.checkline input{ width:auto; flex:none; }
+  .phone-row{ display:flex; gap:8px; }
+  .phone-row select{ flex:none; width:150px; border:1px solid var(--border); background:var(--ivory); padding:10px 8px; font-size:.78rem; border-radius:6px; font-family:inherit; color:var(--text); }
+  .phone-row input{ flex:1; min-width:0; }
   .field.checkline label{ margin:0; text-transform:none; letter-spacing:0; font-size:.82rem; color:var(--text); }
   .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
 
@@ -211,13 +215,14 @@
           <div><h2>Invites &amp; RSVPs</h2><p>Add every invitation — one by one or by CSV — and track each guest's RSVP as it comes in.</p></div>
           <div class="btn-row">
             <button class="btn btn-outline" id="importGuestsBtn">Import CSV</button>
-            <a class="btn btn-outline" href="/api/admin/export?type=guests&format=csv">Export CSV</a>
+            <a class="btn btn-outline" href="/api/admin/export?type=invited&format=csv">Export CSV</a>
             <button class="btn btn-primary" id="addGuestBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Invite</button>
           </div>
         </div>
         <div class="toolbar">
           <input type="search" id="guestSearch" placeholder="Search by name, phone or family…">
           <select id="filterRsvp"><option value="">All RSVP statuses</option><option value="pending">Pending</option><option value="attending">Attending</option><option value="maybe">Maybe</option><option value="not_attending">Not Attending</option></select>
+          <select id="filterInvitedFor"><option value="">All (invited for)</option></select>
           <select id="filterCheckin"><option value="">Check-in: all</option><option value="yes">Checked in</option><option value="no">Not checked in</option></select>
         </div>
         <div class="table-wrap">
@@ -298,7 +303,8 @@
           <h3>Guests</h3>
           <div class="report-grid">
             <div class="report-row"><span>RSVP Report</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=rsvp&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=rsvp&format=pdf">PDF</a></div>
-            <div class="report-row"><span>Full Guest List</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=guests&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=guests&format=pdf">PDF</a></div>
+            <div class="report-row"><span>Attending Guest List <span style="color:var(--text-muted); font-size:.72rem;">(confirmed only)</span></span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=attending&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=attending&format=pdf">PDF</a></div>
+            <div class="report-row"><span>All Invited Guests</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=invited&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=invited&format=pdf">PDF</a></div>
             <div class="report-row"><span>Check-in Report</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=checkin&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=checkin&format=pdf">PDF</a></div>
           </div>
         </div>
@@ -323,10 +329,11 @@
     <div class="form-grid">
       <div class="field"><label for="f-first">First name</label><input id="f-first" type="text"></div>
       <div class="field"><label for="f-last">Last name</label><input id="f-last" type="text"></div>
-      <div class="field"><label for="f-phone">Phone</label><input id="f-phone" type="tel"></div>
+      <div class="field"><label for="f-phone">Phone</label><div class="phone-row"><select id="f-phone-cc" aria-label="Country code"></select><input id="f-phone" type="tel"></div></div>
       <div class="field"><label for="f-email">Email</label><input id="f-email" type="email"></div>
       <div class="field"><label for="f-type">Invitation type</label><select id="f-type"><option value="individual">Individual</option><option value="couple">Couple</option><option value="family">Family</option><option value="group">Group</option></select></div>
       <div class="field"><label for="f-family">Family / group name</label><input id="f-family" type="text" placeholder="e.g. The Vhurudzai Family"></div>
+      <div class="field"><label for="f-invitedfor">Invited for</label><select id="f-invitedfor"><option value="">—</option></select></div>
       <div class="field"><label for="f-invited">Number invited</label><input id="f-invited" type="number" min="1" value="1"></div>
       <div class="field"><label for="f-rsvp">RSVP status</label><select id="f-rsvp"><option value="pending">Pending</option><option value="attending">Attending</option><option value="maybe">Maybe</option><option value="not_attending">Not Attending</option></select></div>
       <div class="field"><label for="f-attending">Attending count</label><input id="f-attending" type="number" min="0" value="0"></div>
@@ -453,8 +460,9 @@
       <label class="pill-choice"><input type="radio" name="gift-type" value="kind"><span>Gift in Kind</span></label>
     </div>
     <div class="form-grid" style="margin-top:16px;">
-      <div class="field full"><label for="gift-giver">Gift giver</label><input id="gift-giver" type="text" placeholder="e.g. The Moyo Family"></div>
+      <div class="field full"><label for="gift-giver">Gift giver</label><input id="gift-giver" type="text" list="giftGiverGuestList" placeholder="e.g. The Moyo Family, or start typing a guest's name"><datalist id="giftGiverGuestList"></datalist></div>
       <div class="field"><label for="gift-date">Date</label><input id="gift-date" type="date"></div>
+      <div class="field"><label for="gift-phone">Giver phone <span style="text-transform:none;letter-spacing:0;">(optional)</span></label><div class="phone-row"><select id="gift-phone-cc" aria-label="Country code"></select><input id="gift-phone" type="tel"></div></div>
       <div id="giftCashFields" class="form-grid full" style="grid-template-columns:1fr 1fr;">
         <div class="field"><label for="gift-amount">Amount</label><input id="gift-amount" type="number" min="0" step="0.01"></div>
         <div class="field"><label for="gift-currency">Currency</label><select id="gift-currency"></select></div>
@@ -484,7 +492,7 @@
     <div class="form-grid">
       <div class="field"><label for="prov-name">Provider name</label><input id="prov-name" type="text" placeholder="e.g. Blush &amp; Bloom Florist"></div>
       <div class="field"><label for="prov-category">Category</label><input id="prov-category" type="text" placeholder="e.g. Florist, Caterer, Photographer"></div>
-      <div class="field"><label for="prov-phone">Phone</label><input id="prov-phone" type="tel"></div>
+      <div class="field"><label for="prov-phone">Phone</label><div class="phone-row"><select id="prov-phone-cc" aria-label="Country code"></select><input id="prov-phone" type="tel"></div></div>
       <div class="field"><label for="prov-email">Email</label><input id="prov-email" type="email"></div>
       <div class="field"><label for="prov-fee">Agreed fee</label><input id="prov-fee" type="number" min="0" step="0.01"></div>
       <div class="field"><label for="prov-currency">Currency</label><select id="prov-currency"></select></div>

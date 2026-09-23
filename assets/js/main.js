@@ -81,6 +81,55 @@
         hint.textContent = "Welcome, " + (info.firstName || "friend") + " — your invitation includes " + maxGuestsAllowed + (maxGuestsAllowed > 1 ? " guests." : " guest.");
       }
     }).catch(function () {});
+
+    /* ---------------- SELF CHECK-IN ---------------- */
+    // Manual "I've arrived" button always available once RSVP'd as attending;
+    // additionally, if the browser grants location and the guest is genuinely
+    // near the venue, we check them in automatically without them lifting a
+    // finger — but we never nag for permission or block anything if denied.
+    var checkinBanner = document.getElementById("checkinBanner");
+    function renderCheckinBanner(status) {
+      if (!checkinBanner || !status || status.rsvpStatus !== "attending") { if (checkinBanner) checkinBanner.hidden = true; return; }
+      checkinBanner.hidden = false;
+      if (status.checkedIn) {
+        checkinBanner.classList.add("done");
+        checkinBanner.innerHTML = "&#10003;&nbsp; You're checked in — see you at the celebration!";
+      } else {
+        checkinBanner.classList.remove("done");
+        checkinBanner.innerHTML = "Arrived at the venue? &nbsp;";
+        var btn = document.createElement("button");
+        btn.type = "button"; btn.className = "btn btn-outline"; btn.textContent = "I've Arrived";
+        btn.addEventListener("click", function () { submitCheckin("manual", null); });
+        checkinBanner.appendChild(btn);
+      }
+    }
+    function fetchCheckinStatus() {
+      fetch("/api/checkin?token=" + encodeURIComponent(guestToken)).then(function (r) { return r.json(); }).then(function (status) {
+        if (!status || !status.found) return;
+        renderCheckinBanner(status);
+        // Only ever attempt the silent geolocation auto-checkin on the wedding
+        // day itself — otherwise a guest merely previewing their invitation
+        // from home (which may be near the venue's own neighbourhood) could
+        // get checked in by mistake weeks early.
+        var isWeddingDay = new Date().toDateString() === new Date(WEDDING_DATE_ISO).toDateString();
+        if (isWeddingDay && status.rsvpStatus === "attending" && !status.checkedIn && navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function (pos) {
+            submitCheckin("auto", pos.coords);
+          }, function () { /* permission denied or unavailable — manual button stays available */ }, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 });
+        }
+      }).catch(function () {});
+    }
+    function submitCheckin(mode, coords) {
+      var body = { token: guestToken, mode: mode };
+      if (coords) { body.lat = coords.latitude; body.lng = coords.longitude; }
+      fetch("/api/checkin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (res && res.ok && !res.alreadyCheckedIn) { showToast(mode === "auto" ? "Welcome! You've been checked in automatically." : "You're checked in!"); }
+          if (res && res.ok) fetchCheckinStatus();
+        }).catch(function () {});
+    }
+    fetchCheckinStatus();
   }
 
   /* ---------------- PROGRAMME RENDER ---------------- */
@@ -137,11 +186,13 @@
     state.step = n;
   }
 
+  if (window.WNPhone) WNPhone.populatePhoneWidget(document.getElementById("g-phone-cc"), document.getElementById("g-phone"), "");
+
   document.getElementById("toStep1").addEventListener("click", function () {
     var name = document.getElementById("g-name").value.trim();
     if (!name) { document.getElementById("g-name").focus(); return; }
     state.name = name;
-    state.phone = document.getElementById("g-phone").value.trim();
+    state.phone = window.WNPhone ? WNPhone.readPhoneWidget(document.getElementById("g-phone-cc"), document.getElementById("g-phone")) : document.getElementById("g-phone").value.trim();
     showStep(1);
   });
   document.getElementById("back1").addEventListener("click", function () { showStep(0); });

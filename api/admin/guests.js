@@ -1,12 +1,14 @@
 const { requireAuth } = require("../../lib/auth");
 const { readData, writeData, newId } = require("../../lib/blob-store");
 
+const CATEGORIES = ["Bride's Side", "Groom's Side", "ZAOGA Church", "Roman Catholic Church", "Mutual Friends", "Service Providers"];
+
 module.exports = async function handler(req, res) {
   if (!requireAuth(req, res)) return;
 
   if (req.method === "GET") {
     var data = await readData();
-    res.status(200).json({ guests: data.guests });
+    res.status(200).json({ guests: data.guests, categories: CATEGORIES });
     return;
   }
 
@@ -21,6 +23,7 @@ module.exports = async function handler(req, res) {
       email: String(body.email || "").trim(),
       invitationType: body.invitationType || "individual",
       familyName: String(body.familyName || "").trim(),
+      invitedFor: String(body.invitedFor || "").trim(),
       invitedCount: Number(body.invitedCount) || 1,
       plusOneAllowed: !!body.plusOneAllowed,
       rsvpStatus: body.rsvpStatus || "pending",
@@ -48,7 +51,7 @@ module.exports = async function handler(req, res) {
     var idx = data3.guests.findIndex(function (g) { return g.id === id; });
     if (idx === -1) { res.status(404).json({ error: "Guest not found" }); return; }
     var patch = req.body || {};
-    var allowed = ["firstName", "lastName", "phone", "email", "invitationType", "familyName",
+    var allowed = ["firstName", "lastName", "phone", "email", "invitationType", "familyName", "invitedFor",
       "invitedCount", "plusOneAllowed", "rsvpStatus", "attendingCount", "notes",
       "checkedIn", "checkInTime", "rsvpAt"];
     allowed.forEach(function (k) {

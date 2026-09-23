@@ -3,7 +3,7 @@ const { readData, writeData, newId } = require("../../lib/blob-store");
 
 const CURRENCIES = ["USD", "ZWG", "ZAR", "GBP", "EUR"];
 const PAYMENT_METHODS = ["EcoCash", "InnBucks", "Bank Transfer", "Cash", "World Remit", "Mukuru", "Western Union", "Other"];
-const IMPORT_COLUMNS = ["Type", "Giver", "Date", "Amount", "Currency", "PaymentMethod", "Description", "EstimatedValue", "EstimatedCurrency", "Notes"];
+const IMPORT_COLUMNS = ["Type", "Giver", "GiverPhone", "Date", "Amount", "Currency", "PaymentMethod", "Description", "EstimatedValue", "EstimatedCurrency", "Notes"];
 
 // Minimal RFC4180-ish CSV parser: handles quoted fields, escaped quotes, commas/newlines inside quotes.
 function parseCsv(text) {
@@ -40,6 +40,7 @@ function toGiftDraft(rowObj) {
   const draft = {
     type,
     giver: (rowObj.Giver || "").trim(),
+    giverPhone: (rowObj.GiverPhone || "").trim(),
     date: (rowObj.Date || "").trim() || new Date().toISOString().slice(0, 10),
     notes: (rowObj.Notes || "").trim(),
   };
@@ -132,6 +133,7 @@ module.exports = async function handler(req, res) {
       id: newId("gift"),
       type,
       giver: String(body.giver || "").trim(),
+      giverPhone: String(body.giverPhone || "").trim(),
       date: body.date || new Date().toISOString().slice(0, 10),
       notes: String(body.notes || "").trim(),
       createdAt: new Date().toISOString(),
@@ -160,7 +162,7 @@ module.exports = async function handler(req, res) {
     const idx = data.gifts.findIndex((g) => g.id === id);
     if (idx === -1) { res.status(404).json({ error: "Gift not found" }); return; }
     const patch = req.body || {};
-    const allowed = ["giver", "date", "notes", "amount", "currency", "paymentMethod", "description", "estimatedValue", "estimatedCurrency"];
+    const allowed = ["giver", "giverPhone", "date", "notes", "amount", "currency", "paymentMethod", "description", "estimatedValue", "estimatedCurrency"];
     allowed.forEach((k) => { if (Object.prototype.hasOwnProperty.call(patch, k)) data.gifts[idx][k] = patch[k]; });
     await writeData(data);
     res.status(200).json({ gift: data.gifts[idx] });

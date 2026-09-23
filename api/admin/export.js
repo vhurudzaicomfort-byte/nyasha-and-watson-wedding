@@ -53,9 +53,9 @@ function buildReport(type, data) {
   var columns, rows, filename, title, weights;
 
   if (type === "rsvp") {
-    columns = ["Name", "Phone", "Invitation Type", "RSVP Status", "Invited", "Attending", "Plus-one", "Responded At"];
-    weights = [2, 1.4, 1, 1, 0.7, 0.9, 0.8, 1.3];
-    rows = guests.map(function (g) { return [fullName(g), g.phone || "", g.invitationType || "", (g.rsvpStatus || "pending").replace("_", " "), g.invitedCount || 1, g.attendingCount || 0, g.plusOneAllowed ? "Yes" : "No", g.rsvpAt ? g.rsvpAt.slice(0, 10) : ""]; });
+    columns = ["Name", "Phone", "Invitation Type", "Invited For", "RSVP Status", "Invited", "Attending", "Plus-one", "Responded At"];
+    weights = [1.8, 1.3, 1, 1.2, 1, 0.7, 0.9, 0.8, 1.3];
+    rows = guests.map(function (g) { return [fullName(g), g.phone || "", g.invitationType || "", g.invitedFor || "", (g.rsvpStatus || "pending").replace("_", " "), g.invitedCount || 1, g.attendingCount || 0, g.plusOneAllowed ? "Yes" : "No", g.rsvpAt ? g.rsvpAt.slice(0, 10) : ""]; });
     filename = "RSVP-Report"; title = "RSVP Report";
   } else if (type === "checkin") {
     columns = ["Guest", "Checked In", "Check-in Time"];
@@ -64,18 +64,26 @@ function buildReport(type, data) {
       return [fullName(g), g.checkedIn ? "Yes" : "No", g.checkInTime ? new Date(g.checkInTime).toLocaleString() : ""];
     });
     filename = "Checkin-Report"; title = "Check-in Report";
-  } else if (type === "guests") {
-    columns = ["Name", "Phone", "Email", "Type", "Family", "Invited", "RSVP", "Attending", "Checked In", "Notes"];
-    weights = [1.7, 1.2, 1.5, 0.8, 1.3, 0.6, 0.9, 0.8, 0.8, 1.6];
-    rows = guests.map(function (g) {
-      return [fullName(g), g.phone || "", g.email || "", g.invitationType || "", g.familyName || "", g.invitedCount || 1, (g.rsvpStatus || "pending").replace("_", " "), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
+  } else if (type === "attending") {
+    var attendingGuests = guests.filter(function (g) { return g.rsvpStatus === "attending"; });
+    columns = ["Name", "Phone", "Email", "Type", "Family", "Invited For", "Attending", "Checked In", "Notes"];
+    weights = [1.7, 1.3, 1.6, 0.8, 1.3, 1.2, 0.8, 0.8, 1.6];
+    rows = attendingGuests.map(function (g) {
+      return [fullName(g), g.phone || "", g.email || "", g.invitationType || "", g.familyName || "", g.invitedFor || "", g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
     });
-    filename = "Guest-List"; title = "Full Guest List";
+    filename = "Attending-Guest-List"; title = "Attending Guest List";
+  } else if (type === "invited") {
+    columns = ["Name", "Phone", "Email", "Type", "Family", "Invited For", "Invited", "RSVP", "Attending", "Checked In", "Notes"];
+    weights = [1.6, 1.2, 1.5, 0.7, 1.2, 1.1, 0.6, 0.9, 0.8, 0.8, 1.5];
+    rows = guests.map(function (g) {
+      return [fullName(g), g.phone || "", g.email || "", g.invitationType || "", g.familyName || "", g.invitedFor || "", g.invitedCount || 1, (g.rsvpStatus || "pending").replace("_", " "), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
+    });
+    filename = "Invited-Guests"; title = "All Invited Guests";
   } else if (type === "gifts") {
-    columns = ["Type", "Giver", "Date", "Amount", "Currency", "Payment Method", "Description", "Notes"];
-    weights = [0.8, 1.4, 1, 1, 0.8, 1.2, 1.6, 1.4];
+    columns = ["Type", "Giver", "Phone", "Date", "Amount", "Currency", "Payment Method", "Description", "Notes"];
+    weights = [0.8, 1.4, 1.1, 1, 1, 0.8, 1.2, 1.6, 1.4];
     rows = gifts.map(function (g) {
-      return [g.type === "cash" ? "Cash" : "In Kind", g.giver || "", g.date || "", g.type === "cash" ? money(g.amount) : (g.estimatedValue != null ? money(g.estimatedValue) : ""), g.type === "cash" ? (g.currency || "") : (g.estimatedValue != null ? (g.estimatedCurrency || "") : ""), g.type === "cash" ? (g.paymentMethod || "") : "", g.description || "", g.notes || ""];
+      return [g.type === "cash" ? "Cash" : "In Kind", g.giver || "", g.giverPhone || "", g.date || "", g.type === "cash" ? money(g.amount) : (g.estimatedValue != null ? money(g.estimatedValue) : ""), g.type === "cash" ? (g.currency || "") : (g.estimatedValue != null ? (g.estimatedCurrency || "") : ""), g.type === "cash" ? (g.paymentMethod || "") : "", g.description || "", g.notes || ""];
     });
     var totals = computeGiftTotals(gifts);
     filename = "Gifts-Report"; title = "Gift Report";
@@ -105,7 +113,7 @@ module.exports = async function handler(req, res) {
 
   if (format === "pdf") {
     try {
-      var pdfBuffer = await buildReportPdf({ title: report.title, columns: report.columns, rows: report.rows, columnWeights: report.weights, subtitle: report.subtitle });
+      var pdfBuffer = await buildReportPdf({ title: report.title, columns: report.columns, rows: report.rows, columnWeights: report.weights, subtitle: report.subtitle, landscape: report.columns.length > 5 });
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", 'attachment; filename="' + report.filename + '.pdf"');
       res.status(200).send(pdfBuffer);

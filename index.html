@@ -16,9 +16,9 @@
 
 <!-- ================= OPENING COVER ================= -->
 <div id="cover" role="dialog" aria-label="Wedding invitation cover">
-  <img class="corner corner--tr" src="assets/img/floral-corner.png" alt="" aria-hidden="true">
-  <img class="corner corner--bl" src="assets/img/floral-corner.png" alt="" aria-hidden="true">
   <div class="cover-card">
+    <img class="corner corner--tr" src="assets/img/floral-corner.png" alt="" aria-hidden="true">
+    <img class="corner corner--bl" src="assets/img/floral-corner.png" alt="" aria-hidden="true">
     <div class="cover-frame" aria-hidden="true"></div>
     <div class="cover-eyebrow">Together with their families</div>
     <svg class="cover-rings" viewBox="0 0 64 34" aria-hidden="true"><circle cx="24" cy="17" r="14" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="40" cy="17" r="14" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>
@@ -63,6 +63,7 @@
     <h1 class="hero-names"><span class="name-part">Nyasha</span><span class="hero-amp">&amp;</span><span class="name-part">Watson</span></h1>
     <p class="hero-sub">Saturday, 5 December 2026 <span>&nbsp;·&nbsp;</span> Colne Valley Nature Reserve Park, Harare</p>
     <p class="invite-hint" id="inviteHint" hidden></p>
+    <div class="checkin-banner" id="checkinBanner" hidden></div>
 
     <div class="countdown" id="countdown" aria-label="Countdown to the wedding">
       <div class="cd-unit"><div class="cd-num" id="cd-days">–</div><div class="cd-label">Days</div></div>
@@ -174,8 +175,8 @@
 
 <!-- ================= INVITATION CARD ================= -->
 <section id="card" style="background:var(--ivory-deep)">
-  <img class="corner corner--tr" style="opacity:.6" src="assets/img/floral-corner.png" alt="" aria-hidden="true">
   <div class="wrap-narrow save-card-wrap">
+    <img class="corner corner--tr" style="opacity:.6" src="assets/img/floral-corner.png" alt="" aria-hidden="true">
     <div class="head">
       <div class="eyebrow">Keep It Close</div>
       <h2>Your Digital Invitation Card</h2>
@@ -205,8 +206,8 @@
 
 <!-- ================= RSVP ================= -->
 <section id="rsvp">
-  <img class="corner corner--tr" style="opacity:.55" src="assets/img/floral-corner.png" alt="" aria-hidden="true">
   <div class="wrap-narrow">
+    <img class="corner corner--tr" style="opacity:.55" src="assets/img/floral-corner.png" alt="" aria-hidden="true">
     <div class="head">
       <div class="eyebrow">Kindly Respond</div>
       <h2>RSVP</h2>
@@ -226,7 +227,9 @@
           <h3 class="step-title">Let's start with you</h3>
           <p class="step-sub">Tell us who's replying.</p>
           <div class="field"><label for="g-name">Full name</label><input type="text" id="g-name" autocomplete="name" required></div>
-          <div class="field"><label for="g-phone">Phone number <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);">(optional)</span></label><input type="tel" id="g-phone" autocomplete="tel"></div>
+          <div class="field"><label for="g-phone">Phone number <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);">(optional)</span></label>
+            <div class="phone-row"><select id="g-phone-cc" aria-label="Country code"></select><input type="tel" id="g-phone" autocomplete="tel" placeholder="e.g. 771234567"></div>
+          </div>
           <div class="rsvp-nav"><span></span><button class="btn btn-primary" id="toStep1">Continue</button></div>
         </div>
 
@@ -321,6 +324,7 @@
 <div id="qrTemp" style="display:none;"></div>
 
 <script src="assets/js/qrcode.min.js"></script>
+<script src="assets/js/countries.js"></script>
 <script src="assets/js/main.js"></script>
 </body>
 </html>

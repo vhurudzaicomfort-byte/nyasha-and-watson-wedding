@@ -6,6 +6,7 @@
   var providers = [];
   var currencies = ["USD"];
   var paymentMethods = ["Cash"];
+  var categories = [];
 
   var toastTimer;
   function showToast(msg) {
@@ -70,15 +71,22 @@
   /* ---------------- LOAD + RENDER ---------------- */
   function loadAll() {
     return Promise.all([api("/api/admin/guests"), api("/api/admin/gifts"), api("/api/admin/providers")]).then(function (res) {
-      guests = res[0].guests;
+      guests = res[0].guests; categories = res[0].categories || [];
       gifts = res[1].gifts; currencies = res[1].currencies; paymentMethods = res[1].paymentMethods;
       providers = res[2].providers;
       renderAll();
     });
   }
   function renderAll() {
+    populateInvitedForFilter();
     renderDashboard(); renderGuestTable();
     renderGifts(); renderProviders();
+  }
+  function populateInvitedForFilter() {
+    var sel = document.getElementById("filterInvitedFor");
+    var current = sel.value;
+    sel.innerHTML = '<option value="">All (invited for)</option>' + categories.map(function (c) { return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + "</option>"; }).join("");
+    sel.value = current;
   }
 
   function renderDashboard() {
@@ -157,6 +165,7 @@
   function renderGuestTable() {
     var q = (document.getElementById("guestSearch").value || "").toLowerCase();
     var fRsvp = document.getElementById("filterRsvp").value;
+    var fInvitedFor = document.getElementById("filterInvitedFor").value;
     var fCheckin = document.getElementById("filterCheckin").value;
 
     var rows = guests.filter(function (g) {
@@ -165,6 +174,7 @@
         if (hay.indexOf(q) === -1) return false;
       }
       if (fRsvp && (g.rsvpStatus || "pending") !== fRsvp) return false;
+      if (fInvitedFor && (g.invitedFor || "") !== fInvitedFor) return false;
       if (fCheckin === "yes" && !g.checkedIn) return false;
       if (fCheckin === "no" && g.checkedIn) return false;
       return true;
@@ -174,8 +184,9 @@
 
     document.getElementById("guestRows").innerHTML = rows.map(function (g) {
       var status = g.rsvpStatus || "pending";
+      var subLine = [g.familyName || capitalize(g.invitationType || "individual"), g.invitedFor].filter(Boolean).join(" · ");
       return "<tr>" +
-        '<td><div class="g-name">' + escapeHtml(fullName(g)) + '</div><div class="g-sub">' + escapeHtml(g.familyName || capitalize(g.invitationType || "individual")) + "</div></td>" +
+        '<td><div class="g-name">' + escapeHtml(fullName(g)) + '</div><div class="g-sub">' + escapeHtml(subLine) + "</div></td>" +
         '<td><span class="pill pill-' + status + '">' + status.replace("_", " ") + "</span></td>" +
         "<td>" + (g.attendingCount != null && g.attendingCount !== "" ? g.attendingCount : "—") + " / " + (g.invitedCount || 1) + "</td>" +
         '<td><span class="pill ' + (g.checkedIn ? "pill-checked" : "pill-notchecked") + '">' + (g.checkedIn ? "Checked in" : "Not yet") + "</span></td>" +
@@ -201,6 +212,7 @@
 
   document.getElementById("guestSearch").addEventListener("input", renderGuestTable);
   document.getElementById("filterRsvp").addEventListener("change", renderGuestTable);
+  document.getElementById("filterInvitedFor").addEventListener("change", renderGuestTable);
   document.getElementById("filterCheckin").addEventListener("change", renderGuestTable);
 
   document.getElementById("guestRows").addEventListener("click", function (e) {
@@ -260,10 +272,13 @@
     document.getElementById("guestModalTitle").textContent = g ? "Edit Guest" : "Add Guest";
     document.getElementById("f-first").value = g ? (g.firstName || "") : "";
     document.getElementById("f-last").value = g ? (g.lastName || "") : "";
-    document.getElementById("f-phone").value = g ? (g.phone || "") : "";
+    WNPhone.populatePhoneWidget(document.getElementById("f-phone-cc"), document.getElementById("f-phone"), g ? (g.phone || "") : "");
     document.getElementById("f-email").value = g ? (g.email || "") : "";
     document.getElementById("f-type").value = g ? (g.invitationType || "individual") : "individual";
     document.getElementById("f-family").value = g ? (g.familyName || "") : "";
+    var invitedForVal = g ? (g.invitedFor || "") : "";
+    document.getElementById("f-invitedfor").innerHTML = '<option value="">—</option>' +
+      categories.map(function (c) { return '<option value="' + escapeHtml(c) + '"' + (c === invitedForVal ? " selected" : "") + ">" + escapeHtml(c) + "</option>"; }).join("");
     document.getElementById("f-invited").value = g ? (g.invitedCount || 1) : 1;
     document.getElementById("f-rsvp").value = g ? (g.rsvpStatus || "pending") : "pending";
     document.getElementById("f-attending").value = g ? (g.attendingCount || 0) : 0;
@@ -283,10 +298,11 @@
     var data = {
       firstName: first,
       lastName: document.getElementById("f-last").value.trim(),
-      phone: document.getElementById("f-phone").value.trim(),
+      phone: WNPhone.readPhoneWidget(document.getElementById("f-phone-cc"), document.getElementById("f-phone")),
       email: document.getElementById("f-email").value.trim(),
       invitationType: document.getElementById("f-type").value,
       familyName: document.getElementById("f-family").value.trim(),
+      invitedFor: document.getElementById("f-invitedfor").value,
       invitedCount: Number(document.getElementById("f-invited").value) || 1,
       rsvpStatus: document.getElementById("f-rsvp").value,
       attendingCount: Number(document.getElementById("f-attending").value) || 0,
@@ -312,7 +328,8 @@
     var qrDataUrlPromise;
     if (window.QRCode) {
       try {
-        new QRCode(qrTemp, { text: g.id, width: 260, height: 260, colorDark: "#3E1730", colorLight: "#FBF7F0", correctLevel: QRCode.CorrectLevel.M });
+        var badgeUrl = location.origin + "/?g=" + encodeURIComponent(g.id) + "&badge=1";
+        new QRCode(qrTemp, { text: badgeUrl, width: 260, height: 260, colorDark: "#3E1730", colorLight: "#FBF7F0", correctLevel: QRCode.CorrectLevel.M });
         qrDataUrlPromise = new Promise(function (resolve) { setTimeout(function () { var c = qrTemp.querySelector("canvas"); resolve(c ? c.toDataURL("image/png") : null); }, 150); });
       } catch (e) { qrDataUrlPromise = Promise.resolve(null); }
     } else { qrDataUrlPromise = Promise.resolve(null); }
@@ -438,7 +455,9 @@
       var img = ctx.getImageData(0, 0, canvas.width, canvas.height);
       var code = window.jsQR(img.data, img.width, img.height);
       if (code && code.data) {
-        var g = guests.find(function (x) { return x.id === code.data; });
+        var scannedId = code.data;
+        try { scannedId = new URL(code.data).searchParams.get("g") || code.data; } catch (e) {}
+        var g = guests.find(function (x) { return x.id === scannedId; });
         if (g) {
           stopScan();
           document.getElementById("checkinSearch").value = fullName(g);
@@ -473,7 +492,7 @@
       var amountStr = g.type === "cash" ? (g.currency + " " + fmtMoney(g.amount)) : (g.estimatedValue != null ? "~" + (g.estimatedCurrency || "") + " " + fmtMoney(g.estimatedValue) : "—");
       return "<tr>" +
         "<td>" + (g.type === "cash" ? "Cash" : "In Kind") + "</td>" +
-        "<td><div class=\"g-name\">" + escapeHtml(g.giver) + "</div>" + (g.type === "kind" ? '<div class="g-sub">' + escapeHtml(g.description || "") + "</div>" : "") + "</td>" +
+        "<td><div class=\"g-name\">" + escapeHtml(g.giver) + "</div>" + ([g.type === "kind" ? g.description : "", g.giverPhone].filter(Boolean).length ? '<div class="g-sub">' + escapeHtml([g.type === "kind" ? g.description : "", g.giverPhone].filter(Boolean).join(" · ")) + "</div>" : "") + "</td>" +
         "<td>" + fmtDate(g.date) + "</td>" +
         "<td>" + amountStr + "</td>" +
         "<td>" + escapeHtml(g.type === "cash" ? (g.paymentMethod || "") : "—") + "</td>" +
@@ -507,6 +526,8 @@
     document.querySelectorAll('input[name="gift-type"]').forEach(function (r) { r.checked = r.value === type; });
     toggleGiftFields(type);
     document.getElementById("gift-giver").value = g ? g.giver : "";
+    document.getElementById("giftGiverGuestList").innerHTML = guests.map(function (guest) { return '<option value="' + escapeHtml(fullName(guest)) + '">'; }).join("");
+    WNPhone.populatePhoneWidget(document.getElementById("gift-phone-cc"), document.getElementById("gift-phone"), g ? (g.giverPhone || "") : "");
     document.getElementById("gift-date").value = g ? g.date : new Date().toISOString().slice(0, 10);
     document.getElementById("gift-amount").value = g ? g.amount || "" : "";
     document.getElementById("gift-description").value = g ? g.description || "" : "";
@@ -519,6 +540,14 @@
     document.getElementById("giftKindFields").style.display = type === "kind" ? "grid" : "none";
   }
   document.querySelectorAll('input[name="gift-type"]').forEach(function (r) { r.addEventListener("change", function () { toggleGiftFields(r.value); }); });
+  document.getElementById("gift-giver").addEventListener("change", function (e) {
+    var typed = e.target.value.trim().toLowerCase();
+    var match = guests.find(function (guest) { return fullName(guest).toLowerCase() === typed; });
+    var phoneInput = document.getElementById("gift-phone");
+    if (match && match.phone && !phoneInput.value) {
+      WNPhone.populatePhoneWidget(document.getElementById("gift-phone-cc"), phoneInput, match.phone);
+    }
+  });
   document.getElementById("addGiftBtn").addEventListener("click", function () { openGiftModal(null); });
   document.getElementById("giftModalClose").addEventListener("click", function () { document.getElementById("giftModalOverlay").hidden = true; });
   document.getElementById("giftModalCancel").addEventListener("click", function () { document.getElementById("giftModalOverlay").hidden = true; });
@@ -527,6 +556,7 @@
     var body = {
       type: type,
       giver: document.getElementById("gift-giver").value.trim(),
+      giverPhone: WNPhone.readPhoneWidget(document.getElementById("gift-phone-cc"), document.getElementById("gift-phone")),
       date: document.getElementById("gift-date").value,
       notes: document.getElementById("gift-notes").value.trim(),
     };
@@ -598,7 +628,7 @@
     populateSelect(document.getElementById("prov-currency"), currencies, p ? p.currency : "USD");
     document.getElementById("prov-name").value = p ? p.name : "";
     document.getElementById("prov-category").value = p ? p.category : "";
-    document.getElementById("prov-phone").value = p ? p.phone : "";
+    WNPhone.populatePhoneWidget(document.getElementById("prov-phone-cc"), document.getElementById("prov-phone"), p ? (p.phone || "") : "");
     document.getElementById("prov-email").value = p ? p.email : "";
     document.getElementById("prov-fee").value = p ? p.agreedFee : "";
     document.getElementById("prov-deadline").value = p ? p.paymentDeadline || "" : "";
@@ -657,7 +687,7 @@
     var body = {
       name: document.getElementById("prov-name").value.trim(),
       category: document.getElementById("prov-category").value.trim(),
-      phone: document.getElementById("prov-phone").value.trim(),
+      phone: WNPhone.readPhoneWidget(document.getElementById("prov-phone-cc"), document.getElementById("prov-phone")),
       email: document.getElementById("prov-email").value.trim(),
       agreedFee: document.getElementById("prov-fee").value,
       currency: document.getElementById("prov-currency").value,
