@@ -53,6 +53,13 @@ function fontCss() {
   }).join("");
 }
 
+// Card artwork as PNG data URIs: self-contained files, and PNG is what the PDF
+// engine and design tools (Illustrator, Inkscape) can all read.
+async function pngDataUri(file, width) {
+  const buf = await sharp(path.join(ROOT, "assets", "img", file)).resize(width).png({ compressionLevel: 9 }).toBuffer();
+  return "data:image/png;base64," + buf.toString("base64");
+}
+
 function qrMatrix(text) {
   const q = QRCode.create(text, { errorCorrectionLevel: "M" });
   const n = q.modules.size, data = q.modules.data;
@@ -69,7 +76,8 @@ async function main() {
   fs.mkdirSync(OUT, { recursive: true });
   const rsvpUrl = Inv.SITE + "/#rsvp";
   const qr = qrMatrix(rsvpUrl);
-  const common = { qr, measure, rsvpHref: rsvpUrl, linkTarget: "_blank" };
+  const images = { rings: await pngDataUri("wedding-rings.webp", 640), spray: await pngDataUri("floral-spray.webp", 660) };
+  const common = { qr, measure, images, rsvpHref: rsvpUrl, linkTarget: "_blank" };
 
   // 1) editable SVG (live text, embedded fonts, working links)
   const svgStatic = Inv.build(Object.assign({ fontCss: fontCss() }, common));

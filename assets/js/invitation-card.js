@@ -34,7 +34,7 @@
   // Clickable areas in card coordinates (also used for PDF link annotations).
   var HOTSPOTS = {
     venue: { x: 196, y: 734, w: 688, h: 146, label: "Open Colne Valley Nature Reserve Park in Google Maps" },
-    rsvp: { x: 588, y: 1092, w: 370, h: 152, label: "RSVP online" }
+    rsvp: { x: 554, y: 1092, w: 342, h: 152, label: "RSVP online" }
   };
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
@@ -60,39 +60,41 @@
     return '<path d="M' + r2(cx) + " " + r2(cy - s) + " L" + r2(cx + k) + " " + r2(cy - k) + " L" + r2(cx + s) + " " + r2(cy) + " L" + r2(cx + k) + " " + r2(cy + k) + " L" + r2(cx) + " " + r2(cy + s) + " L" + r2(cx - k) + " " + r2(cy + k) + " L" + r2(cx - s) + " " + r2(cy) + " L" + r2(cx - k) + " " + r2(cy - k) + ' Z" fill="' + C.gold + '" opacity="' + r2(opacity) + '"/>';
   }
 
-  // Two interlocking wedding bands with a solitaire; t (0..1) animates a light
-  // sweep across the gold and the sparkles for the GIF.
-  function rings(cx, cy, t) {
-    var r = 38, off = 26, sw = 6.5;
+  // Gold rings artwork (640x298), seated on a soft shadow. For the GIF a band
+  // of light, masked to the rings' own shape, travels across the gold and a few
+  // sparkles twinkle around them.
+  var RINGS_RATIO = 298 / 640;
+  function rings(href, cx, top, width, t) {
+    var h = width * RINGS_RATIO, x = cx - width / 2;
     var animated = typeof t === "number";
-    var sweep = animated ? -190 + 380 * Math.min(1, t / 0.6) : 0;
     var out = [];
-    out.push('<linearGradient id="wnGold" gradientUnits="userSpaceOnUse" x1="' + (cx - 70) + '" y1="' + (cy - 40) + '" x2="' + (cx + 70) + '" y2="' + (cy + 40) + '">' +
-      '<stop offset="0" stop-color="#9A7535"/><stop offset=".42" stop-color="#C9A25E"/><stop offset=".5" stop-color="#F4E4BC"/><stop offset=".58" stop-color="#C9A25E"/><stop offset="1" stop-color="#9A7535"/></linearGradient>');
-    var lx = cx - off, rx = cx + off;
-    function pt(x0, deg) { var a = deg * Math.PI / 180; return r2(x0 + r * Math.cos(a)) + " " + r2(cy + r * Math.sin(a)); }
-    out.push('<g fill="none" stroke="url(#wnGold)" stroke-width="' + sw + '">');
-    out.push('<circle cx="' + lx + '" cy="' + cy + '" r="' + r + '"/>');
-    out.push('<circle cx="' + rx + '" cy="' + cy + '" r="' + r + '"/>');
-    // redraw the left band over the right one at the top crossing = interlocked
-    out.push('<path d="M' + pt(lx, -72) + " A" + r + " " + r + " 0 0 1 " + pt(lx, -22) + '"/>');
-    out.push("</g>");
+    out.push('<ellipse cx="' + r2(cx + 6) + '" cy="' + r2(top + h - 4) + '" rx="' + r2(width * 0.42) + '" ry="9" fill="url(#wnRingShadow)"/>');
+    out.push('<image href="' + esc(href) + '" xlink:href="' + esc(href) + '" x="' + r2(x) + '" y="' + r2(top) + '" width="' + r2(width) + '" height="' + r2(h) + '" preserveAspectRatio="xMidYMid meet"/>');
     if (animated) {
-      // a soft band of light travelling across the gold (GIF only)
-      out.push('<linearGradient id="wnShine" gradientUnits="userSpaceOnUse" x1="' + r2(cx - 45 + sweep) + '" y1="' + (cy - 40) + '" x2="' + r2(cx + 45 + sweep) + '" y2="' + (cy + 40) + '">' +
-        '<stop offset="0" stop-color="#FFF6DD" stop-opacity="0"/><stop offset=".5" stop-color="#FFF6DD" stop-opacity=".95"/><stop offset="1" stop-color="#FFF6DD" stop-opacity="0"/></linearGradient>');
-      out.push('<g fill="none" stroke="url(#wnShine)" stroke-width="' + sw + '"><circle cx="' + lx + '" cy="' + cy + '" r="' + r + '"/><circle cx="' + rx + '" cy="' + cy + '" r="' + r + '"/></g>');
+      var sweep = -width + 2 * width * Math.min(1, t / 0.6);
+      out.push('<mask id="wnRingMask" mask-type="alpha" maskUnits="userSpaceOnUse" x="' + r2(x) + '" y="' + r2(top) + '" width="' + r2(width) + '" height="' + r2(h) + '">' +
+        '<image href="' + esc(href) + '" xlink:href="' + esc(href) + '" x="' + r2(x) + '" y="' + r2(top) + '" width="' + r2(width) + '" height="' + r2(h) + '"/></mask>');
+      out.push('<linearGradient id="wnShine" gradientUnits="userSpaceOnUse" x1="' + r2(cx - 60 + sweep) + '" y1="' + r2(top) + '" x2="' + r2(cx + 20 + sweep) + '" y2="' + r2(top + h) + '">' +
+        '<stop offset="0" stop-color="#FFF7E0" stop-opacity="0"/><stop offset=".5" stop-color="#FFF7E0" stop-opacity=".5"/><stop offset="1" stop-color="#FFF7E0" stop-opacity="0"/></linearGradient>');
+      out.push('<rect x="' + r2(x) + '" y="' + r2(top) + '" width="' + r2(width) + '" height="' + r2(h) + '" fill="url(#wnShine)" mask="url(#wnRingMask)"/>');
+      var tw = function (phase) { return 0.2 + 0.8 * Math.abs(Math.sin(Math.PI * 2 * (t + phase))); };
+      out.push(star(x + width * 0.93, top + 8, 10, tw(0)));
+      out.push(star(x + width * 0.05, top + h * 0.28, 7, tw(0.35)));
+      out.push(star(x + width * 0.62, top + h * 0.12, 6, tw(0.7)));
     }
-    var gx = lx - 12, gy = cy - r - 2;
-    out.push('<g stroke="#9A7535" stroke-width="1.4" stroke-linejoin="round">' +
-      '<path d="M' + r2(gx - 9) + " " + r2(gy - 7) + " L" + r2(gx - 4) + " " + r2(gy - 13) + " L" + r2(gx + 4) + " " + r2(gy - 13) + " L" + r2(gx + 9) + " " + r2(gy - 7) + " L" + r2(gx) + " " + r2(gy + 4) + ' Z" fill="#FFFDF7"/>' +
-      '<path d="M' + r2(gx - 9) + " " + r2(gy - 7) + " H" + r2(gx + 9) + " M" + r2(gx - 4) + " " + r2(gy - 13) + " L" + r2(gx - 2) + " " + r2(gy - 7) + " L" + r2(gx) + " " + r2(gy + 4) + " M" + r2(gx + 4) + " " + r2(gy - 13) + " L" + r2(gx + 2) + " " + r2(gy - 7) + '" fill="none" stroke-width="1"/></g>');
-    var tw = function (phase) { return animated ? 0.25 + 0.75 * Math.abs(Math.sin(Math.PI * 2 * (t + phase))) : 0.9; };
-    out.push(star(cx + 78, cy - 34, 9, tw(0)));
-    out.push(star(cx - 80, cy + 26, 6, tw(0.33)));
-    out.push(star(cx + 60, cy + 40, 5, tw(0.66)));
-    out.push(star(gx + 16, gy - 16, 5, tw(0.15)));
     return out.join("");
+  }
+
+  // Floral spray on a card corner: bloom (~50% x / ~41% y of the artwork)
+  // placed `inset` px inside the corner, laid across it with a slight tilt so
+  // the stems follow the frame; the tips bleed off the card's edges.
+  var SPRAY_RATIO = 1366 / 1360;
+  function spray(href, corner, size, inset) {
+    var w = size, h = size * SPRAY_RATIO;
+    var x = corner === "tl" ? inset - 0.5 * w : W - inset - 0.5 * w;
+    var y = corner === "tl" ? inset - 0.41 * h : H - inset - 0.59 * h;
+    var rot = corner === "tl" ? -6 : 174;
+    return '<image href="' + esc(href) + '" xlink:href="' + esc(href) + '" x="' + r2(x) + '" y="' + r2(y) + '" width="' + r2(w) + '" height="' + r2(h) + '" transform="rotate(' + rot + " " + r2(x + w / 2) + " " + r2(y + h / 2) + ')" filter="url(#wnSoft)"/>';
   }
 
   function qrPath(qr, x, y, size) {
@@ -121,6 +123,7 @@
    * o.fontCss    optional @font-face CSS to embed (standalone files)
    * o.frame      0..1 animation phase (GIF frames); omit for the static card
    * o.pdf        true when the SVG is only an intermediate for the PDF build
+   * o.images     { rings, spray } image URLs (data: URIs for standalone files)
    */
   function build(o) {
     o = o || {};
@@ -133,6 +136,9 @@
     var mapsHref = o.mapsHref || MAPS_URL;
     var target = o.linkTarget == null ? "_blank" : o.linkTarget;
     var cx = W / 2;
+    var img = o.images || {};
+    var ringsHref = img.rings || "/assets/img/wedding-rings.webp";
+    var sprayHref = img.spray || "/assets/img/floral-spray.webp";
     var s = [];
 
     s.push('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ' + W + " " + H + '"' + (pdfMode ? '' : ' width="' + W + '" height="' + H + '"') + ' role="img" aria-labelledby="wnTitle wnDesc">');
@@ -142,6 +148,8 @@
     s.push("<defs>" +
       '<radialGradient id="wnGlowA" cx="16%" cy="10%" r="60%"><stop offset="0" stop-color="#E8D2A6" stop-opacity=".32"/><stop offset="1" stop-color="#E8D2A6" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="wnGlowB" cx="88%" cy="94%" r="55%"><stop offset="0" stop-color="#EAB08C" stop-opacity=".18"/><stop offset="1" stop-color="#EAB08C" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="wnRingShadow"><stop offset="0" stop-color="#5A3A10" stop-opacity=".28"/><stop offset="1" stop-color="#5A3A10" stop-opacity="0"/></radialGradient>' +
+      '<filter id="wnSoft" x="-15%" y="-15%" width="130%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#3E1730" flood-opacity=".18"/></filter>' +
       "</defs>");
 
     // paper + frame
@@ -152,11 +160,13 @@
     var gapL = r2(cx - fw / 2 - 22), gapR = r2(cx + fw / 2 + 22);
     s.push('<path d="M' + gapL + ' 1314 H36 V36 H1044 V1314 H' + gapR + '" fill="none" stroke="' + C.gold + '" stroke-width="3"/>');
     s.push('<path d="M' + gapL + ' 1298 H52 V52 H1028 V1298 H' + gapR + '" fill="none" stroke="' + C.champ + '" stroke-width="1.5"/>');
+    s.push(spray(sprayHref, "tl", 320, 106));
+    s.push(spray(sprayHref, "br", 320, 98));
 
     // header
-    s.push(text("TOGETHER WITH THEIR FAMILIES", cx, 104, "sansMed", 17, C.muted, { ls: 6 }));
-    s.push(rings(cx, 174, t));
-    s.push(text("You are warmly invited to the wedding of", cx, 256, "serif", 25, C.plum2, { italic: true }));
+    s.push(text("TOGETHER WITH THEIR FAMILIES", cx + 3, 98, "sansMed", 17, C.muted, { ls: 6 }));
+    s.push(rings(ringsHref, cx, 116, 236, t));
+    s.push(text("You are warmly invited to the wedding of", cx, 258, "serif", 25, C.plum2, { italic: true }));
 
     // names
     s.push(text("Nyasha", cx, 354, "script", 104, C.plum, { stroke: 3 }));
@@ -199,29 +209,29 @@
     }
 
     // details panel: dress code + colours | RSVP
-    s.push('<path d="M110 1086H970M572 1106V1250" stroke="' + C.champ + '" stroke-width="1.5"/>');
-    s.push(text("DRESS CODE", 341, 1124, "sansSemi", 13, C.gold, { ls: 5 }));
-    s.push(text("Formal & Smart Casual", 341, 1160, "serifSemi", 27, C.plum));
-    s.push(text("OUR COLOURS", 341, 1198, "sansSemi", 13, C.gold, { ls: 5 }));
+    s.push('<path d="M110 1086H970M540 1106V1250" stroke="' + C.champ + '" stroke-width="1.5"/>');
+    s.push(text("DRESS CODE", 327, 1124, "sansSemi", 13, C.gold, { ls: 5 }));
+    s.push(text("Formal & Smart Casual", 325, 1160, "serifSemi", 27, C.plum));
+    s.push(text("OUR COLOURS", 327, 1198, "sansSemi", 13, C.gold, { ls: 5 }));
     SWATCHES.forEach(function (sw, i) {
-      var x = 191 + i * 100;
+      var x = 175 + i * 100;
       s.push('<circle cx="' + x + '" cy="1221" r="15" fill="' + sw.color + '" stroke="' + (sw.name === "Ivory" ? "#D9C9AE" : "#3E1730") + '" stroke-opacity="' + (sw.name === "Ivory" ? 1 : 0.14) + '" stroke-width="1.2"/>');
       s.push(text(sw.name, x, 1256, "sans", 12, C.plum2));
     });
 
-    s.push('<rect x="590" y="1100" width="150" height="150" fill="#FFFDF8" stroke="' + C.champ + '" stroke-width="1.5"/>');
-    if (o.qr) s.push(qrPath(o.qr, 605, 1115, 120));
-    else s.push('<rect x="605" y="1115" width="120" height="120" fill="none" stroke="' + C.champ + '" stroke-dasharray="4 4"/>');
-    s.push(text("KINDLY RSVP BY", 856, 1130, "sansSemi", 13, C.gold, { ls: 5 }));
-    s.push(text("10 November 2026", 856, 1164, "serifSemi", 20, C.plum));
+    s.push('<rect x="560" y="1100" width="150" height="150" fill="#FFFDF8" stroke="' + C.champ + '" stroke-width="1.5"/>');
+    if (o.qr) s.push(qrPath(o.qr, 575, 1115, 120));
+    else s.push('<rect x="575" y="1115" width="120" height="120" fill="none" stroke="' + C.champ + '" stroke-dasharray="4 4"/>');
+    s.push(text("KINDLY RSVP BY", 808, 1130, "sansSemi", 13, C.gold, { ls: 4 }));
+    s.push(text("10 November 2026", 806, 1164, "serifSemi", 20, C.plum));
     if (animated) {
       var u = (t * 2) % 1;
-      s.push('<rect x="' + r2(766 - 10 * u) + '" y="' + r2(1188 - 10 * u) + '" width="' + r2(180 + 20 * u) + '" height="' + r2(44 + 20 * u) + '" rx="' + r2(3 + 6 * u) + '" fill="none" stroke="' + C.coral + '" stroke-width="2" opacity="' + r2(0.7 * (1 - u)) + '"/>');
+      s.push('<rect x="' + r2(726 - 10 * u) + '" y="' + r2(1188 - 10 * u) + '" width="' + r2(160 + 20 * u) + '" height="' + r2(44 + 20 * u) + '" rx="' + r2(3 + 6 * u) + '" fill="none" stroke="' + C.coral + '" stroke-width="2" opacity="' + r2(0.7 * (1 - u)) + '"/>');
     }
-    s.push('<rect x="766" y="1188" width="180" height="44" rx="3" fill="' + C.plum + '"/>');
-    var bl = "RSVP ONLINE", bw = measure(bl, "sansSemi", 14, 3.5), groupW = bw + 6 + 10;
-    var bx = 856 - groupW / 2;
-    s.push(text(bl, bx, 1216, "sansSemi", 14, C.ivory, { ls: 3.5, anchor: "start" }));
+    s.push('<rect x="726" y="1188" width="160" height="44" rx="3" fill="' + C.plum + '"/>');
+    var bl = "RSVP ONLINE", bw = measure(bl, "sansSemi", 13, 3), groupW = bw + 6 + 10;
+    var bx = 806 - groupW / 2;
+    s.push(text(bl, bx, 1215, "sansSemi", 13, C.ivory, { ls: 3, anchor: "start" }));
     var arx = bx + bw + 6;
     s.push('<path d="M' + r2(arx) + " 1211 H" + r2(arx + 10) + " M" + r2(arx + 6) + " 1207 L" + r2(arx + 10) + " 1211 L" + r2(arx + 6) + ' 1215" fill="none" stroke="' + C.ivory + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>');
 

@@ -595,7 +595,8 @@
   redrawCard();
   loadFonts().then(redrawCard); // re-fit the guest name once the real fonts are in
 
-  // Download: an image can't reach the page's fonts, so they're embedded first.
+  // Download: an SVG drawn as an image can't reach the page's fonts or other
+  // files, so fonts and artwork are embedded as data URLs first.
   var cardFontCss = null;
   function cardFontData() {
     if (cardFontCss) return Promise.resolve(cardFontCss);
@@ -610,9 +611,22 @@
       });
     })).then(function (css) { cardFontCss = css.join(""); return cardFontCss; });
   }
+  function asDataUrl(url) {
+    return fetch(url).then(function (r) { return r.blob(); }).then(function (b) {
+      return new Promise(function (resolve) { var fr = new FileReader(); fr.onload = function () { resolve(fr.result); }; fr.readAsDataURL(b); });
+    });
+  }
+  var cardImages = null;
+  function cardImageData() {
+    if (cardImages) return Promise.resolve(cardImages);
+    return Promise.all([asDataUrl("/assets/img/wedding-rings.webp"), asDataUrl("/assets/img/floral-spray.webp")]).then(function (res) {
+      cardImages = { rings: res[0], spray: res[1] };
+      return cardImages;
+    });
+  }
   function renderCardJpeg() {
-    return cardFontData().then(function (css) {
-      var svg = WNInvitation.build(cardOptions({ fontCss: css, rsvpHref: cardRsvpLink() }));
+    return Promise.all([cardFontData(), cardImageData()]).then(function (res) {
+      var svg = WNInvitation.build(cardOptions({ fontCss: res[0], images: res[1], rsvpHref: cardRsvpLink() }));
       var url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
       return loadImage(url).then(function (img) {
         if (!img) { URL.revokeObjectURL(url); throw new Error("render failed"); }
