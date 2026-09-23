@@ -4,7 +4,8 @@
   "description": "Offline generators for the invitation card deliverables (not deployed).",
   "scripts": {
     "invitation": "node build-invitation.js",
-    "business-kit": "node business-kit/build.js"
+    "business-kit": "node business-kit/build.js",
+    "qr": "node build-qr.js"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
