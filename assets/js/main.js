@@ -120,7 +120,6 @@
     var cardNameInput = document.getElementById("g-card-name");
     if (full && !cardNameInput.value) { cardNameInput.value = full; redrawCard(); }
     if (info.gender && !state.gender) setChip("g-gender", state.gender = info.gender);
-    if (info.ageGroup && !state.ageGroup) setChip("g-age", state.ageGroup = info.ageGroup);
     renderInviteHint();
     renderRsvpAlready();
     renderCheckin();
@@ -352,7 +351,7 @@
   });
 
   /* ---------------- RSVP WIZARD ---------------- */
-  var state = { step: 0, name: "", phone: "", gender: "", ageGroup: "", attend: "", guests: 1, plusone: "", message: "" };
+  var state = { step: 0, name: "", phone: "", gender: "", attend: "", guests: 1, plusone: "", message: "" };
   var stepsEls = document.querySelectorAll(".rsvp-step");
   var segs = document.querySelectorAll(".rp-seg");
 
@@ -379,7 +378,6 @@
     document.querySelectorAll("#" + groupId + " .chip").forEach(function (c) { c.setAttribute("aria-checked", String(c.dataset.value === value)); });
   }
   buildChips("g-gender", F.GENDERS, "gender");
-  buildChips("g-age", F.AGE_GROUPS, "ageGroup");
 
   if (window.WNPhone) WNPhone.populatePhoneWidget(document.getElementById("g-phone-cc"), document.getElementById("g-phone"), "");
 
@@ -447,7 +445,6 @@
     var rows = [["Name", state.name], ["Response", attendLabel(state.attend)]];
     if (state.phone) rows.push(["Phone", WNPhone.formatPhone(state.phone)]);
     if (state.gender) rows.push(["Gender", F.genderLabel(state.gender)]);
-    if (state.ageGroup) rows.push(["Age group", F.ageLabel(state.ageGroup)]);
     if (state.attend === "attending") {
       rows.push(["Party size", state.guests + (state.guests > 1 ? " guests" : " guest")]);
       if (state.plusone) rows.push(["Additional guest(s)", state.plusone]);
@@ -471,7 +468,7 @@
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         token: guestToken || undefined, requestId: (!guestToken && pendingRequest && pendingRequest.status === "pending") ? pendingRequest.requestId : undefined, channel: channel,
-        name: state.name, phone: state.phone, gender: state.gender, ageGroup: state.ageGroup,
+        name: state.name, phone: state.phone, gender: state.gender,
         attend: state.attend, guests: state.guests, plusOneName: state.plusone, message: state.message
       })
     }).then(function (r) {

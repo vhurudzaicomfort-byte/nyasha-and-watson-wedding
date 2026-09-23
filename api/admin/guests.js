@@ -20,7 +20,6 @@ function applyRequestToGuest(guest, reqRec, now) {
   }
   if (reqRec.phone && !guest.phone) guest.phone = reqRec.phone;
   if (reqRec.gender) guest.gender = reqRec.gender;
-  if (reqRec.ageGroup) guest.ageGroup = reqRec.ageGroup;
   guest.rsvpChannel = reqRec.channel || "web";
   guest.rsvpAt = reqRec.updatedAt || reqRec.createdAt || now;
 }
@@ -59,7 +58,6 @@ async function handleRequestAction(body, res) {
         familyName: "",
         invitedFor: Fields.normCategory(body.invitedFor),
         gender: reqRec.gender || "",
-        ageGroup: reqRec.ageGroup || "",
         invitedCount: party,
         plusOneAllowed: false,
         rsvpStatus: "pending",
@@ -92,12 +90,14 @@ module.exports = async function handler(req, res) {
 
   if (req.method === "GET") {
     var data = await readData();
-    // one-off migration of the old per-church categories to "Church"
+    // one-off clean-ups: old per-church categories -> "Church"; age group is no longer collected
     var migrated = false;
     data.guests.forEach(function (g) {
       var norm = Fields.normCategory(g.invitedFor);
       if (norm !== (g.invitedFor || "")) { g.invitedFor = norm; migrated = true; }
+      if ("ageGroup" in g) { delete g.ageGroup; migrated = true; }
     });
+    data.requests.forEach(function (r) { if ("ageGroup" in r) { delete r.ageGroup; migrated = true; } });
     if (migrated) await writeData(data);
     var requests = data.requests.slice().sort(function (a, b) { return (b.updatedAt || b.createdAt || "").localeCompare(a.updatedAt || a.createdAt || ""); });
     res.status(200).json({ guests: data.guests, categories: CATEGORIES, requests: requests });
@@ -118,7 +118,6 @@ module.exports = async function handler(req, res) {
       familyName: String(body.familyName || "").trim(),
       invitedFor: Fields.normCategory(body.invitedFor),
       gender: Fields.normGender(body.gender),
-      ageGroup: Fields.normAgeGroup(body.ageGroup),
       invitedCount: Number(body.invitedCount) || 1,
       plusOneAllowed: !!body.plusOneAllowed,
       rsvpStatus: body.rsvpStatus || "pending",
@@ -149,11 +148,10 @@ module.exports = async function handler(req, res) {
     if (idx === -1) { res.status(404).json({ error: "Guest not found" }); return; }
     var patch = Object.assign({}, req.body || {});
     if ("gender" in patch) patch.gender = Fields.normGender(patch.gender);
-    if ("ageGroup" in patch) patch.ageGroup = Fields.normAgeGroup(patch.ageGroup);
     if ("invitedFor" in patch) patch.invitedFor = Fields.normCategory(patch.invitedFor);
     if (patch.checkedIn === true && !patch.checkInMethod) patch.checkInMethod = "usher";
     if (patch.checkedIn === false) patch.checkInMethod = "";
-    var allowed = ["firstName", "lastName", "phone", "email", "invitationType", "familyName", "invitedFor", "gender", "ageGroup",
+    var allowed = ["firstName", "lastName", "phone", "email", "invitationType", "familyName", "invitedFor", "gender",
       "invitedCount", "plusOneAllowed", "rsvpStatus", "attendingCount", "notes",
       "checkedIn", "checkInTime", "checkInMethod", "rsvpAt", "rsvpChannel"];
     allowed.forEach(function (k) {

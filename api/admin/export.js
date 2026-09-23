@@ -61,9 +61,9 @@ function buildReport(type, data) {
   var columns, rows, filename, title, weights;
 
   if (type === "rsvp") {
-    columns = ["Name", "Phone", "Invited For", "Gender", "Age Group", "RSVP Status", "Invited", "Attending", "Plus-one", "Responded Via", "Responded At"];
-    weights = [1.7, 1.3, 1.2, 0.8, 0.8, 1, 0.7, 0.8, 0.7, 1, 1.1];
-    rows = guests.map(function (g) { return [fullName(g), phone(g.phone), g.invitedFor || "", Fields.genderLabel(g.gender), Fields.ageLabel(g.ageGroup), (g.rsvpStatus || "pending").replace("_", " "), g.invitedCount || 1, g.attendingCount || 0, g.plusOneAllowed ? "Yes" : "No", channelLabel(g), g.rsvpAt ? g.rsvpAt.slice(0, 10) : ""]; });
+    columns = ["Name", "Phone", "Invited For", "Gender", "RSVP Status", "Invited", "Attending", "Plus-one", "Responded Via", "Responded At"];
+    weights = [1.7, 1.3, 1.2, 0.8, 1, 0.7, 0.8, 0.7, 1, 1.1];
+    rows = guests.map(function (g) { return [fullName(g), phone(g.phone), g.invitedFor || "", Fields.genderLabel(g.gender), (g.rsvpStatus || "pending").replace("_", " "), g.invitedCount || 1, g.attendingCount || 0, g.plusOneAllowed ? "Yes" : "No", channelLabel(g), g.rsvpAt ? g.rsvpAt.slice(0, 10) : ""]; });
     filename = "RSVP-Report"; title = "RSVP Report";
   } else if (type === "checkin") {
     columns = ["Guest", "RSVP", "Party", "Checked In", "Method", "Check-in Time"];
@@ -74,17 +74,17 @@ function buildReport(type, data) {
     filename = "Checkin-Report"; title = "Check-in Report";
   } else if (type === "attending") {
     var attendingGuests = guests.filter(function (g) { return g.rsvpStatus === "attending"; });
-    columns = ["Name", "Phone", "Email", "Family", "Invited For", "Gender", "Age Group", "Attending", "Checked In", "Notes"];
-    weights = [1.6, 1.3, 1.5, 1.2, 1.1, 0.7, 0.7, 0.7, 0.8, 1.6];
+    columns = ["Name", "Phone", "Email", "Family", "Invited For", "Gender", "Attending", "Checked In", "Notes"];
+    weights = [1.6, 1.3, 1.5, 1.2, 1.1, 0.7, 0.7, 0.8, 1.6];
     rows = attendingGuests.map(function (g) {
-      return [fullName(g), phone(g.phone), g.email || "", g.familyName || "", g.invitedFor || "", Fields.genderLabel(g.gender), Fields.ageLabel(g.ageGroup), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
+      return [fullName(g), phone(g.phone), g.email || "", g.familyName || "", g.invitedFor || "", Fields.genderLabel(g.gender), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
     });
     filename = "Attending-Guest-List"; title = "Attending Guest List";
   } else if (type === "invited") {
-    columns = ["Name", "Phone", "Email", "Type", "Family", "Invited For", "Gender", "Age Group", "Invited", "RSVP", "Attending", "Checked In", "Notes"];
-    weights = [1.5, 1.2, 1.4, 0.7, 1.1, 1.1, 0.7, 0.7, 0.6, 0.9, 0.7, 0.7, 1.4];
+    columns = ["Name", "Phone", "Email", "Type", "Family", "Invited For", "Gender", "Invited", "RSVP", "Attending", "Checked In", "Notes"];
+    weights = [1.5, 1.2, 1.4, 0.7, 1.1, 1.1, 0.7, 0.6, 0.9, 0.7, 0.7, 1.4];
     rows = guests.map(function (g) {
-      return [fullName(g), phone(g.phone), g.email || "", g.invitationType || "", g.familyName || "", g.invitedFor || "", Fields.genderLabel(g.gender), Fields.ageLabel(g.ageGroup), g.invitedCount || 1, (g.rsvpStatus || "pending").replace("_", " "), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
+      return [fullName(g), phone(g.phone), g.email || "", g.invitationType || "", g.familyName || "", g.invitedFor || "", Fields.genderLabel(g.gender), g.invitedCount || 1, (g.rsvpStatus || "pending").replace("_", " "), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
     });
     filename = "Invited-Guests"; title = "All Invited Guests";
   } else if (type === "requests") {

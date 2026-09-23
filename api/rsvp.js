@@ -38,7 +38,6 @@ function publicView(guest) {
     attendingCount: guest.attendingCount || 0,
     plusOneName: guest.plusOneName || "",
     gender: guest.gender || "",
-    ageGroup: guest.ageGroup || "",
     rsvpAt: guest.rsvpAt || null,
     checkedIn: !!guest.checkedIn,
   };
@@ -72,7 +71,6 @@ module.exports = async function handler(req, res) {
     var message = String(body.message || "").trim().slice(0, 1000);
     var channel = CHANNELS.indexOf(body.channel) !== -1 ? body.channel : "web";
     var gender = Fields.normGender(body.gender);
-    var ageGroup = Fields.normAgeGroup(body.ageGroup);
     var phone = String(body.phone || "").trim();
     var requestedCount = Math.max(1, Math.min(10, Number(body.guests) || 1));
 
@@ -99,7 +97,6 @@ module.exports = async function handler(req, res) {
       }
       if (phone && (matchedBy === "link" || !guest2.phone)) guest2.phone = phone;
       if (gender) guest2.gender = gender;
-      if (ageGroup) guest2.ageGroup = ageGroup;
       guest2.rsvpChannel = channel;
       guest2.rsvpAt = now;
       await writeData(data2);
@@ -127,7 +124,6 @@ module.exports = async function handler(req, res) {
       lastName: nameParts.lastName,
       phone: phone || reqRec.phone || "",
       gender: gender || reqRec.gender || "",
-      ageGroup: ageGroup || reqRec.ageGroup || "",
       attend: attend,
       guests: attend === "attending" ? requestedCount : 0,
       plusOneName: attend === "attending" && body.plusOneName ? String(body.plusOneName).trim() : "",

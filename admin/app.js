@@ -97,7 +97,6 @@
   function populateInvitedForFilter() {
     fillSelect("filterInvitedFor", "All (invited for)", categories.map(function (c) { return { value: c, label: c }; }));
     fillSelect("filterGender", "All genders", FG.GENDERS.concat([{ value: "_none", label: "Not recorded" }]));
-    fillSelect("filterAge", "All ages", [{ value: "_child", label: "Children (0–16)" }].concat(FG.AGE_GROUPS.map(function (a) { return { value: a.value, label: "Age " + a.label }; }), [{ value: "_none", label: "Not recorded" }]));
   }
 
   function renderDashboard() {
@@ -165,25 +164,14 @@
       ? provEntries.map(barRow).join("") + '<p style="margin-top:6px; font-size:.76rem; color:var(--text-muted);">Percent of agreed fee paid so far, by currency.</p>'
       : '<p style="color:var(--text-muted); font-size:.84rem;">No service providers recorded yet.</p>';
   }
-  // Age and gender are optional, so every figure says how much of the list it covers.
+  // Gender is optional, so the note says how much of the list it covers.
   function renderGuestMix(attending) {
-    var withAge = attending.filter(function (g) { return g.ageGroup; });
     var withGender = attending.filter(function (g) { return g.gender; });
-    var ageMax = Math.max(1, withAge.length);
-    document.getElementById("ageBars").innerHTML = withAge.length
-      ? FG.AGE_GROUPS.map(function (a) { return barRow([a.label, withAge.filter(function (g) { return g.ageGroup === a.value; }).length, ageMax]); }).join("")
-      : '<p style="color:var(--text-muted); font-size:.84rem;">No age groups recorded yet.</p>';
     var gMax = Math.max(1, withGender.length);
     document.getElementById("genderBars").innerHTML = withGender.length
       ? FG.GENDERS.map(function (x) { return barRow([x.label, withGender.filter(function (g) { return g.gender === x.value; }).length, gMax]); }).join("")
       : '<p style="color:var(--text-muted); font-size:.84rem;">No genders recorded yet.</p>';
-    var children = withAge.filter(function (g) { return FG.isChild(g.ageGroup); }).length;
-    var seniors = withAge.filter(function (g) { return g.ageGroup === "61+"; }).length;
-    var parts = [];
-    if (attending.length) parts.push("Age recorded for " + withAge.length + " of " + attending.length + " attending invitations, gender for " + withGender.length + ".");
-    if (children) parts.push(children + (children > 1 ? " children" : " child") + " (0–16) expected — plan kids' meals and seating.");
-    if (seniors) parts.push(seniors + " guest" + (seniors > 1 ? "s" : "") + " aged 61+ — consider seating near the front and easy access.");
-    document.getElementById("mixNote").textContent = parts.join(" ");
+    document.getElementById("mixNote").textContent = attending.length ? "Gender recorded for " + withGender.length + " of " + attending.length + " attending invitations." : "";
   }
   function renderCheckinMethods() {
     var checked = guests.filter(function (g) { return g.checkedIn; });
@@ -217,7 +205,6 @@
     var fInvitedFor = document.getElementById("filterInvitedFor").value;
     var fCheckin = document.getElementById("filterCheckin").value;
     var fGender = document.getElementById("filterGender").value;
-    var fAge = document.getElementById("filterAge").value;
 
     var rows = guests.filter(function (g) {
       if (q) {
@@ -227,9 +214,6 @@
       if (fRsvp && (g.rsvpStatus || "pending") !== fRsvp) return false;
       if (fInvitedFor && (g.invitedFor || "") !== fInvitedFor) return false;
       if (fGender && (fGender === "_none" ? !!g.gender : g.gender !== fGender)) return false;
-      if (fAge === "_child" && !FG.isChild(g.ageGroup)) return false;
-      if (fAge === "_none" && g.ageGroup) return false;
-      if (fAge && fAge.charAt(0) !== "_" && g.ageGroup !== fAge) return false;
       if (fCheckin === "yes" && !g.checkedIn) return false;
       if (fCheckin === "no" && g.checkedIn) return false;
       return true;
@@ -240,7 +224,7 @@
     document.getElementById("guestRows").innerHTML = rows.map(function (g) {
       var status = g.rsvpStatus || "pending";
       var subLine = [g.familyName || capitalize(g.invitationType || "individual"), g.invitedFor].filter(Boolean).join(" · ");
-      var meta = [FG.genderLabel(g.gender), g.ageGroup ? "Age " + FG.ageLabel(g.ageGroup) : "", g.rsvpChannel && status !== "pending" ? "Replied via " + (CHANNELS[g.rsvpChannel] || g.rsvpChannel) : ""].filter(Boolean).join(" · ");
+      var meta = [FG.genderLabel(g.gender), g.rsvpChannel && status !== "pending" ? "Replied via " + (CHANNELS[g.rsvpChannel] || g.rsvpChannel) : ""].filter(Boolean).join(" · ");
       return "<tr>" +
         '<td><div class="g-name">' + escapeHtml(fullName(g)) + '</div><div class="g-sub">' + escapeHtml(subLine) + "</div>" + (meta ? '<div class="g-meta">' + escapeHtml(meta) + "</div>" : "") + "</td>" +
         '<td><span class="pill pill-' + status + '">' + status.replace("_", " ") + "</span></td>" +
@@ -271,7 +255,6 @@
   document.getElementById("filterInvitedFor").addEventListener("change", renderGuestTable);
   document.getElementById("filterCheckin").addEventListener("change", renderGuestTable);
   document.getElementById("filterGender").addEventListener("change", renderGuestTable);
-  document.getElementById("filterAge").addEventListener("change", renderGuestTable);
 
   document.getElementById("guestRows").addEventListener("click", function (e) {
     var btn = e.target.closest(".icon-btn");
@@ -355,7 +338,7 @@
     var byId = {};
     guests.forEach(function (g) { byId[g.id] = g; });
     document.getElementById("reqRows").innerHTML = rows.map(function (r) {
-      var meta = [WNPhone.formatPhone(r.phone), FG.genderLabel(r.gender), r.ageGroup ? "Age " + FG.ageLabel(r.ageGroup) : ""].filter(Boolean).join(" · ");
+      var meta = [WNPhone.formatPhone(r.phone), FG.genderLabel(r.gender)].filter(Boolean).join(" · ");
       var linked = r.guestId && byId[r.guestId] ? "On invite list as " + fullName(byId[r.guestId]) : "";
       var actions;
       if (r.status === "pending") actions = '<button class="btn btn-primary btn-sm" data-req-action="approve" data-id="' + r.id + '">Approve</button> <button class="btn btn-outline btn-sm" data-req-action="decline" data-id="' + r.id + '">Decline</button>';
