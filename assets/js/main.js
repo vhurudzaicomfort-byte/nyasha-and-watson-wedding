@@ -39,7 +39,14 @@
   /* ---------------- COVER ---------------- */
   var cover = document.getElementById("cover");
   var body = document.body;
-  body.classList.add("locked");
+  var deepLink = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
+  if (deepLink) {
+    cover.style.transition = "none";
+    cover.classList.add("opened");
+    window.addEventListener("load", function () { deepLink.scrollIntoView(); });
+  } else {
+    body.classList.add("locked");
+  }
   document.getElementById("openInviteBtn").addEventListener("click", function () {
     cover.classList.add("opened");
     body.classList.remove("locked");
@@ -84,6 +91,7 @@
     if (!id || id === guestToken) return;
     guestToken = id;
     storeSet(id);
+    redrawCard();
     try {
       var u = new URL(location.href);
       u.searchParams.set("g", id);
@@ -542,125 +550,89 @@
   }
   var sprayImgPromise = loadImage(SPRAY_SRC);
 
-  /* ---------------- INVITATION CARD (canvas, live preview + download) ---------------- */
-  function makeQrDataUrl(text) {
-    return new Promise(function (resolve) {
-      if (!window.QRCode) { resolve(null); return; }
-      var el = document.getElementById("qrTemp");
-      el.innerHTML = "";
-      try {
-        new QRCode(el, { text: text, width: 300, height: 300, colorDark: "#3E1730", colorLight: "#FBF7F0", correctLevel: QRCode.CorrectLevel.M });
-        setTimeout(function () {
-          var c = el.querySelector("canvas");
-          resolve(c ? c.toDataURL("image/png") : null);
-        }, 160);
-      } catch (e) { resolve(null); }
-    });
-  }
-
-  function drawCard(ctx, w, h, qrImg, floralImg, guestName) {
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = "#FBF7F0"; ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "#B08A46"; ctx.lineWidth = 3; ctx.strokeRect(34, 34, w - 68, h - 68);
-    ctx.strokeStyle = "#E4D2B0"; ctx.lineWidth = 1; ctx.strokeRect(50, 50, w - 100, h - 100);
-    drawSpray(ctx, floralImg, w, h, 340, "tl", 100);
-    drawSpray(ctx, floralImg, w, h, 340, "br", 100);
-    ctx.textAlign = "center";
-
-    drawRings(ctx, w / 2, 68, 11, 8, "#B08A46", 2.4);
-    ctx.fillStyle = "#8B7A6E"; ctx.font = '500 20px "Poppins", sans-serif';
-    ctx.fillText("T O G E T H E R   W I T H   T H E I R   F A M I L I E S", w / 2, 108);
-    ctx.font = 'italic 400 22px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
-    ctx.fillText("You are warmly invited to the wedding of", w / 2, 145);
-
-    boldScript(ctx, "Nyasha", w / 2, 255, '400 104px "Great Vibes", cursive', "#3E1730", 3.6);
-    ctx.font = '600 24px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
-    ctx.fillText("M A Z U R U S E", w / 2, 343);
-    boldScript(ctx, "&", w / 2, 400, '400 56px "Great Vibes", cursive', "#D97F55", 2.4);
-    boldScript(ctx, "Watson", w / 2, 520, '400 104px "Great Vibes", cursive', "#3E1730", 3.6);
-    ctx.font = '600 24px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
-    ctx.fillText("C H I N ' O M B E", w / 2, 608);
-
-    ctx.strokeStyle = "#E4D2B0"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(w / 2 - 140, 642); ctx.lineTo(w / 2 + 140, 642); ctx.stroke();
-    ctx.font = 'italic 400 21px "Bodoni Moda", serif'; ctx.fillStyle = "#5A2444";
-    ctx.fillText("As they celebrate their love", w / 2, 676);
-    ctx.fillText("and begin a new chapter together", w / 2, 702);
-
-    // date block — width of the date line is measured so the flanking rules never cross the text
-    ctx.font = '500 19px "Poppins", sans-serif';
-    ctx.letterSpacing = "2px";
-    var dateLine = "SATURDAY   ·   DECEMBER 2026";
-    var dateW = ctx.measureText(dateLine).width;
-    ctx.fillStyle = "#5A2444";
-    ctx.fillText(dateLine, w / 2, 754);
-    centeredRule(ctx, w, 748, dateW / 2 + 24, 60, "#D97F55");
-    ctx.letterSpacing = "0px";
-
-    ctx.fillStyle = "#D97F55"; ctx.font = '600 128px "Bodoni Moda", serif';
-    ctx.fillText("05", w / 2, 872);
-
-    ctx.fillStyle = "#5A2444"; ctx.font = '600 24px "Bodoni Moda", serif';
-    ctx.fillText("COLNE VALLEY NATURE RESERVE PARK", w / 2, 928);
-    ctx.fillStyle = "#8B7A6E"; ctx.font = '400 18px "Poppins", sans-serif';
-    ctx.fillText("7 Bay Noakes, Colne Valley, Chisipite,", w / 2, 956);
-    ctx.fillText("Harare, Zimbabwe", w / 2, 978);
-
-    ctx.strokeStyle = "#E4D2B0"; ctx.beginPath(); ctx.moveTo(w / 2 - 140, 1002); ctx.lineTo(w / 2 + 140, 1002); ctx.stroke();
-
-    ctx.fillStyle = "#5A2444"; ctx.font = 'italic 400 20px "Bodoni Moda", serif';
-    ctx.fillText('"Above all, love each other deeply,', w / 2, 1032);
-    ctx.fillText("because love covers over a multitude of sins.\"", w / 2, 1056);
-    ctx.font = '600 15px "Poppins", sans-serif'; ctx.fillStyle = "#8B7A6E";
-    ctx.fillText("1   P E T E R   4 : 8", w / 2, 1080);
-
-    if (guestName) {
-      ctx.font = '500 12px "Poppins", sans-serif'; ctx.fillStyle = "#B08A46";
-      ctx.fillText("R E S E R V E D   F O R", w / 2, 1102);
-      ctx.font = 'italic 400 22px "Bodoni Moda", serif'; ctx.fillStyle = "#3E1730";
-      ctx.fillText(guestName, w / 2, 1126);
-    }
-    ctx.font = '500 13px "Poppins", sans-serif'; ctx.fillStyle = "#8B7A6E";
-    ctx.fillText("S T R I C T L Y   B Y   I N V I T A T I O N   O N L Y", w / 2, 1148);
-
-    // Caption sits above the QR code (not below it) so nothing renders past the
-    // card's inner border — the frame previously struck straight through this line.
-    ctx.font = '500 14px "Poppins", sans-serif'; ctx.fillStyle = "#8B7A6E";
-    ctx.fillText("SCAN FOR RSVP & WEDDING DETAILS", w / 2, 1176);
-
-    var qs = 104, qrTop = 1190;
-    if (qrImg) ctx.drawImage(qrImg, w / 2 - qs / 2, qrTop, qs, qs);
-    else { ctx.strokeStyle = "#E4D2B0"; ctx.strokeRect(w / 2 - qs / 2, qrTop, qs, qs); }
-  }
-
-  var cachedQrImg = null, cachedFloralImg = null;
-  var cardCanvas = document.getElementById("inviteCanvas");
-  var cardCtx = cardCanvas.getContext("2d");
-
-  function redrawCard() {
-    if (!cachedQrImg && !cachedFloralImg) return;
-    var name = (document.getElementById("g-card-name").value || "").trim();
-    drawCard(cardCtx, cardCanvas.width, cardCanvas.height, cachedQrImg, cachedFloralImg, name);
-  }
-
-  Promise.all([loadFonts(), makeQrDataUrl(location.origin + location.pathname), sprayImgPromise]).then(function (res) {
-    cachedFloralImg = res[2];
-    if (res[1]) loadImage(res[1]).then(function (img) { cachedQrImg = img; redrawCard(); });
-    else redrawCard();
-  });
-
-  /* Keep the RSVP name field and the card's personalisation field in sync */
+  /* ---------------- INVITATION CARD (interactive SVG, live preview + download) ---------------- */
+  // The same drawing as the JPG / PDF / SVG / GIF files in /invitation-card
+  // (assets/js/invitation-card.js). Its RSVP and venue areas are real links
+  // laid over the artwork, so they stay aligned at any size.
+  var cardHost = document.getElementById("inviteCard");
   var rsvpNameInput = document.getElementById("g-name");
   var cardNameInput = document.getElementById("g-card-name");
+  var measureCtx = document.createElement("canvas").getContext("2d");
+  var CARD_CSS_FONTS = { script: '400 {s}px "Great Vibes"', serif: '400 {s}px "Bodoni Moda"', serifSemi: '600 {s}px "Bodoni Moda"', serifBold: '700 {s}px "Bodoni Moda"', sans: '400 {s}px "Poppins"', sansMed: '500 {s}px "Poppins"', sansSemi: '600 {s}px "Poppins"' };
+  function measureCardText(str, key, size, ls) {
+    measureCtx.font = CARD_CSS_FONTS[key].replace("{s}", size);
+    return measureCtx.measureText(str).width + (ls || 0) * str.length;
+  }
+  // A personalised card's QR opens that guest's own invitation at the RSVP.
+  function cardRsvpLink() { return location.origin + "/" + (guestToken ? "?g=" + encodeURIComponent(guestToken) : "") + "#rsvp"; }
+  function qrMatrix(value) {
+    if (!window.QRCode) return null;
+    var el = document.getElementById("qrTemp");
+    el.innerHTML = "";
+    try {
+      var m = new QRCode(el, { text: value, width: 64, height: 64, correctLevel: QRCode.CorrectLevel.M })._oQRCode;
+      return { size: m.getModuleCount(), isDark: function (r, c) { return m.isDark(r, c); } };
+    } catch (e) { return null; }
+  }
+  var cardQr = null, cardQrFor = "";
+  function cardOptions(extra) {
+    var link = cardRsvpLink();
+    if (link !== cardQrFor) { cardQr = qrMatrix(link); cardQrFor = link; }
+    return Object.assign({ name: (cardNameInput.value || "").trim(), qr: cardQr, measure: measureCardText }, extra);
+  }
+  function redrawCard() {
+    if (!cardHost || !window.WNInvitation) return;
+    cardHost.innerHTML = WNInvitation.build(cardOptions({ rsvpHref: "#rsvp", linkTarget: "" }));
+  }
   rsvpNameInput.addEventListener("input", function () { cardNameInput.value = rsvpNameInput.value; redrawCard(); });
   cardNameInput.addEventListener("input", function () { rsvpNameInput.value = cardNameInput.value; redrawCard(); });
+  redrawCard();
+  loadFonts().then(redrawCard); // re-fit the guest name once the real fonts are in
 
+  // Download: an image can't reach the page's fonts, so they're embedded first.
+  var cardFontCss = null;
+  function cardFontData() {
+    if (cardFontCss) return Promise.resolve(cardFontCss);
+    var faces = [["Great Vibes", 400, "GreatVibes-Regular.ttf"], ["Bodoni Moda", 400, "BodoniModa_28pt-Regular.ttf"], ["Bodoni Moda", 600, "BodoniModa_28pt-SemiBold.ttf"], ["Bodoni Moda", 700, "BodoniModa_28pt-Bold.ttf"], ["Poppins", 400, "Poppins-Regular.ttf"], ["Poppins", 500, "Poppins-Medium.ttf"], ["Poppins", 600, "Poppins-SemiBold.ttf"]];
+    return Promise.all(faces.map(function (face) {
+      return fetch("assets/fonts/" + face[2]).then(function (r) { return r.blob(); }).then(function (b) {
+        return new Promise(function (resolve) {
+          var fr = new FileReader();
+          fr.onload = function () { resolve("@font-face{font-family:'" + face[0] + "';font-weight:" + face[1] + ";font-style:normal;src:url(" + fr.result + ") format('truetype');}"); };
+          fr.readAsDataURL(b);
+        });
+      });
+    })).then(function (css) { cardFontCss = css.join(""); return cardFontCss; });
+  }
+  function renderCardJpeg() {
+    return cardFontData().then(function (css) {
+      var svg = WNInvitation.build(cardOptions({ fontCss: css, rsvpHref: cardRsvpLink() }));
+      var url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+      return loadImage(url).then(function (img) {
+        if (!img) { URL.revokeObjectURL(url); throw new Error("render failed"); }
+        var c = document.createElement("canvas");
+        c.width = WNInvitation.W; c.height = WNInvitation.H;
+        var ctx = c.getContext("2d");
+        // Give embedded fonts a moment to apply inside the SVG image before painting.
+        return new Promise(function (r) { setTimeout(r, 250); }).then(function () {
+          ctx.fillStyle = "#FBF7F0"; ctx.fillRect(0, 0, c.width, c.height);
+          ctx.drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(url);
+          return new Promise(function (resolve) { c.toBlob(resolve, "image/jpeg", 0.93); });
+        });
+      });
+    });
+  }
   document.getElementById("saveCardBtn").addEventListener("click", function () {
-    cardCanvas.toBlob(function (blob) {
-      if (!blob) return;
+    var btn = this;
+    btn.disabled = true;
+    renderCardJpeg().then(function (blob) {
+      if (!blob) throw new Error("no image");
       var guestName = (cardNameInput.value || "").trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
-      downloadBlob(blob, "Nyasha-Watson-Invitation" + (guestName ? "-" + guestName : "") + ".png");
+      downloadBlob(blob, "Nyasha-Watson-Invitation" + (guestName ? "-" + guestName : "") + ".jpg");
       showToast("Invitation card downloaded");
-    }, "image/png");
+    }).catch(function () { showToast("Couldn't create the card image — please try again"); })
+      .then(function () { btn.disabled = false; });
   });
 
   /* ---------------- PROGRAMME DOWNLOAD (branded PNG, phone-friendly) ---------------- */

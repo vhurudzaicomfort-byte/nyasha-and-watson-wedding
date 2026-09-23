@@ -399,12 +399,15 @@
       } catch (e) { qrDataUrlPromise = Promise.resolve(null); }
     } else { qrDataUrlPromise = Promise.resolve(null); }
 
-    qrDataUrlPromise.then(function (qrDataUrl) {
+    Promise.all([qrDataUrlPromise, badgeSpray()]).then(function (res) {
+      var qrDataUrl = res[0], spray = res[1];
       var c = document.getElementById("badgeCanvas");
       var ctx = c.getContext("2d");
       var w = c.width, h = c.height;
       ctx.fillStyle = "#FBF7F0"; ctx.fillRect(0, 0, w, h);
       ctx.strokeStyle = "#B08A46"; ctx.lineWidth = 3; ctx.strokeRect(24, 24, w - 48, h - 48);
+      drawSpray(ctx, spray, w, h, 230, "tl", 62);
+      drawSpray(ctx, spray, w, h, 230, "br", 62);
       ctx.textAlign = "center";
       ctx.fillStyle = "#8B7A6E"; ctx.font = '400 22px Jost, sans-serif';
       ctx.fillText("WATSON & NYASHA", w / 2, 90);
@@ -429,6 +432,30 @@
         finishBadge(w, h);
       }
     });
+  }
+  // Same floral spray as the website, bloom tucked just inside the corner and
+  // tilted to follow the frame (matches drawSpray in assets/js/main.js).
+  var badgeSprayPromise = null;
+  function badgeSpray() {
+    if (!badgeSprayPromise) badgeSprayPromise = new Promise(function (resolve) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { resolve(null); };
+      img.src = "/assets/img/floral-spray.webp";
+    });
+    return badgeSprayPromise;
+  }
+  function drawSpray(ctx, img, cw, ch, size, corner, inset) {
+    if (!img) return;
+    var sw = size, sh = size * img.naturalHeight / img.naturalWidth;
+    var x = corner === "tl" ? inset - 0.5 * sw : cw - inset - 0.5 * sw;
+    var y = corner === "tl" ? inset - 0.41 * sh : ch - inset - 0.59 * sh;
+    ctx.save();
+    ctx.translate(x + sw / 2, y + sh / 2);
+    if (corner === "br") ctx.rotate(Math.PI);
+    ctx.rotate(-6 * Math.PI / 180);
+    ctx.drawImage(img, -sw / 2, -sh / 2, sw, sh);
+    ctx.restore();
   }
   function finishBadge(w, h) {
     var c = document.getElementById("badgeCanvas");
