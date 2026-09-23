@@ -43,7 +43,13 @@
   if (deepLink) {
     cover.style.transition = "none";
     cover.classList.add("opened");
-    window.addEventListener("load", function () { deepLink.scrollIntoView(); });
+    var jumpToDeepLink = function () {
+      var html = document.documentElement, prev = html.style.scrollBehavior;
+      html.style.scrollBehavior = "auto"; // jump, don't animate, when arriving from a link
+      deepLink.scrollIntoView();
+      html.style.scrollBehavior = prev;
+    };
+    window.addEventListener("load", function () { jumpToDeepLink(); setTimeout(jumpToDeepLink, 700); });
   } else {
     body.classList.add("locked");
   }
