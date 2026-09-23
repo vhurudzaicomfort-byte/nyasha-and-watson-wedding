@@ -32,6 +32,27 @@ function parseCsv(text) {
   return rows.filter((r) => r.some((c) => c.trim() !== ""));
 }
 
+// Accept the Excel template's friendly headers ("First Name *", "Number Invited"…) as
+// well as the original CSV ones, matched case- and punctuation-insensitively.
+const HEADER_ALIASES = {
+  firstname: "FirstName", name: "FirstName", lastname: "LastName", surname: "LastName",
+  phone: "Phone", phonenumber: "Phone", mobile: "Phone", cell: "Phone", whatsapp: "Phone",
+  email: "Email", emailaddress: "Email",
+  invitationtype: "InvitationType", type: "InvitationType",
+  familyname: "FamilyName", familygroupname: "FamilyName", family: "FamilyName", groupname: "FamilyName",
+  invitedfor: "InvitedFor", category: "InvitedFor", side: "InvitedFor",
+  gender: "Gender", sex: "Gender",
+  numberinvited: "InvitedCount", invitedcount: "InvitedCount", invited: "InvitedCount", partysize: "InvitedCount", guests: "InvitedCount",
+  plusoneallowed: "PlusOneAllowed", plusone: "PlusOneAllowed",
+  rsvpstatus: "RSVPStatus", rsvp: "RSVPStatus",
+  notes: "Notes", note: "Notes", comments: "Notes",
+};
+function canonicalHeader(h) {
+  const key = String(h || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return HEADER_ALIASES[key] || String(h || "").trim();
+}
+const INVITATION_TYPES = ["individual", "couple", "family", "group"];
+
 function normPhone(s) { return String(s || "").replace(/[^\d]/g, ""); }
 function normName(s) { return String(s || "").trim().toLowerCase().replace(/\s+/g, " "); }
 
@@ -41,11 +62,12 @@ function toGuestDraft(rowObj) {
     lastName: (rowObj.LastName || "").trim(),
     phone: (rowObj.Phone || "").trim(),
     email: (rowObj.Email || "").trim(),
-    invitationType: (rowObj.InvitationType || "individual").trim().toLowerCase() || "individual",
+    invitationType: (function (t) { t = String(t || "").trim().toLowerCase(); return INVITATION_TYPES.indexOf(t) !== -1 ? t : "individual"; })(rowObj.InvitationType),
     familyName: (rowObj.FamilyName || "").trim(),
     invitedFor: Fields.normCategory(rowObj.InvitedFor),
     gender: Fields.normGender(rowObj.Gender),
-    invitedCount: Number(rowObj.InvitedCount) || 1,
+    // blank count: 2 for a couple, otherwise 1
+    invitedCount: Math.max(1, Math.min(50, parseInt(rowObj.InvitedCount, 10) || (String(rowObj.InvitationType || "").trim().toLowerCase() === "couple" ? 2 : 1))),
     plusOneAllowed: /^(y|yes|true|1)$/i.test((rowObj.PlusOneAllowed || "").trim()),
     rsvpStatus: (rowObj.RSVPStatus || "pending").trim().toLowerCase() || "pending",
     attendingCount: 0,
@@ -98,7 +120,7 @@ module.exports = async function handler(req, res) {
   const rows = parseCsv(csvText);
   if (!rows.length) { res.status(400).json({ error: "CSV appears to be empty" }); return; }
 
-  const header = rows[0].map((h) => h.trim());
+  const header = rows[0].map(canonicalHeader);
   const dataRows = rows.slice(1);
 
   const preview = dataRows.map((r) => {

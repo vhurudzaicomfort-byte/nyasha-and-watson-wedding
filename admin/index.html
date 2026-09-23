@@ -10,8 +10,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="/assets/js/qrcode.min.js"></script>
-<script src="/assets/js/countries.js?v=20260923j"></script>
-<script src="/assets/js/guest-fields.js?v=20260923j"></script>
+<script src="/assets/js/countries.js?v=20260923k"></script>
+<script src="/assets/js/guest-fields.js?v=20260923k"></script>
 <script src="/assets/js/jsQR.min.js"></script>
 <style>
   :root{
@@ -237,7 +237,7 @@
         <div class="page-head">
           <div><h2>Invites &amp; RSVPs</h2><p>Add every invitation — one by one or by CSV — and track each guest's RSVP as it comes in.</p></div>
           <div class="btn-row">
-            <button class="btn btn-outline" id="importGuestsBtn">Import CSV</button>
+            <button class="btn btn-outline" id="importGuestsBtn">Import</button>
             <a class="btn btn-outline" href="/api/admin/export?type=invited&format=csv">Export CSV</a>
             <button class="btn btn-primary" id="addGuestBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Invite</button>
           </div>
@@ -431,15 +431,16 @@
 <div class="overlay" id="importModalOverlay" hidden>
   <div class="modal modal-wide">
     <button class="modal-close" id="importModalClose" aria-label="Close">&times;</button>
-    <h3>Import Guests from CSV</h3>
-    <p class="modal-sub">Download the template, fill it in, then upload it here. Possible duplicates are flagged for your review before anything is saved.</p>
+    <h3>Import Guests</h3>
+    <p class="modal-sub">Download the Excel template, fill in the Guests tab (Invitation Type, Invited For and Gender are dropdowns), then drop the saved file here. Possible duplicates are flagged for your review before anything is saved.</p>
     <div class="btn-row" style="margin-bottom:16px;">
-      <a class="btn btn-outline btn-sm" href="/assets/guest-import-template.csv" download>Download CSV Template</a>
+      <a class="btn btn-primary btn-sm" href="/assets/guest-import-template.xlsx" download="Guest-Register-Template.xlsx">Download Excel Template</a>
+      <a class="btn btn-outline btn-sm" href="/assets/guest-import-template.csv" download>CSV template</a>
     </div>
     <div id="importDropzone" class="dropzone">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
-      <p><strong>Drag &amp; drop</strong> your CSV here, or click to choose a file</p>
-      <input type="file" id="importFileInput" accept=".csv,text/csv" hidden>
+      <p><strong>Drag &amp; drop</strong> your Excel or CSV file here, or click to choose a file</p>
+      <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv,text/csv" hidden>
     </div>
     <div id="importPreviewWrap" hidden>
       <div class="import-summary" id="importSummary"></div>
@@ -468,7 +469,7 @@
     <div id="giftImportDropzone" class="dropzone">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
       <p><strong>Drag &amp; drop</strong> your CSV here, or click to choose a file</p>
-      <input type="file" id="giftImportFileInput" accept=".csv,text/csv" hidden>
+      <input type="file" id="giftImportFileInput" accept=".xlsx,.xls,.csv,text/csv" hidden>
     </div>
     <div id="giftImportPreviewWrap" hidden>
       <div class="import-summary" id="giftImportSummary"></div>
@@ -497,7 +498,7 @@
     <div id="providerImportDropzone" class="dropzone">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
       <p><strong>Drag &amp; drop</strong> your CSV here, or click to choose a file</p>
-      <input type="file" id="providerImportFileInput" accept=".csv,text/csv" hidden>
+      <input type="file" id="providerImportFileInput" accept=".xlsx,.xls,.csv,text/csv" hidden>
     </div>
     <div id="providerImportPreviewWrap" hidden>
       <div class="import-summary" id="providerImportSummary"></div>
@@ -598,6 +599,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/admin/app.js?v=20260923j"></script>
+<script src="/admin/app.js?v=20260923k"></script>
 </body>
 </html>

@@ -1,3 +1,1 @@
-FirstName,LastName,Phone,Email,InvitationType,FamilyName,InvitedFor,Gender,InvitedCount,PlusOneAllowed,RSVPStatus,Notes
-Comfort,Vhurudzai,+263 772692738,comfort@example.com,individual,,Bride's Side,Female,1,No,pending,Example row — edit or delete (Gender is optional)
-Tariro,Moyo,,,couple,The Moyo Family,Church,,2,Yes,pending,
+First Name,Last Name,Phone,Email,Invitation Type,Family Name,Invited For,Gender,Number Invited,Notes

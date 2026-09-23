@@ -909,6 +909,39 @@
     return "<option value=\"" + value + "\"" + (r.resolution === value ? " selected" : "") + ">" + label + "</option>";
   }
 
+  // Excel uploads: the SheetJS reader is loaded only when an Excel file is picked,
+  // then the "Guests" sheet (or the first sheet) becomes CSV for the same import.
+  // Title rows above the header are skipped: the header is the first row with 3+ filled cells.
+  var xlsxLoader = null;
+  function loadXlsx() {
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    if (!xlsxLoader) xlsxLoader = new Promise(function (resolve, reject) {
+      var s = document.createElement("script");
+      s.src = "/assets/js/xlsx.mini.min.js";
+      s.onload = function () { resolve(window.XLSX); };
+      s.onerror = function () { xlsxLoader = null; reject(new Error("Could not load the Excel reader — please try again")); };
+      document.head.appendChild(s);
+    });
+    return xlsxLoader;
+  }
+  function csvCell(v) {
+    var s = String(v == null ? "" : v);
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function excelToCsv(file) {
+    return Promise.all([loadXlsx(), file.arrayBuffer()]).then(function (res) {
+      var XLSX = res[0];
+      var wb = XLSX.read(res[1], { type: "array" });
+      var sheetName = wb.SheetNames.find(function (n) { return /^guests?$/i.test(n.trim()); }) || wb.SheetNames[0];
+      var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, raw: false, defval: "", blankrows: false });
+      var filled = function (r) { return r.filter(function (c) { return String(c).trim() !== ""; }).length; };
+      var start = rows.findIndex(function (r) { return filled(r) >= 3; });
+      if (start === -1) throw new Error("That sheet looks empty — fill in the Guests tab and try again");
+      return rows.slice(start).filter(function (r) { return filled(r) > 0; })
+        .map(function (r) { return r.map(csvCell).join(","); }).join("\n");
+    });
+  }
+
   function setupCsvImport(cfg) {
     var rows = [];
     function reset() {
@@ -938,13 +971,11 @@
     });
 
     function readFile(file) {
-      var reader = new FileReader();
-      reader.onload = function () {
-        api(cfg.endpoint, { method: "POST", body: { csv: String(reader.result) } })
-          .then(function (res) { showPreview(res); })
-          .catch(function (e) { showToast(e.message || "Could not read that CSV file"); });
-      };
-      reader.readAsText(file);
+      var isExcel = /\.(xlsx|xlsm|xls)$/i.test(file.name || "");
+      (isExcel ? excelToCsv(file) : file.text()).then(function (csv) {
+        return api(cfg.endpoint, { method: "POST", body: { csv: csv } });
+      }).then(function (res) { showPreview(res); })
+        .catch(function (e) { showToast(e.message || "Could not read that file"); });
     }
 
     function showPreview(res) {

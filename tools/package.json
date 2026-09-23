@@ -3,15 +3,18 @@
   "private": true,
   "description": "Offline generators for the invitation card deliverables (not deployed).",
   "scripts": {
-    "invitation": "node build-invitation.js"
+    "invitation": "node build-invitation.js",
+    "guest-template": "node build-guest-template.js"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
+    "exceljs": "^4.4.0",
     "gifenc": "^1.0.3",
     "omggif": "^1.0.10",
     "pdfkit": "^0.20.2",
     "qrcode": "^1.5.4",
     "sharp": "^0.35.4",
-    "svg-to-pdfkit": "^0.1.8"
+    "svg-to-pdfkit": "^0.1.8",
+    "xlsx": "^0.18.5"
   }
 }

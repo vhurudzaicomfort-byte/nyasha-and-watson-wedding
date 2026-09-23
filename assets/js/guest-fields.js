@@ -21,6 +21,10 @@
     var s = String(v || "").trim();
     if (!s) return "";
     if (/church/i.test(s)) return "Church";
+    if (/^bride/i.test(s)) return "Bride's Side";
+    if (/^groom/i.test(s)) return "Groom's Side";
+    if (/mutual|friend/i.test(s)) return "Mutual Friends";
+    if (/service|provider|vendor|supplier/i.test(s)) return "Service Providers";
     var hit = CATEGORIES.find(function (c) { return c.toLowerCase() === s.toLowerCase(); });
     return hit || s;
   }
