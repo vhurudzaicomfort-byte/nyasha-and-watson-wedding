@@ -1,7 +1,8 @@
 const { requireAuth } = require("../../lib/auth");
 const { readData, writeData, newId } = require("../../lib/blob-store");
+const Fields = require("../../assets/js/guest-fields.js");
 
-const CATEGORIES = ["Bride's Side", "Groom's Side", "ZAOGA Church", "Roman Catholic Church", "Mutual Friends", "Service Providers"];
+const CATEGORIES = Fields.CATEGORIES;
 
 module.exports = async function handler(req, res) {
   if (!requireAuth(req, res)) return;
@@ -24,6 +25,8 @@ module.exports = async function handler(req, res) {
       invitationType: body.invitationType || "individual",
       familyName: String(body.familyName || "").trim(),
       invitedFor: String(body.invitedFor || "").trim(),
+      gender: Fields.normGender(body.gender),
+      ageGroup: Fields.normAgeGroup(body.ageGroup),
       invitedCount: Number(body.invitedCount) || 1,
       plusOneAllowed: !!body.plusOneAllowed,
       rsvpStatus: body.rsvpStatus || "pending",
@@ -32,7 +35,9 @@ module.exports = async function handler(req, res) {
       checkedIn: false,
       checkInTime: null,
       createdAt: new Date().toISOString(),
-      rsvpAt: null,
+      rsvpAt: body.rsvpStatus && body.rsvpStatus !== "pending" ? new Date().toISOString() : null,
+      rsvpChannel: body.rsvpStatus && body.rsvpStatus !== "pending" ? "admin" : "",
+      checkInMethod: "",
     };
     if (!guest.firstName) {
       res.status(400).json({ error: "First name is required" });
@@ -50,10 +55,14 @@ module.exports = async function handler(req, res) {
     var data3 = await readData();
     var idx = data3.guests.findIndex(function (g) { return g.id === id; });
     if (idx === -1) { res.status(404).json({ error: "Guest not found" }); return; }
-    var patch = req.body || {};
-    var allowed = ["firstName", "lastName", "phone", "email", "invitationType", "familyName", "invitedFor",
+    var patch = Object.assign({}, req.body || {});
+    if ("gender" in patch) patch.gender = Fields.normGender(patch.gender);
+    if ("ageGroup" in patch) patch.ageGroup = Fields.normAgeGroup(patch.ageGroup);
+    if (patch.checkedIn === true && !patch.checkInMethod) patch.checkInMethod = "usher";
+    if (patch.checkedIn === false) patch.checkInMethod = "";
+    var allowed = ["firstName", "lastName", "phone", "email", "invitationType", "familyName", "invitedFor", "gender", "ageGroup",
       "invitedCount", "plusOneAllowed", "rsvpStatus", "attendingCount", "notes",
-      "checkedIn", "checkInTime", "rsvpAt"];
+      "checkedIn", "checkInTime", "checkInMethod", "rsvpAt", "rsvpChannel"];
     allowed.forEach(function (k) {
       if (Object.prototype.hasOwnProperty.call(patch, k)) data3.guests[idx][k] = patch[k];
     });

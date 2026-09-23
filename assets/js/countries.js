@@ -85,18 +85,32 @@
 
   // Wires a <select> (country) + <input type=tel> (local number) pair.
   // existingValue is whatever was previously stored for this phone field.
+  // Options are keyed by ISO code (not dial) so countries sharing a dial code
+  // (US/Canada) stay distinct; the full name lives in the tooltip only.
   function populatePhoneWidget(selectEl, inputEl, existingValue) {
     var parsed = splitPhone(existingValue);
+    var selected = findByDial(parsed.dial) || COUNTRIES[0];
     selectEl.innerHTML = COUNTRIES.map(function (c) {
-      return '<option value="' + c.dial + '"' + (c.dial === parsed.dial ? " selected" : "") + ">+" + c.dial + " " + c.name + "</option>";
+      return '<option value="' + c.code + '" title="' + c.name + '"' + (c === selected ? " selected" : "") + ">" + c.code + " +" + c.dial + "</option>";
     }).join("");
-    selectEl.value = parsed.dial;
+    selectEl.value = selected.code;
     inputEl.value = parsed.number;
   }
 
   function readPhoneWidget(selectEl, inputEl) {
-    return joinPhone(selectEl.value, inputEl.value);
+    var c = COUNTRIES.find(function (x) { return x.code === selectEl.value; }) || COUNTRIES[0];
+    return joinPhone(c.dial, inputEl.value);
   }
 
-  global.WNPhone = { COUNTRIES: COUNTRIES, splitPhone: splitPhone, joinPhone: joinPhone, populatePhoneWidget: populatePhoneWidget, readPhoneWidget: readPhoneWidget, findByDial: findByDial };
-})(window);
+  // "+263778106935" -> "+263 778106935": readable, and the space stops Excel
+  // from turning the number into 2.64E+11 when a CSV is opened.
+  function formatPhone(raw) {
+    var s = String(raw || "").trim();
+    if (!s) return "";
+    var p = splitPhone(s);
+    return p.number ? "+" + p.dial + " " + p.number : s;
+  }
+
+  global.WNPhone = { COUNTRIES: COUNTRIES, splitPhone: splitPhone, joinPhone: joinPhone, formatPhone: formatPhone, populatePhoneWidget: populatePhoneWidget, readPhoneWidget: readPhoneWidget, findByDial: findByDial };
+  if (typeof module !== "undefined" && module.exports) module.exports = global.WNPhone;
+})(typeof window !== "undefined" ? window : globalThis);

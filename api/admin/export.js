@@ -1,6 +1,14 @@
 const { requireAuth } = require("../../lib/auth");
 const { readData } = require("../../lib/blob-store");
 const { buildReportPdf } = require("../../lib/pdf-report");
+const WNPhone = require("../../assets/js/countries.js");
+const Fields = require("../../assets/js/guest-fields.js");
+
+var phone = WNPhone.formatPhone;
+var CHECKIN_METHODS = { usher: "Usher", self: "Self (at venue)", auto: "Automatic (GPS)", "self-unverified": "Self (location unavailable)" };
+var CHANNELS = { web: "Website", whatsapp: "WhatsApp", sms: "SMS", email: "Email", call: "Phone call", admin: "Logged by admin" };
+function methodLabel(g) { return g.checkedIn ? (CHECKIN_METHODS[g.checkInMethod] || "Usher") : ""; }
+function channelLabel(g) { return CHANNELS[g.rsvpChannel] || ""; }
 
 function toCsv(rows) {
   return rows.map(function (r) {
@@ -53,37 +61,37 @@ function buildReport(type, data) {
   var columns, rows, filename, title, weights;
 
   if (type === "rsvp") {
-    columns = ["Name", "Phone", "Invitation Type", "Invited For", "RSVP Status", "Invited", "Attending", "Plus-one", "Responded At"];
-    weights = [1.8, 1.3, 1, 1.2, 1, 0.7, 0.9, 0.8, 1.3];
-    rows = guests.map(function (g) { return [fullName(g), g.phone || "", g.invitationType || "", g.invitedFor || "", (g.rsvpStatus || "pending").replace("_", " "), g.invitedCount || 1, g.attendingCount || 0, g.plusOneAllowed ? "Yes" : "No", g.rsvpAt ? g.rsvpAt.slice(0, 10) : ""]; });
+    columns = ["Name", "Phone", "Invited For", "Gender", "Age Group", "RSVP Status", "Invited", "Attending", "Plus-one", "Responded Via", "Responded At"];
+    weights = [1.7, 1.3, 1.2, 0.8, 0.8, 1, 0.7, 0.8, 0.7, 1, 1.1];
+    rows = guests.map(function (g) { return [fullName(g), phone(g.phone), g.invitedFor || "", Fields.genderLabel(g.gender), Fields.ageLabel(g.ageGroup), (g.rsvpStatus || "pending").replace("_", " "), g.invitedCount || 1, g.attendingCount || 0, g.plusOneAllowed ? "Yes" : "No", channelLabel(g), g.rsvpAt ? g.rsvpAt.slice(0, 10) : ""]; });
     filename = "RSVP-Report"; title = "RSVP Report";
   } else if (type === "checkin") {
-    columns = ["Guest", "Checked In", "Check-in Time"];
-    weights = [2, 0.9, 1.3];
+    columns = ["Guest", "RSVP", "Party", "Checked In", "Method", "Check-in Time"];
+    weights = [2, 1, 0.7, 0.9, 1.4, 1.4];
     rows = guests.map(function (g) {
-      return [fullName(g), g.checkedIn ? "Yes" : "No", g.checkInTime ? new Date(g.checkInTime).toLocaleString() : ""];
+      return [fullName(g), (g.rsvpStatus || "pending").replace("_", " "), g.attendingCount || g.invitedCount || 1, g.checkedIn ? "Yes" : "No", methodLabel(g), g.checkInTime ? new Date(g.checkInTime).toLocaleString("en-GB", { timeZone: "Africa/Harare" }) : ""];
     });
     filename = "Checkin-Report"; title = "Check-in Report";
   } else if (type === "attending") {
     var attendingGuests = guests.filter(function (g) { return g.rsvpStatus === "attending"; });
-    columns = ["Name", "Phone", "Email", "Type", "Family", "Invited For", "Attending", "Checked In", "Notes"];
-    weights = [1.7, 1.3, 1.6, 0.8, 1.3, 1.2, 0.8, 0.8, 1.6];
+    columns = ["Name", "Phone", "Email", "Family", "Invited For", "Gender", "Age Group", "Attending", "Checked In", "Notes"];
+    weights = [1.6, 1.3, 1.5, 1.2, 1.1, 0.7, 0.7, 0.7, 0.8, 1.6];
     rows = attendingGuests.map(function (g) {
-      return [fullName(g), g.phone || "", g.email || "", g.invitationType || "", g.familyName || "", g.invitedFor || "", g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
+      return [fullName(g), phone(g.phone), g.email || "", g.familyName || "", g.invitedFor || "", Fields.genderLabel(g.gender), Fields.ageLabel(g.ageGroup), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
     });
     filename = "Attending-Guest-List"; title = "Attending Guest List";
   } else if (type === "invited") {
-    columns = ["Name", "Phone", "Email", "Type", "Family", "Invited For", "Invited", "RSVP", "Attending", "Checked In", "Notes"];
-    weights = [1.6, 1.2, 1.5, 0.7, 1.2, 1.1, 0.6, 0.9, 0.8, 0.8, 1.5];
+    columns = ["Name", "Phone", "Email", "Type", "Family", "Invited For", "Gender", "Age Group", "Invited", "RSVP", "Attending", "Checked In", "Notes"];
+    weights = [1.5, 1.2, 1.4, 0.7, 1.1, 1.1, 0.7, 0.7, 0.6, 0.9, 0.7, 0.7, 1.4];
     rows = guests.map(function (g) {
-      return [fullName(g), g.phone || "", g.email || "", g.invitationType || "", g.familyName || "", g.invitedFor || "", g.invitedCount || 1, (g.rsvpStatus || "pending").replace("_", " "), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
+      return [fullName(g), phone(g.phone), g.email || "", g.invitationType || "", g.familyName || "", g.invitedFor || "", Fields.genderLabel(g.gender), Fields.ageLabel(g.ageGroup), g.invitedCount || 1, (g.rsvpStatus || "pending").replace("_", " "), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
     });
     filename = "Invited-Guests"; title = "All Invited Guests";
   } else if (type === "gifts") {
     columns = ["Type", "Giver", "Phone", "Date", "Amount", "Currency", "Payment Method", "Description", "Notes"];
     weights = [0.8, 1.4, 1.1, 1, 1, 0.8, 1.2, 1.6, 1.4];
     rows = gifts.map(function (g) {
-      return [g.type === "cash" ? "Cash" : "In Kind", g.giver || "", g.giverPhone || "", g.date || "", g.type === "cash" ? money(g.amount) : (g.estimatedValue != null ? money(g.estimatedValue) : ""), g.type === "cash" ? (g.currency || "") : (g.estimatedValue != null ? (g.estimatedCurrency || "") : ""), g.type === "cash" ? (g.paymentMethod || "") : "", g.description || "", g.notes || ""];
+      return [g.type === "cash" ? "Cash" : "In Kind", g.giver || "", phone(g.giverPhone), g.date || "", g.type === "cash" ? money(g.amount) : (g.estimatedValue != null ? money(g.estimatedValue) : ""), g.type === "cash" ? (g.currency || "") : (g.estimatedValue != null ? (g.estimatedCurrency || "") : ""), g.type === "cash" ? (g.paymentMethod || "") : "", g.description || "", g.notes || ""];
     });
     var totals = computeGiftTotals(gifts);
     filename = "Gifts-Report"; title = "Gift Report";
@@ -94,7 +102,7 @@ function buildReport(type, data) {
     weights = [1.5, 1, 1.3, 1, 0.7, 1, 1, 1, 1];
     rows = providers.map(function (p) {
       var comp = computeProviderStatus(p);
-      return [p.name || "", p.category || "", (p.phone || p.email || ""), money(p.agreedFee), p.currency || "", money(comp.amountPaid), money(comp.outstanding), comp.status, p.paymentDeadline || ""];
+      return [p.name || "", p.category || "", (phone(p.phone) || p.email || ""), money(p.agreedFee), p.currency || "", money(comp.amountPaid), money(comp.outstanding), comp.status, p.paymentDeadline || ""];
     });
     filename = "Service-Providers-Report"; title = "Service Provider Payments";
   } else {
@@ -125,5 +133,6 @@ module.exports = async function handler(req, res) {
 
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", 'attachment; filename="' + report.filename + '.csv"');
-  res.status(200).send(toCsv([report.columns].concat(report.rows)));
+  // BOM so Excel opens the file as UTF-8 (names with accents, "·", "–").
+  res.status(200).send("﻿" + toCsv([report.columns].concat(report.rows)));
 };

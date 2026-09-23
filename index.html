@@ -10,15 +10,15 @@
 <meta property="og:image" content="/assets/img/invitation-card.jpg">
 <meta name="theme-color" content="#3E1730">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%233E1730%22/><text x=%2250%22 y=%2266%22 font-family=%22Georgia,%20serif%22 font-size=%2240%22 fill=%22%23E8D9BE%22 text-anchor=%22middle%22>N%26W</text></svg>">
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/style.css?v=20260923">
 </head>
 <body>
 
 <!-- ================= OPENING COVER ================= -->
 <div id="cover" role="dialog" aria-label="Wedding invitation cover">
   <div class="cover-card">
-    <img class="corner corner--tr" src="assets/img/floral-corner.png" alt="" aria-hidden="true">
-    <img class="corner corner--bl" src="assets/img/floral-corner.png" alt="" aria-hidden="true">
+    <img class="spray spray--tl" src="assets/img/floral-spray.webp" alt="" aria-hidden="true">
+    <img class="spray spray--br" src="assets/img/floral-spray.webp" alt="" aria-hidden="true">
     <div class="cover-frame" aria-hidden="true"></div>
     <div class="cover-eyebrow">Together with their families</div>
     <svg class="cover-rings" viewBox="0 0 64 34" aria-hidden="true"><circle cx="24" cy="17" r="14" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="40" cy="17" r="14" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>
@@ -87,6 +87,8 @@
       <h2>A Little Love Note</h2>
     </div>
     <div class="message-card">
+      <img class="spray spray--tl" src="assets/img/floral-spray.webp" alt="" aria-hidden="true">
+      <img class="spray spray--br" src="assets/img/floral-spray.webp" alt="" aria-hidden="true">
       <p>With grateful hearts and full of joy, we invite you to be part of the day we say "I do." We want the people who have shaped our story to stand with us as we begin the next one &mdash; together.</p>
       <p style="margin-top:18px;">Your presence, laughter and blessing are the greatest gifts we could ask for. We can't wait to celebrate with you.</p>
       <div class="message-sign">Nyasha &amp; Watson</div>
@@ -100,7 +102,11 @@
       <div class="info-card"><div class="ic-label">Dress Code</div><div class="ic-value">Formal &amp; Smart Casual</div></div>
       <div class="info-card"><div class="ic-label">Parking</div><div class="ic-value">Free &amp; Available</div><div class="ic-note">On-site at the reserve</div></div>
     </div>
-    <p class="invite-only-note">This celebration is strictly by invitation only.</p>
+    <div class="invite-only-note">
+      <svg viewBox="0 0 64 34" aria-hidden="true"><circle cx="24" cy="17" r="14" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="40" cy="17" r="14" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>
+      <p>This celebration is strictly by invitation only.</p>
+      <span>Kindly bring only the guests named on your invitation.</span>
+    </div>
   </div>
 </section>
 
@@ -143,6 +149,29 @@
     </div>
     <div class="timeline" id="programmeList"></div>
     <p class="programme-note">All times above are provisional and will be finalised nearer the date.</p>
+    <div class="btn-row" style="justify-content:center; margin-top:22px;">
+      <button class="btn btn-outline" id="downloadProgrammeBtn" type="button">
+        Download Programme
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+      </button>
+    </div>
+
+    <div class="selfcheck-card" id="self-checkin">
+      <div class="selfcheck-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21z"/><path d="M9.3 9.6l1.8 1.8 3.6-3.6"/></svg></div>
+      <div class="eyebrow">On the Day</div>
+      <h3>Self Check-in</h3>
+      <p class="selfcheck-lead">Arrived at Colne Valley? Check yourself in so the couple and ushers know you're here.</p>
+      <p class="selfcheck-rule">Please only check in once you have arrived at the venue &mdash; we confirm your location to keep the guest list accurate.</p>
+      <div class="field selfcheck-phone" id="selfcheckPhoneField" hidden>
+        <label for="sc-phone">The phone number on your invitation</label>
+        <div class="phone-row"><select id="sc-phone-cc" aria-label="Country code"></select><input type="tel" id="sc-phone" autocomplete="tel" placeholder="e.g. 771234567"></div>
+      </div>
+      <button class="btn btn-primary" id="selfCheckinBtn" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        Self Check-in
+      </button>
+      <p class="selfcheck-status" id="selfcheckStatus" role="status" aria-live="polite"></p>
+    </div>
   </div>
 </section>
 
@@ -176,7 +205,6 @@
 <!-- ================= INVITATION CARD ================= -->
 <section id="card" style="background:var(--ivory-deep)">
   <div class="wrap-narrow save-card-wrap">
-    <img class="corner corner--tr" style="opacity:.6" src="assets/img/floral-corner.png" alt="" aria-hidden="true">
     <div class="head">
       <div class="eyebrow">Keep It Close</div>
       <h2>Your Digital Invitation Card</h2>
@@ -207,14 +235,17 @@
 <!-- ================= RSVP ================= -->
 <section id="rsvp">
   <div class="wrap-narrow">
-    <img class="corner corner--tr" style="opacity:.55" src="assets/img/floral-corner.png" alt="" aria-hidden="true">
     <div class="head">
       <div class="eyebrow">Kindly Respond</div>
       <h2>RSVP</h2>
       <p class="lede">We'd love to know if you'll be celebrating with us.</p>
     </div>
 
+    <div class="rsvp-stage">
+    <img class="spray spray--tr" src="assets/img/floral-spray.webp" alt="" aria-hidden="true">
+    <img class="spray spray--bl" src="assets/img/floral-spray.webp" alt="" aria-hidden="true">
     <div class="rsvp-shell">
+      <div class="rsvp-already" id="rsvpAlready" hidden></div>
       <div class="rsvp-progress" id="rsvpProgress">
         <div class="rp-seg done" data-step="0"></div>
         <div class="rp-seg" data-step="1"></div>
@@ -229,6 +260,12 @@
           <div class="field"><label for="g-name">Full name</label><input type="text" id="g-name" autocomplete="name" required></div>
           <div class="field"><label for="g-phone">Phone number <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);">(optional)</span></label>
             <div class="phone-row"><select id="g-phone-cc" aria-label="Country code"></select><input type="tel" id="g-phone" autocomplete="tel" placeholder="e.g. 771234567"></div>
+          </div>
+          <div class="about-you">
+            <div class="about-you-head">A little about you <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);">(optional)</span></div>
+            <p class="about-you-sub">Helps us plan seating, catering and any little ones' needs. Skip if you prefer.</p>
+            <div class="field"><label id="g-gender-label">Gender</label><div class="chip-group" id="g-gender" role="radiogroup" aria-labelledby="g-gender-label"></div></div>
+            <div class="field"><label id="g-age-label">Age group</label><div class="chip-group" id="g-age" role="radiogroup" aria-labelledby="g-age-label"></div></div>
           </div>
           <div class="rsvp-nav"><span></span><button class="btn btn-primary" id="toStep1">Continue</button></div>
         </div>
@@ -272,24 +309,38 @@
             <div id="summaryList" style="margin-top:20px;"></div>
             <div class="rsvp-nav">
               <button class="link-btn" id="back3">Back</button>
-              <button class="btn btn-primary" id="sendRsvp">
-                Send RSVP via WhatsApp
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.39 1.26 4.8L2 22l5.42-1.36a9.9 9.9 0 0 0 4.62 1.14h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2zm5.6 14.17c-.24.67-1.4 1.29-1.93 1.35-.5.06-1.03.24-3.45-.72-2.9-1.15-4.77-4.08-4.92-4.27-.14-.19-1.18-1.57-1.18-3 0-1.42.75-2.11 1.02-2.4.27-.29.58-.36.78-.36.19 0 .39 0 .55.01.18.01.42-.07.65.5.24.58.82 2 .89 2.15.07.14.11.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.13-.28.28-.12.55.16.27.71 1.17 1.52 1.9 1.05.94 1.93 1.23 2.2 1.37.27.14.43.12.59-.07.16-.19.68-.79.86-1.06.18-.27.36-.22.6-.13.24.09 1.53.72 1.79.85.26.13.43.19.5.3.06.11.06.63-.18 1.3z"/></svg>
+              <button class="btn btn-primary" id="submitRsvp">
+                Submit RSVP
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </button>
             </div>
+            <p class="rsvp-error" id="rsvpError" role="alert" hidden></p>
+            <details class="other-ways" id="otherWays">
+              <summary>Other ways to RSVP <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></summary>
+              <p class="other-ways-sub">Prefer to reply directly? Your answers above are included and saved for the couple too.</p>
+              <div class="other-ways-list">
+                <button type="button" class="ow-item" data-channel="whatsapp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.39 1.26 4.8L2 22l5.42-1.36a9.9 9.9 0 0 0 4.62 1.14h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2z"/></svg><span>WhatsApp</span></button>
+                <button type="button" class="ow-item" data-channel="sms"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H8l-4 4z"/></svg><span>SMS</span></button>
+                <button type="button" class="ow-item" data-channel="call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><span>Call</span></button>
+                <button type="button" class="ow-item" data-channel="email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span>Email</span></button>
+              </div>
+            </details>
           </div>
           <div id="confirmPane" hidden>
             <div class="confirm-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>
             <h3 class="step-title" style="text-align:center;">Thank you<span id="confirmName"></span></h3>
-            <p class="step-sub" style="text-align:center;">Your RSVP has been prepared and sent to WhatsApp. We can't wait to celebrate with you.</p>
+            <p class="step-sub" style="text-align:center;" id="confirmMsg">Your RSVP has been received. We can't wait to celebrate with you.</p>
+            <div id="confirmSummary" class="confirm-summary"></div>
             <div class="btn-row" style="justify-content:center; margin-top:26px;">
               <a class="btn btn-outline" href="#calendar">Add to Calendar</a>
               <a class="btn btn-outline" href="#card">View Invitation Card</a>
             </div>
+            <p style="text-align:center; margin-top:18px;"><button class="link-btn" id="changeRsvp" type="button">Change my response</button></p>
           </div>
         </div>
 
       </div>
+    </div>
     </div>
     <p class="rsvp-deadline">Kindly respond by <strong>10 November 2026</strong> &middot; strictly by invitation only</p>
   </div>
@@ -324,7 +375,8 @@
 <div id="qrTemp" style="display:none;"></div>
 
 <script src="assets/js/qrcode.min.js"></script>
-<script src="assets/js/countries.js"></script>
-<script src="assets/js/main.js"></script>
+<script src="assets/js/countries.js?v=20260923"></script>
+<script src="assets/js/guest-fields.js?v=20260923"></script>
+<script src="assets/js/main.js?v=20260923"></script>
 </body>
 </html>

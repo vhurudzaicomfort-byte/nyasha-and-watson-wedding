@@ -6,7 +6,12 @@
   var providers = [];
   var currencies = ["USD"];
   var paymentMethods = ["Cash"];
-  var categories = [];
+  var FG = window.WNGuestFields;
+  // Built in (not fetched) so the "Invited for" dropdown is never empty, even
+  // before the guest list has loaded or if an older API response is cached.
+  var categories = FG.CATEGORIES.slice();
+  var CHECKIN_METHODS = { usher: "Usher", self: "Self", auto: "Auto (GPS)", "self-unverified": "Self · no location" };
+  var CHANNELS = { web: "website", whatsapp: "WhatsApp", sms: "SMS", email: "email", call: "phone call", admin: "portal (logged by admin)" };
 
   var toastTimer;
   function showToast(msg) {
@@ -71,7 +76,7 @@
   /* ---------------- LOAD + RENDER ---------------- */
   function loadAll() {
     return Promise.all([api("/api/admin/guests"), api("/api/admin/gifts"), api("/api/admin/providers")]).then(function (res) {
-      guests = res[0].guests; categories = res[0].categories || [];
+      guests = res[0].guests; if (res[0].categories && res[0].categories.length) categories = res[0].categories;
       gifts = res[1].gifts; currencies = res[1].currencies; paymentMethods = res[1].paymentMethods;
       providers = res[2].providers;
       renderAll();
@@ -82,11 +87,16 @@
     renderDashboard(); renderGuestTable();
     renderGifts(); renderProviders();
   }
-  function populateInvitedForFilter() {
-    var sel = document.getElementById("filterInvitedFor");
+  function fillSelect(id, firstLabel, options) {
+    var sel = document.getElementById(id);
     var current = sel.value;
-    sel.innerHTML = '<option value="">All (invited for)</option>' + categories.map(function (c) { return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + "</option>"; }).join("");
+    sel.innerHTML = '<option value="">' + firstLabel + "</option>" + options.map(function (o) { return '<option value="' + escapeHtml(o.value) + '">' + escapeHtml(o.label) + "</option>"; }).join("");
     sel.value = current;
+  }
+  function populateInvitedForFilter() {
+    fillSelect("filterInvitedFor", "All (invited for)", categories.map(function (c) { return { value: c, label: c }; }));
+    fillSelect("filterGender", "All genders", FG.GENDERS.concat([{ value: "_none", label: "Not recorded" }]));
+    fillSelect("filterAge", "All ages", [{ value: "_child", label: "Children (0–16)" }].concat(FG.AGE_GROUPS.map(function (a) { return { value: a.value, label: "Age " + a.label }; }), [{ value: "_none", label: "Not recorded" }]));
   }
 
   function renderDashboard() {
@@ -137,6 +147,8 @@
 
     var rows = [["Attending", attending.length, total], ["Maybe", maybe.length, total], ["Not Attending", not.length, total], ["Pending", pending.length, total]];
     document.getElementById("rsvpBars").innerHTML = rows.map(barRow).join("") || emptyBars();
+    renderGuestMix(attending);
+    renderCheckinMethods();
 
     var giftCurrencyEntries = Object.keys(cashByCurrency).map(function (c) { return [c, cashByCurrency[c]]; });
     var maxGift = Math.max.apply(null, giftCurrencyEntries.map(function (e) { return e[1]; }).concat([1]));
@@ -150,6 +162,41 @@
     document.getElementById("providerBars").innerHTML = provEntries.length
       ? provEntries.map(barRow).join("") + '<p style="margin-top:6px; font-size:.76rem; color:var(--text-muted);">Percent of agreed fee paid so far, by currency.</p>'
       : '<p style="color:var(--text-muted); font-size:.84rem;">No service providers recorded yet.</p>';
+  }
+  // Age and gender are optional, so every figure says how much of the list it covers.
+  function renderGuestMix(attending) {
+    var withAge = attending.filter(function (g) { return g.ageGroup; });
+    var withGender = attending.filter(function (g) { return g.gender; });
+    var ageMax = Math.max(1, withAge.length);
+    document.getElementById("ageBars").innerHTML = withAge.length
+      ? FG.AGE_GROUPS.map(function (a) { return barRow([a.label, withAge.filter(function (g) { return g.ageGroup === a.value; }).length, ageMax]); }).join("")
+      : '<p style="color:var(--text-muted); font-size:.84rem;">No age groups recorded yet.</p>';
+    var gMax = Math.max(1, withGender.length);
+    document.getElementById("genderBars").innerHTML = withGender.length
+      ? FG.GENDERS.map(function (x) { return barRow([x.label, withGender.filter(function (g) { return g.gender === x.value; }).length, gMax]); }).join("")
+      : '<p style="color:var(--text-muted); font-size:.84rem;">No genders recorded yet.</p>';
+    var children = withAge.filter(function (g) { return FG.isChild(g.ageGroup); }).length;
+    var seniors = withAge.filter(function (g) { return g.ageGroup === "61+"; }).length;
+    var parts = [];
+    if (attending.length) parts.push("Age recorded for " + withAge.length + " of " + attending.length + " attending invitations, gender for " + withGender.length + ".");
+    if (children) parts.push(children + (children > 1 ? " children" : " child") + " (0–16) expected — plan kids' meals and seating.");
+    if (seniors) parts.push(seniors + " guest" + (seniors > 1 ? "s" : "") + " aged 61+ — consider seating near the front and easy access.");
+    document.getElementById("mixNote").textContent = parts.join(" ");
+  }
+  function renderCheckinMethods() {
+    var checked = guests.filter(function (g) { return g.checkedIn; });
+    if (!checked.length) { document.getElementById("checkinBars").innerHTML = '<p style="color:var(--text-muted); font-size:.84rem;">No one checked in yet. Guests can be checked in by an usher, by Self Check-in on the website, or automatically when they arrive.</p>'; return; }
+    var counts = {};
+    checked.forEach(function (g) { var m = g.checkInMethod || "usher"; counts[m] = (counts[m] || 0) + 1; });
+    document.getElementById("checkinBars").innerHTML = Object.keys(CHECKIN_METHODS).filter(function (m) { return counts[m]; })
+      .map(function (m) { return barRow([CHECKIN_METHODS[m], counts[m], checked.length]); }).join("");
+  }
+  function checkinPill(g) {
+    if (!g.checkedIn) return '<span class="pill pill-notchecked">Not yet</span>';
+    var m = g.checkInMethod || "usher";
+    var cls = m === "self-unverified" ? "pill-checked-warn" : m === "usher" ? "pill-checked" : "pill-checked-self";
+    var when = g.checkInTime ? new Date(g.checkInTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+    return '<span class="pill ' + cls + '" title="' + escapeHtml((CHECKIN_METHODS[m] || m) + (when ? " at " + when : "")) + '">Checked in · ' + escapeHtml(CHECKIN_METHODS[m] || m) + "</span>";
   }
   function stat(label, val, sub, accent) {
     return '<div class="stat-card' + (accent ? " accent" : "") + '"><div class="sc-label">' + label + '</div><div class="sc-val">' + val + "</div>" + (sub ? '<div class="sc-sub">' + sub + "</div>" : "") + "</div>";
@@ -167,6 +214,8 @@
     var fRsvp = document.getElementById("filterRsvp").value;
     var fInvitedFor = document.getElementById("filterInvitedFor").value;
     var fCheckin = document.getElementById("filterCheckin").value;
+    var fGender = document.getElementById("filterGender").value;
+    var fAge = document.getElementById("filterAge").value;
 
     var rows = guests.filter(function (g) {
       if (q) {
@@ -175,6 +224,10 @@
       }
       if (fRsvp && (g.rsvpStatus || "pending") !== fRsvp) return false;
       if (fInvitedFor && (g.invitedFor || "") !== fInvitedFor) return false;
+      if (fGender && (fGender === "_none" ? !!g.gender : g.gender !== fGender)) return false;
+      if (fAge === "_child" && !FG.isChild(g.ageGroup)) return false;
+      if (fAge === "_none" && g.ageGroup) return false;
+      if (fAge && fAge.charAt(0) !== "_" && g.ageGroup !== fAge) return false;
       if (fCheckin === "yes" && !g.checkedIn) return false;
       if (fCheckin === "no" && g.checkedIn) return false;
       return true;
@@ -185,11 +238,12 @@
     document.getElementById("guestRows").innerHTML = rows.map(function (g) {
       var status = g.rsvpStatus || "pending";
       var subLine = [g.familyName || capitalize(g.invitationType || "individual"), g.invitedFor].filter(Boolean).join(" · ");
+      var meta = [FG.genderLabel(g.gender), g.ageGroup ? "Age " + FG.ageLabel(g.ageGroup) : "", g.rsvpChannel && status !== "pending" ? "Replied via " + (CHANNELS[g.rsvpChannel] || g.rsvpChannel) : ""].filter(Boolean).join(" · ");
       return "<tr>" +
-        '<td><div class="g-name">' + escapeHtml(fullName(g)) + '</div><div class="g-sub">' + escapeHtml(subLine) + "</div></td>" +
+        '<td><div class="g-name">' + escapeHtml(fullName(g)) + '</div><div class="g-sub">' + escapeHtml(subLine) + "</div>" + (meta ? '<div class="g-meta">' + escapeHtml(meta) + "</div>" : "") + "</td>" +
         '<td><span class="pill pill-' + status + '">' + status.replace("_", " ") + "</span></td>" +
         "<td>" + (g.attendingCount != null && g.attendingCount !== "" ? g.attendingCount : "—") + " / " + (g.invitedCount || 1) + "</td>" +
-        '<td><span class="pill ' + (g.checkedIn ? "pill-checked" : "pill-notchecked") + '">' + (g.checkedIn ? "Checked in" : "Not yet") + "</span></td>" +
+        "<td>" + checkinPill(g) + "</td>" +
         '<td><div class="row-actions">' + iconBtn("edit", g.id, "Edit") + iconBtn("link", g.id, "Copy invite link") + iconBtn("invite", g.id, "Send invite via WhatsApp") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Delete") + "</div></td>" +
         "</tr>";
     }).join("");
@@ -214,6 +268,8 @@
   document.getElementById("filterRsvp").addEventListener("change", renderGuestTable);
   document.getElementById("filterInvitedFor").addEventListener("change", renderGuestTable);
   document.getElementById("filterCheckin").addEventListener("change", renderGuestTable);
+  document.getElementById("filterGender").addEventListener("change", renderGuestTable);
+  document.getElementById("filterAge").addEventListener("change", renderGuestTable);
 
   document.getElementById("guestRows").addEventListener("click", function (e) {
     var btn = e.target.closest(".icon-btn");
@@ -254,7 +310,7 @@
 
   function toggleCheckin(g) {
     var next = !g.checkedIn;
-    api("/api/admin/guests?id=" + g.id, { method: "PATCH", body: { checkedIn: next, checkInTime: next ? new Date().toISOString() : null } })
+    api("/api/admin/guests?id=" + g.id, { method: "PATCH", body: { checkedIn: next, checkInTime: next ? new Date().toISOString() : null, checkInMethod: next ? "usher" : "" } })
       .then(function () { showToast(next ? fullName(g) + " checked in" : "Check-in undone"); return loadAll(); })
       .catch(function () { showToast("Could not update check-in"); });
   }
@@ -279,6 +335,10 @@
     var invitedForVal = g ? (g.invitedFor || "") : "";
     document.getElementById("f-invitedfor").innerHTML = '<option value="">—</option>' +
       categories.map(function (c) { return '<option value="' + escapeHtml(c) + '"' + (c === invitedForVal ? " selected" : "") + ">" + escapeHtml(c) + "</option>"; }).join("");
+    document.getElementById("f-gender").innerHTML = '<option value="">—</option>' + FG.GENDERS.map(function (x) { return '<option value="' + x.value + '">' + x.label + "</option>"; }).join("");
+    document.getElementById("f-gender").value = g ? (g.gender || "") : "";
+    document.getElementById("f-age").innerHTML = '<option value="">—</option>' + FG.AGE_GROUPS.map(function (a) { return '<option value="' + a.value + '">' + a.label + "</option>"; }).join("");
+    document.getElementById("f-age").value = g ? (g.ageGroup || "") : "";
     document.getElementById("f-invited").value = g ? (g.invitedCount || 1) : 1;
     document.getElementById("f-rsvp").value = g ? (g.rsvpStatus || "pending") : "pending";
     document.getElementById("f-attending").value = g ? (g.attendingCount || 0) : 0;
@@ -303,6 +363,8 @@
       invitationType: document.getElementById("f-type").value,
       familyName: document.getElementById("f-family").value.trim(),
       invitedFor: document.getElementById("f-invitedfor").value,
+      gender: document.getElementById("f-gender").value,
+      ageGroup: document.getElementById("f-age").value,
       invitedCount: Number(document.getElementById("f-invited").value) || 1,
       rsvpStatus: document.getElementById("f-rsvp").value,
       attendingCount: Number(document.getElementById("f-attending").value) || 0,
@@ -310,8 +372,11 @@
       notes: document.getElementById("f-notes").value.trim()
     };
     if (data.rsvpStatus === "attending" && !data.attendingCount) data.attendingCount = data.invitedCount;
+    var original = editingGuestId ? guests.find(function (x) { return x.id === editingGuestId; }) : null;
+    var statusChanged = original ? (original.rsvpStatus || "pending") !== data.rsvpStatus : data.rsvpStatus !== "pending";
+    if (statusChanged) { data.rsvpAt = data.rsvpStatus === "pending" ? null : new Date().toISOString(); data.rsvpChannel = data.rsvpStatus === "pending" ? "" : "admin"; }
     var req = editingGuestId
-      ? api("/api/admin/guests?id=" + editingGuestId, { method: "PATCH", body: Object.assign(data, { rsvpAt: new Date().toISOString() }) })
+      ? api("/api/admin/guests?id=" + editingGuestId, { method: "PATCH", body: data })
       : api("/api/admin/guests", { method: "POST", body: data });
     req.then(function () { showToast(editingGuestId ? "Guest updated" : "Guest added"); closeGuestModal(); return loadAll(); })
       .catch(function (e) { showToast(e.message || "Could not save guest"); });

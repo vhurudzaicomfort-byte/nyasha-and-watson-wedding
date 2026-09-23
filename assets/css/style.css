@@ -43,13 +43,16 @@ section{ padding-block:96px; position:relative; }
 @media (max-width:640px){ section{ padding-block:64px; } }
 .hr-gold{ border:none; height:1px; background:linear-gradient(90deg, transparent, var(--gold), transparent); margin-block:28px; }
 
-/* floral corner accents — asset is a taller/squarer crop (~500x415), so the
-   width is smaller than you'd expect for a "wide banner" image, to land at
-   roughly the same rendered height as the original design. */
-.corner{ position:absolute; width:130px; height:auto; pointer-events:none; opacity:.95; z-index:1; }
-@media (max-width:640px){ .corner{ width:92px; } }
-.corner--tr{ top:-10px; right:-10px; }
-.corner--bl{ bottom:-10px; left:-10px; transform:rotate(180deg); }
+/* Floral spray accents. The artwork is a diagonal spray (bottom-left to
+   top-right) whose densest bloom sits at ~50% x / ~41% y of the image. Each
+   spray is centred on a card corner and laid perpendicular to that corner's
+   bisector, so it wraps around the corner and mostly lives outside the card
+   instead of covering content. --w sets the size; offsets are derived from it. */
+.spray{ --w:220px; position:absolute; width:var(--w); height:auto; pointer-events:none; z-index:2; user-select:none; filter:drop-shadow(0 6px 10px rgba(62,23,48,.12)); }
+.spray--tl{ top:calc(var(--w) * -.44); left:calc(var(--w) * -.52); }
+.spray--br{ bottom:calc(var(--w) * -.44); right:calc(var(--w) * -.52); transform:rotate(180deg); }
+.spray--tr{ top:calc(var(--w) * -.44); right:calc(var(--w) * -.52); transform:scaleX(-1); }
+.spray--bl{ bottom:calc(var(--w) * -.44); left:calc(var(--w) * -.52); transform:scaleY(-1); }
 
 /* opening cover */
 #cover{ position:fixed; inset:0; z-index:999;
@@ -64,16 +67,14 @@ section{ padding-block:96px; position:relative; }
 .cover-card{ position:relative; width:min(440px,88vw); padding:52px 30px 40px; background:var(--surface); border:1px solid var(--champagne-line); box-shadow:var(--shadow-soft); text-align:center; transform:translateY(0) scale(1); transition:transform .8s cubic-bezier(.2,.7,.2,1), opacity .8s ease; }
 #cover.opened .cover-card{ transform:translateY(-24px) scale(.96); opacity:0; }
 .cover-frame{ position:absolute; inset:10px; border:1px solid var(--gold); opacity:.55; pointer-events:none; }
-/* The cover card is much smaller than a full section, so the standard corner
-   size/bleed (tuned for full-width sections) would swallow the card's own
-   text. Shrink it and push it further outside the card so only a small,
-   intentional sliver rests on the card face. */
-.cover-card .corner{ width:88px; z-index:0; opacity:.9; }
-.cover-card .corner--tr{ top:-54px; right:-54px; }
-.cover-card .corner--bl{ bottom:-54px; left:-54px; }
+.cover-card .spray{ --w:210px; }
+@media (max-width:520px){ .cover-card .spray{ --w:150px; } }
 .cover-eyebrow{ font-size:.68rem; letter-spacing:.3em; text-transform:uppercase; color:var(--text-muted); }
 .cover-rings{ width:38px; height:auto; color:var(--gold); margin:20px auto 6px; display:block; opacity:.85; }
 .cover-names{ font-family:'Great Vibes',cursive; font-weight:400; font-size:clamp(3rem,13vw,4rem); line-height:1.3; margin-top:16px; color:var(--plum); -webkit-text-stroke:.9px var(--plum); text-stroke:.9px var(--plum); }
+/* The script names carry a plum outline for weight; the ampersand's outline must
+   match its own coral fill rather than inherit the plum. */
+.cover-amp, .hero-amp, .footer-amp, .brand b{ -webkit-text-stroke-color:currentColor; }
 .cover-amp{ color:var(--coral); font-size:.8em; display:inline-block; margin:0 .22em; }
 .cover-date{ margin-top:18px; font-family:'Bodoni Moda',serif; font-size:1rem; letter-spacing:.08em; color:var(--plum-2); }
 .cover-venue{ margin-top:4px; font-size:.8rem; color:var(--text-muted); }
@@ -133,7 +134,8 @@ section{ padding-block:96px; position:relative; }
 .head p.lede{ margin-top:16px; color:var(--text-muted); font-size:.98rem; }
 
 .message-card{ background:var(--surface); border:1px solid var(--border); padding:52px 40px; text-align:center; box-shadow:var(--shadow-card); position:relative; }
-@media (max-width:640px){ .message-card{ padding:36px 22px; } }
+.message-card .spray{ --w:230px; }
+@media (max-width:640px){ .message-card{ padding:44px 22px; } .message-card .spray{ --w:150px; } }
 .message-card p{ font-size:1.08rem; color:var(--plum-2); font-family:'Bodoni Moda',serif; font-style:italic; font-weight:400; }
 .message-sign{ margin-top:26px; font-family:'Great Vibes',cursive; font-size:1.9rem; color:var(--coral); -webkit-text-stroke:.5px var(--coral); text-stroke:.5px var(--coral); }
 
@@ -188,8 +190,36 @@ section{ padding-block:96px; position:relative; }
 .card-frame{ width:min(340px,80vw); aspect-ratio:1080/1350; box-shadow:var(--shadow-soft); border-radius:4px; overflow:hidden; border:1px solid var(--border); }
 .card-frame canvas{ width:100%; height:100%; display:block; }
 
-/* rsvp */
-.rsvp-shell{ background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-soft); max-width:640px; margin:0 auto; }
+/* rsvp — the stage holds the sprays behind the shell, so the opaque shell hides
+   their inner half and the flowers only ever peek out around the corners. */
+.rsvp-stage{ position:relative; max-width:640px; margin:0 auto; }
+.rsvp-stage .spray{ --w:200px; z-index:0; }
+@media (max-width:640px){ .rsvp-stage .spray{ --w:140px; } }
+.rsvp-shell{ position:relative; z-index:1; background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-soft); }
+.rsvp-already{ margin:22px 28px 0; padding:12px 16px; background:var(--champagne); border:1px solid var(--champagne-line); font-size:.84rem; color:var(--plum-2); }
+.rsvp-already strong{ color:var(--plum); font-weight:500; }
+.about-you{ margin-top:28px; padding-top:22px; border-top:1px dashed var(--border); }
+.about-you-head{ font-family:'Bodoni Moda',serif; font-size:1.05rem; color:var(--plum); }
+.about-you-sub{ margin-top:4px; font-size:.78rem; color:var(--text-muted); }
+.about-you .field{ margin-top:16px; }
+.chip-group{ display:flex; flex-wrap:wrap; gap:8px; }
+.chip{ border:1px solid var(--border); background:var(--ivory); color:var(--plum-2); padding:9px 16px; min-height:40px; border-radius:99px; font-family:'Poppins',sans-serif; font-size:.82rem; cursor:pointer; transition:all .18s ease; }
+.chip:hover{ border-color:var(--gold); }
+.chip[aria-checked="true"]{ background:var(--plum); border-color:var(--plum); color:var(--ivory); }
+.rsvp-error{ margin-top:14px; font-size:.82rem; color:var(--error); text-align:right; }
+.other-ways{ margin-top:22px; border-top:1px solid var(--border); padding-top:14px; }
+.other-ways summary{ list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-size:.74rem; letter-spacing:.14em; text-transform:uppercase; color:var(--plum-2); padding:8px 0; }
+.other-ways summary::-webkit-details-marker{ display:none; }
+.other-ways summary svg{ transition:transform .2s ease; }
+.other-ways[open] summary svg{ transform:rotate(180deg); }
+.other-ways-sub{ font-size:.78rem; color:var(--text-muted); margin-top:4px; }
+.other-ways-list{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px; }
+@media (max-width:480px){ .other-ways-list{ grid-template-columns:repeat(2,1fr); } }
+.ow-item{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:14px 8px; border:1px solid var(--border); background:var(--ivory); color:var(--plum-2); font-family:'Poppins',sans-serif; font-size:.76rem; letter-spacing:.04em; cursor:pointer; transition:all .18s ease; }
+.ow-item:hover{ border-color:var(--plum); background:var(--champagne); }
+.ow-item svg{ width:20px; height:20px; color:var(--coral); }
+.ow-item:disabled{ opacity:.45; cursor:not-allowed; }
+.confirm-summary{ margin:18px auto 0; max-width:360px; }
 .rsvp-progress{ display:flex; gap:6px; padding:22px 28px 0; }
 .rp-seg{ flex:1; height:3px; background:var(--border); }
 .rp-seg.done{ background:var(--gold); }
@@ -203,7 +233,7 @@ section{ padding-block:96px; position:relative; }
 .field input:focus, .field textarea:focus{ outline:2px solid var(--gold); outline-offset:1px; }
 .field textarea{ resize:vertical; min-height:88px; }
 .phone-row{ display:flex; gap:8px; }
-.phone-row select{ flex:none; width:132px; border:1px solid var(--border); background:var(--ivory); padding:13px 8px; font-family:'Poppins',sans-serif; font-size:.82rem; color:var(--text); }
+.phone-row select{ flex:none; width:108px; border:1px solid var(--border); background:var(--ivory); padding:13px 8px; font-family:'Poppins',sans-serif; font-size:.82rem; color:var(--text); }
 .phone-row input[type=tel]{ flex:1; min-width:0; }
 .choice-cards{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:20px; }
 .choice-card{ display:flex; align-items:center; gap:14px; border:1px solid var(--border); padding:16px 18px; cursor:pointer; background:var(--ivory); transition:border-color .2s, background .2s; }
@@ -233,7 +263,10 @@ section{ padding-block:96px; position:relative; }
 .card-link:hover{ border-color:var(--gold); color:var(--plum); }
 .card-link svg{ width:15px; height:15px; color:var(--coral); flex:none; }
 
-.invite-only-note{ text-align:center; margin-top:32px; font-size:.78rem; letter-spacing:.06em; color:var(--text-muted); font-style:italic; }
+.invite-only-note{ text-align:center; margin:48px auto 0; max-width:560px; padding:26px 24px 24px; border-top:1px solid var(--champagne-line); border-bottom:1px solid var(--champagne-line); color:var(--gold); }
+.invite-only-note svg{ width:34px; height:auto; display:block; margin:0 auto 12px; opacity:.85; }
+.invite-only-note p{ font-family:'Bodoni Moda',serif; font-weight:600; font-size:clamp(1.2rem,3.4vw,1.55rem); line-height:1.35; color:var(--plum); letter-spacing:.01em; }
+.invite-only-note span{ display:block; margin-top:8px; font-size:.84rem; color:var(--plum-2); }
 
 footer{ text-align:center; padding:70px 24px 50px; }
 .footer-names{ font-family:'Great Vibes',cursive; font-size:2.4rem; line-height:1.3; color:var(--plum); -webkit-text-stroke:.7px var(--plum); text-stroke:.7px var(--plum); }
@@ -246,3 +279,18 @@ footer{ text-align:center; padding:70px 24px 50px; }
 
 .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
 a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+
+/* self check-in */
+.selfcheck-card{ margin:56px auto 0; max-width:520px; text-align:center; background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-card); padding:36px 28px 30px; }
+.selfcheck-icon{ width:56px; height:56px; border-radius:50%; background:var(--champagne); color:var(--plum); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
+.selfcheck-icon svg{ width:28px; height:28px; }
+.selfcheck-card h3{ font-size:1.6rem; margin-top:6px; }
+.selfcheck-lead{ margin-top:10px; font-size:.9rem; color:var(--plum-2); }
+.selfcheck-rule{ margin:14px auto 0; max-width:40ch; font-size:.8rem; color:var(--text-muted); padding:10px 14px; background:var(--ivory); border:1px dashed var(--champagne-line); }
+.selfcheck-phone{ text-align:left; max-width:340px; margin-inline:auto; }
+.selfcheck-card .btn{ margin-top:22px; }
+.selfcheck-status{ margin-top:14px; font-size:.84rem; color:var(--plum-2); min-height:1.2em; }
+.selfcheck-status.ok{ color:var(--success); font-weight:500; }
+.selfcheck-status.warn{ color:var(--warning); }
+.selfcheck-card.done{ border-color:#CFE0CB; background:#F4F8F2; }
+.selfcheck-card.done .selfcheck-icon{ background:#E7EFE3; color:var(--success); }
