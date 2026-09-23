@@ -515,10 +515,12 @@
     var x = corner === "tl" || corner === "bl" ? inset - 0.5 * sw : cw - inset - 0.5 * sw;
     var y = corner === "tl" ? inset - 0.41 * sh : corner === "tr" ? inset - 0.41 * sh : ch - inset - 0.59 * sh;
     ctx.save();
+    var tilt = -6 * Math.PI / 180; // matches the site's --rot
     ctx.translate(x + sw / 2, y + sh / 2);
     if (corner === "br") ctx.rotate(Math.PI);
     if (corner === "tr") ctx.scale(-1, 1);
     if (corner === "bl") ctx.scale(1, -1);
+    ctx.rotate(tilt);
     ctx.drawImage(img, -sw / 2, -sh / 2, sw, sh);
     ctx.restore();
   }
