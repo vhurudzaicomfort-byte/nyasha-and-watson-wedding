@@ -23,6 +23,7 @@
   color-scheme:light;
 }
 *{box-sizing:border-box;}
+[hidden]{ display:none !important; }
 html{scroll-behavior:smooth;}
 @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} *{animation-duration:.001ms !important; transition-duration:.001ms !important;} }
 
@@ -139,7 +140,7 @@ section{ padding-block:96px; position:relative; }
 .message-card p{ font-size:1.08rem; color:var(--plum-2); font-family:'Bodoni Moda',serif; font-style:italic; font-weight:400; }
 .message-sign{ margin-top:26px; font-family:'Great Vibes',cursive; font-size:1.9rem; color:var(--coral); -webkit-text-stroke:.5px var(--coral); text-stroke:.5px var(--coral); }
 
-.info-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:48px; }
+.info-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:84px; }
 @media (max-width:900px){ .info-grid{ grid-template-columns:repeat(2,1fr); } }
 @media (max-width:560px){ .info-grid{ grid-template-columns:1fr; } }
 .info-card{ background:var(--surface); border:1px solid var(--border); padding:26px 22px; }
@@ -265,7 +266,7 @@ section{ padding-block:96px; position:relative; }
 
 .invite-only-note{ text-align:center; margin:48px auto 0; max-width:560px; padding:26px 24px 24px; border-top:1px solid var(--champagne-line); border-bottom:1px solid var(--champagne-line); color:var(--gold); }
 .invite-only-note svg{ width:34px; height:auto; display:block; margin:0 auto 12px; opacity:.85; }
-.invite-only-note p{ font-family:'Bodoni Moda',serif; font-weight:600; font-size:clamp(1.2rem,3.4vw,1.55rem); line-height:1.35; color:var(--plum); letter-spacing:.01em; }
+.invite-only-note p{ text-wrap:balance; font-family:'Bodoni Moda',serif; font-weight:600; font-size:clamp(1.2rem,3.4vw,1.55rem); line-height:1.35; color:var(--plum); letter-spacing:.01em; }
 .invite-only-note span{ display:block; margin-top:8px; font-size:.84rem; color:var(--plum-2); }
 
 footer{ text-align:center; padding:70px 24px 50px; }

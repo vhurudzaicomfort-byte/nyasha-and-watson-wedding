@@ -506,13 +506,14 @@
       img.src = src;
     });
   }
-  // Mirrors the site's .spray CSS: the bloom (~50% x / ~41% y of the artwork)
-  // sits on the corner, laid across the corner so it wraps around it.
-  function drawSpray(ctx, img, cw, ch, size, corner) {
+  // Same idea as the site's .spray CSS (spray laid across the corner), but a
+  // flat image can't overhang its edge, so the bloom (~50% x / ~41% y of the
+  // artwork) is placed `inset` px inside the corner and only the tips bleed off.
+  function drawSpray(ctx, img, cw, ch, size, corner, inset) {
     if (!img) return;
     var sw = size, sh = size * img.naturalHeight / img.naturalWidth;
-    var x = corner === "tl" || corner === "bl" ? -0.52 * sw : cw - sw + 0.52 * sw;
-    var y = corner === "tl" || corner === "tr" ? -0.44 * sw : ch - sh + 0.44 * sw;
+    var x = corner === "tl" || corner === "bl" ? inset - 0.5 * sw : cw - inset - 0.5 * sw;
+    var y = corner === "tl" ? inset - 0.41 * sh : corner === "tr" ? inset - 0.41 * sh : ch - inset - 0.59 * sh;
     ctx.save();
     ctx.translate(x + sw / 2, y + sh / 2);
     if (corner === "br") ctx.rotate(Math.PI);
@@ -560,8 +561,8 @@
     ctx.fillStyle = "#FBF7F0"; ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = "#B08A46"; ctx.lineWidth = 3; ctx.strokeRect(34, 34, w - 68, h - 68);
     ctx.strokeStyle = "#E4D2B0"; ctx.lineWidth = 1; ctx.strokeRect(50, 50, w - 100, h - 100);
-    drawSpray(ctx, floralImg, w, h, 380, "tl");
-    drawSpray(ctx, floralImg, w, h, 380, "br");
+    drawSpray(ctx, floralImg, w, h, 340, "tl", 100);
+    drawSpray(ctx, floralImg, w, h, 340, "br", 100);
     ctx.textAlign = "center";
 
     drawRings(ctx, w / 2, 68, 11, 8, "#B08A46", 2.4);
@@ -665,8 +666,8 @@
     ctx.fillStyle = "#FBF7F0"; ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = "#B08A46"; ctx.lineWidth = 3; ctx.strokeRect(34, 34, w - 68, h - 68);
     ctx.strokeStyle = "#E4D2B0"; ctx.lineWidth = 1; ctx.strokeRect(50, 50, w - 100, h - 100);
-    drawSpray(ctx, floralImg, w, h, 380, "tl");
-    drawSpray(ctx, floralImg, w, h, 380, "br");
+    drawSpray(ctx, floralImg, w, h, 340, "tl", 100);
+    drawSpray(ctx, floralImg, w, h, 340, "br", 100);
     ctx.textAlign = "center";
 
     drawRings(ctx, w / 2, 96, 11, 8, "#B08A46", 2.4);
