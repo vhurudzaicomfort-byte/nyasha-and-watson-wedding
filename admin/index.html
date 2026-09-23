@@ -10,8 +10,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="/assets/js/qrcode.min.js"></script>
-<script src="/assets/js/countries.js?v=20260923l"></script>
-<script src="/assets/js/guest-fields.js?v=20260923l"></script>
+<script src="/assets/js/countries.js?v=20260923m"></script>
+<script src="/assets/js/guest-fields.js?v=20260923m"></script>
 <script src="/assets/js/jsQR.min.js"></script>
 <style>
   :root{
@@ -69,6 +69,7 @@
   .stat-card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px 18px; }
   .stat-card .sc-label{ font-size:.64rem; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); }
   .stat-card .sc-val{ font-family:'Cormorant Garamond',serif; font-size:2.1rem; color:var(--plum); margin-top:6px; font-variant-numeric:tabular-nums; }
+  .stat-card .sc-val.long{ font-size:1.15rem; line-height:1.45; margin-top:10px; }
   .stat-card .sc-sub{ font-size:.72rem; color:var(--text-muted); margin-top:2px; }
   .stat-card.accent{ border-color:var(--gold); }
 
@@ -160,6 +161,8 @@
   .badge-preview{ max-width:300px; width:100%; margin:0 auto; border-radius:10px; box-shadow:0 14px 30px -16px rgba(62,23,48,.4); border:1px solid var(--border); }
 
   .scan-video{ width:100%; max-width:360px; border-radius:10px; background:#111; margin:0 auto; display:block; }
+  /* elements toggled with the hidden attribute stay hidden even when a class sets display */
+  [hidden]{ display:none !important; }
   .scan-status{ text-align:center; font-size:.8rem; color:var(--text-muted); margin-top:12px; }
   .checkin-result{ margin-top:18px; padding:18px; border-radius:10px; background:var(--ivory-deep); border:1px solid var(--border); }
 
@@ -601,6 +604,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/admin/app.js?v=20260923l"></script>
+<script src="/admin/app.js?v=20260923m"></script>
 </body>
 </html>

@@ -268,6 +268,8 @@ section{ padding-block:96px; position:relative; }
 #confirmPane.is-pending .cb-done{ display:none; }
 #confirmPane.is-pending .cb-pending{ display:block; }
 .rsvp-deadline{ text-align:center; margin-top:20px; font-size:.78rem; color:var(--text-muted); }
+/* clear the bottom-left spray that hangs below the RSVP card on phones */
+@media (max-width:640px){ .rsvp-deadline{ margin-top:84px; } }
 
 .save-card-wrap{ text-align:center; }
 .card-links{ display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:22px; }

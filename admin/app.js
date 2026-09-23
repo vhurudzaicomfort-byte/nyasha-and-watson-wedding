@@ -189,7 +189,9 @@
     return '<span class="pill ' + cls + '" title="' + escapeHtml((CHECKIN_METHODS[m] || m) + (when ? " at " + when : "")) + '">Checked in · ' + escapeHtml(CHECKIN_METHODS[m] || m) + "</span>";
   }
   function stat(label, val, sub, accent) {
-    return '<div class="stat-card' + (accent ? " accent" : "") + '"><div class="sc-label">' + label + '</div><div class="sc-val">' + val + "</div>" + (sub ? '<div class="sc-sub">' + sub + "</div>" : "") + "</div>";
+    // multi-currency totals ("USD 400.00 · GBP 150.00 …") get a smaller size instead of wrapping in giant type
+    var long = String(val).length > 12;
+    return '<div class="stat-card' + (accent ? " accent" : "") + '"><div class="sc-label">' + label + '</div><div class="sc-val' + (long ? " long" : "") + '">' + val + "</div>" + (sub ? '<div class="sc-sub">' + sub + "</div>" : "") + "</div>";
   }
   function barRow(r) {
     var label = r[0], val = r[1], max = r[2] || 1;
