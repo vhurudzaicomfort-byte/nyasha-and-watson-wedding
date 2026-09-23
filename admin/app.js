@@ -4,6 +4,7 @@
   var guests = [];
   var gifts = [];
   var providers = [];
+  var requests = [];
   var currencies = ["USD"];
   var paymentMethods = ["Cash"];
   var FG = window.WNGuestFields;
@@ -76,7 +77,7 @@
   /* ---------------- LOAD + RENDER ---------------- */
   function loadAll() {
     return Promise.all([api("/api/admin/guests"), api("/api/admin/gifts"), api("/api/admin/providers")]).then(function (res) {
-      guests = res[0].guests; if (res[0].categories && res[0].categories.length) categories = res[0].categories;
+      guests = res[0].guests; requests = res[0].requests || []; if (res[0].categories && res[0].categories.length) categories = res[0].categories;
       gifts = res[1].gifts; currencies = res[1].currencies; paymentMethods = res[1].paymentMethods;
       providers = res[2].providers;
       renderAll();
@@ -84,7 +85,7 @@
   }
   function renderAll() {
     populateInvitedForFilter();
-    renderDashboard(); renderGuestTable();
+    renderDashboard(); renderGuestTable(); renderApprovals();
     renderGifts(); renderProviders();
   }
   function fillSelect(id, firstLabel, options) {
@@ -138,6 +139,7 @@
       stat("Not Attending", not.length),
       stat("Pending", pending.length),
       stat("Checked In", checkedIn, (total - checkedIn) + " not yet arrived"),
+      stat("Pending Approval", requests.filter(function (r) { return r.status === "pending"; }).length, "RSVPs from people not on the invite list", requests.some(function (r) { return r.status === "pending"; })),
       stat("RSVP Rate", rate + "%", responded + " of " + total + " responded"),
       stat("Cash Gifts", cashTotalStr, gifts.filter(function (g) { return g.type === "cash"; }).length + " gifts recorded"),
       stat("Gifts in Kind", kindCount, "items received"),
@@ -321,6 +323,119 @@
     });
   }
 
+  /* ---------------- RSVP APPROVALS ---------------- */
+  // RSVPs from the general link that didn't match anyone on the invite list.
+  // The guest was told "pending approval"; approving adds (or links) them to the
+  // invite list with their RSVP already recorded. Decisions are kept on record.
+  var REQ_STATUS = { pending: "Pending approval", approved: "Approved", declined: "Declined" };
+  function reqName(r) { return ((r.firstName || "") + " " + (r.lastName || "")).trim() || "(no name)"; }
+  function reqResponse(r) {
+    if (r.attend === "attending") return "Attending · party of " + (r.guests || 1);
+    if (r.attend === "maybe") return "Not sure yet";
+    if (r.attend === "not_attending") return "Declining";
+    return "—";
+  }
+  function renderApprovals() {
+    var pending = requests.filter(function (r) { return r.status === "pending"; }).length;
+    var badge = document.getElementById("approvalCount");
+    badge.hidden = !pending;
+    badge.textContent = pending;
+    document.getElementById("approvalOption").textContent = "Approvals" + (pending ? " (" + pending + ")" : "");
+
+    var fStatus = document.getElementById("reqFilter").value;
+    var q = (document.getElementById("reqSearch").value || "").toLowerCase();
+    var rows = requests.filter(function (r) {
+      if (fStatus && r.status !== fStatus) return false;
+      if (q && (reqName(r) + " " + (r.phone || "")).toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    });
+    var empty = document.getElementById("reqEmpty");
+    empty.hidden = rows.length !== 0;
+    document.getElementById("reqEmptyTitle").textContent = fStatus === "pending" ? "Nothing waiting for approval" : "No requests here";
+    var byId = {};
+    guests.forEach(function (g) { byId[g.id] = g; });
+    document.getElementById("reqRows").innerHTML = rows.map(function (r) {
+      var meta = [WNPhone.formatPhone(r.phone), FG.genderLabel(r.gender), r.ageGroup ? "Age " + FG.ageLabel(r.ageGroup) : ""].filter(Boolean).join(" · ");
+      var linked = r.guestId && byId[r.guestId] ? "On invite list as " + fullName(byId[r.guestId]) : "";
+      var actions;
+      if (r.status === "pending") actions = '<button class="btn btn-primary btn-sm" data-req-action="approve" data-id="' + r.id + '">Approve</button> <button class="btn btn-outline btn-sm" data-req-action="decline" data-id="' + r.id + '">Decline</button>';
+      else if (r.status === "declined") actions = '<button class="btn btn-outline btn-sm" data-req-action="reopen" data-id="' + r.id + '">Reopen</button>';
+      else actions = r.guestId && byId[r.guestId] ? '<button class="btn btn-outline btn-sm" data-req-action="invite" data-id="' + r.id + '">Send invite link</button>' : "";
+      return "<tr>" +
+        '<td><div class="g-name">' + escapeHtml(reqName(r)) + '</div><div class="g-sub">' + escapeHtml(meta) + "</div>" + (linked ? '<div class="g-meta">' + escapeHtml(linked) + "</div>" : "") + "</td>" +
+        "<td>" + escapeHtml(reqResponse(r)) + (r.plusOneName ? '<div class="g-sub">With ' + escapeHtml(r.plusOneName) + "</div>" : "") + "</td>" +
+        '<td><div class="req-msg">' + escapeHtml(r.message || "—") + "</div></td>" +
+        "<td>" + fmtDate(r.updatedAt || r.createdAt) + '<div class="g-sub">via ' + escapeHtml(CHANNELS[r.channel] || "website") + "</div></td>" +
+        '<td><span class="pill pill-req-' + r.status + '">' + (REQ_STATUS[r.status] || r.status) + "</span>" + (r.decidedAt ? '<div class="g-sub">' + fmtDate(r.decidedAt) + "</div>" : "") + "</td>" +
+        '<td><div class="row-actions">' + actions + "</div></td>" +
+        "</tr>";
+    }).join("");
+  }
+  document.getElementById("reqFilter").addEventListener("change", renderApprovals);
+  document.getElementById("reqSearch").addEventListener("input", renderApprovals);
+
+  function requestAction(body, okMsg) {
+    return api("/api/admin/guests", { method: "POST", body: body })
+      .then(function () { showToast(okMsg); return loadAll(); })
+      .catch(function (e) { showToast(e.message || "Could not update the request"); });
+  }
+  document.getElementById("reqRows").addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-req-action]");
+    if (!btn) return;
+    var r = requests.find(function (x) { return x.id === btn.dataset.id; });
+    if (!r) return;
+    var action = btn.dataset.reqAction;
+    if (action === "approve") openApproveModal(r);
+    else if (action === "decline") {
+      askConfirm("Decline " + reqName(r) + "?", "They'll stay off the invite list. You can reopen this later if you change your mind.").then(function (ok) {
+        if (ok) requestAction({ action: "decline", requestId: r.id }, "Request declined");
+      });
+    } else if (action === "reopen") requestAction({ action: "reopen", requestId: r.id }, "Request reopened");
+    else if (action === "invite") {
+      var g = guests.find(function (x) { return x.id === r.guestId; });
+      if (g) sendInvite(g);
+    }
+  });
+
+  var approvingRequest = null;
+  function nameTokens(s) { return String(s || "").toLowerCase().split(/\s+/).filter(Boolean); }
+  function openApproveModal(r) {
+    approvingRequest = r;
+    document.getElementById("approveModalSub").textContent = reqName(r) + " — " + reqResponse(r) + (r.phone ? " · " + WNPhone.formatPhone(r.phone) : "");
+    document.getElementById("approve-invitedfor").innerHTML = '<option value="">—</option>' + categories.map(function (c) { return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + "</option>"; }).join("");
+    // suggest the most likely existing invite: shared surname or first name
+    var mine = nameTokens(reqName(r));
+    var sorted = guests.slice().sort(function (a, b) { return fullName(a).localeCompare(fullName(b)); });
+    var suggestion = sorted.find(function (g) { return nameTokens(fullName(g)).some(function (t) { return mine.indexOf(t) !== -1; }); });
+    document.getElementById("approve-guest").innerHTML = '<option value="">Choose an invite…</option>' + sorted.map(function (g) {
+      return '<option value="' + g.id + '"' + (suggestion && suggestion.id === g.id ? " selected" : "") + ">" + escapeHtml(fullName(g)) + (g.phone ? " · " + escapeHtml(WNPhone.formatPhone(g.phone)) : "") + "</option>";
+    }).join("");
+    document.querySelector('input[name="approve-mode"][value="new"]').checked = true;
+    syncApproveMode();
+    document.getElementById("approveModalOverlay").hidden = false;
+  }
+  function syncApproveMode() {
+    var mode = document.querySelector('input[name="approve-mode"]:checked').value;
+    document.getElementById("approveNewFields").hidden = mode !== "new";
+    document.getElementById("approveLinkFields").hidden = mode !== "link";
+  }
+  document.querySelectorAll('input[name="approve-mode"]').forEach(function (el) { el.addEventListener("change", syncApproveMode); });
+  function closeApproveModal() { document.getElementById("approveModalOverlay").hidden = true; approvingRequest = null; }
+  document.getElementById("approveModalClose").addEventListener("click", closeApproveModal);
+  document.getElementById("approveModalCancel").addEventListener("click", closeApproveModal);
+  document.getElementById("approveModalSave").addEventListener("click", function () {
+    if (!approvingRequest) return;
+    var mode = document.querySelector('input[name="approve-mode"]:checked').value;
+    var body = { action: "approve", requestId: approvingRequest.id, mode: mode };
+    if (mode === "link") {
+      body.guestId = document.getElementById("approve-guest").value;
+      if (!body.guestId) { showToast("Choose the invite to link this RSVP to"); return; }
+    } else body.invitedFor = document.getElementById("approve-invitedfor").value;
+    var name = reqName(approvingRequest);
+    closeApproveModal();
+    requestAction(body, name + " approved and added to the invite list");
+  });
+
   /* ---------------- GUEST MODAL ---------------- */
   var editingGuestId = null;
   function openGuestModal(g) {
@@ -337,8 +452,6 @@
       categories.map(function (c) { return '<option value="' + escapeHtml(c) + '"' + (c === invitedForVal ? " selected" : "") + ">" + escapeHtml(c) + "</option>"; }).join("");
     document.getElementById("f-gender").innerHTML = '<option value="">—</option>' + FG.GENDERS.map(function (x) { return '<option value="' + x.value + '">' + x.label + "</option>"; }).join("");
     document.getElementById("f-gender").value = g ? (g.gender || "") : "";
-    document.getElementById("f-age").innerHTML = '<option value="">—</option>' + FG.AGE_GROUPS.map(function (a) { return '<option value="' + a.value + '">' + a.label + "</option>"; }).join("");
-    document.getElementById("f-age").value = g ? (g.ageGroup || "") : "";
     document.getElementById("f-invited").value = g ? (g.invitedCount || 1) : 1;
     document.getElementById("f-rsvp").value = g ? (g.rsvpStatus || "pending") : "pending";
     document.getElementById("f-attending").value = g ? (g.attendingCount || 0) : 0;
@@ -364,7 +477,6 @@
       familyName: document.getElementById("f-family").value.trim(),
       invitedFor: document.getElementById("f-invitedfor").value,
       gender: document.getElementById("f-gender").value,
-      ageGroup: document.getElementById("f-age").value,
       invitedCount: Number(document.getElementById("f-invited").value) || 1,
       rsvpStatus: document.getElementById("f-rsvp").value,
       attendingCount: Number(document.getElementById("f-attending").value) || 0,

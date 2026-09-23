@@ -87,6 +87,16 @@ function buildReport(type, data) {
       return [fullName(g), phone(g.phone), g.email || "", g.invitationType || "", g.familyName || "", g.invitedFor || "", Fields.genderLabel(g.gender), Fields.ageLabel(g.ageGroup), g.invitedCount || 1, (g.rsvpStatus || "pending").replace("_", " "), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
     });
     filename = "Invited-Guests"; title = "All Invited Guests";
+  } else if (type === "requests") {
+    var REQ_STATUS = { pending: "Pending approval", approved: "Approved", declined: "Declined" };
+    var byId = {}; guests.forEach(function (g) { byId[g.id] = g; });
+    columns = ["Name", "Phone", "Response", "Party", "Message", "Via", "Received", "Status", "Decided", "On Invite List As"];
+    weights = [1.5, 1.2, 1, 0.6, 1.8, 0.8, 1, 1, 1, 1.4];
+    rows = (data.requests || []).slice().sort(function (a, b) { return (b.createdAt || "").localeCompare(a.createdAt || ""); }).map(function (r) {
+      var linked = r.guestId && byId[r.guestId] ? fullName(byId[r.guestId]) : "";
+      return [((r.firstName || "") + " " + (r.lastName || "")).trim(), phone(r.phone), (r.attend || "").replace("_", " "), r.attend === "attending" ? (r.guests || 1) : "", r.message || "", CHANNELS[r.channel] || "", (r.createdAt || "").slice(0, 10), REQ_STATUS[r.status] || r.status, (r.decidedAt || "").slice(0, 10), linked];
+    });
+    filename = "RSVP-Approval-Requests"; title = "RSVP Approval Requests";
   } else if (type === "gifts") {
     columns = ["Type", "Giver", "Phone", "Date", "Amount", "Currency", "Payment Method", "Description", "Notes"];
     weights = [0.8, 1.4, 1.1, 1, 1, 0.8, 1.2, 1.6, 1.4];

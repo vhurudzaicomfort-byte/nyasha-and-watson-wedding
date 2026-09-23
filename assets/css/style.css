@@ -263,6 +263,10 @@ section{ padding-block:96px; position:relative; }
 .summary-row .sr-v{ color:var(--plum-2); text-align:right; max-width:60%; }
 .confirm-badge{ width:64px; height:64px; border-radius:50%; background:var(--champagne); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; }
 .confirm-badge svg{ width:30px; height:30px; color:var(--success); }
+.confirm-badge .cb-pending{ display:none; color:var(--warning); }
+#confirmPane.is-pending .confirm-badge{ background:#FBEEDF; }
+#confirmPane.is-pending .cb-done{ display:none; }
+#confirmPane.is-pending .cb-pending{ display:block; }
 .rsvp-deadline{ text-align:center; margin-top:20px; font-size:.78rem; color:var(--text-muted); }
 
 .save-card-wrap{ text-align:center; }

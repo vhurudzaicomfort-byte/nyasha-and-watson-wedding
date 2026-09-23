@@ -2,7 +2,7 @@ const { requireAuth } = require("../../lib/auth");
 const { readData, writeData, newId } = require("../../lib/blob-store");
 const Fields = require("../../assets/js/guest-fields.js");
 
-const COLUMNS = ["FirstName", "LastName", "Phone", "Email", "InvitationType", "FamilyName", "InvitedFor", "Gender", "AgeGroup", "InvitedCount", "PlusOneAllowed", "RSVPStatus", "Notes"];
+const COLUMNS = ["FirstName", "LastName", "Phone", "Email", "InvitationType", "FamilyName", "InvitedFor", "Gender", "InvitedCount", "PlusOneAllowed", "RSVPStatus", "Notes"];
 
 // Minimal RFC4180-ish CSV parser: handles quoted fields, escaped quotes, commas/newlines inside quotes.
 function parseCsv(text) {
@@ -43,9 +43,8 @@ function toGuestDraft(rowObj) {
     email: (rowObj.Email || "").trim(),
     invitationType: (rowObj.InvitationType || "individual").trim().toLowerCase() || "individual",
     familyName: (rowObj.FamilyName || "").trim(),
-    invitedFor: (rowObj.InvitedFor || "").trim(),
+    invitedFor: Fields.normCategory(rowObj.InvitedFor),
     gender: Fields.normGender(rowObj.Gender),
-    ageGroup: Fields.normAgeGroup(rowObj.AgeGroup),
     invitedCount: Number(rowObj.InvitedCount) || 1,
     plusOneAllowed: /^(y|yes|true|1)$/i.test((rowObj.PlusOneAllowed || "").trim()),
     rsvpStatus: (rowObj.RSVPStatus || "pending").trim().toLowerCase() || "pending",
@@ -73,6 +72,7 @@ module.exports = async function handler(req, res) {
           // Contact/invitation details only — never clobber RSVP progress already
           // recorded (via the guest edit modal or the guest's own RSVP submission).
           const { rsvpStatus, attendingCount, ...contactFields } = draft;
+          if (!contactFields.gender) delete contactFields.gender; // don't blank what the guest told us
           Object.assign(existing, contactFields);
           updated++;
           return;

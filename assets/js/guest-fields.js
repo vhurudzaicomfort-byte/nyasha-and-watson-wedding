@@ -3,7 +3,7 @@
 (function (global) {
   "use strict";
 
-  var CATEGORIES = ["Bride's Side", "Groom's Side", "ZAOGA Church", "Roman Catholic Church", "Mutual Friends", "Service Providers"];
+  var CATEGORIES = ["Bride's Side", "Groom's Side", "Church", "Mutual Friends", "Service Providers"];
 
   var GENDERS = [
     { value: "female", label: "Female" },
@@ -30,13 +30,21 @@
     if (s === "61" || s === "61-" || s === "61plus") s = "61+";
     return AGE_GROUPS.some(function (a) { return a.value === s; }) ? s : "";
   }
+  // Older records used one category per church; they all fold into "Church".
+  function normCategory(v) {
+    var s = String(v || "").trim();
+    if (!s) return "";
+    if (/church/i.test(s)) return "Church";
+    var hit = CATEGORIES.find(function (c) { return c.toLowerCase() === s.toLowerCase(); });
+    return hit || s;
+  }
   function genderLabel(v) { var g = GENDERS.find(function (x) { return x.value === v; }); return g ? g.label : ""; }
   function ageLabel(v) { var a = AGE_GROUPS.find(function (x) { return x.value === v; }); return a ? a.label : ""; }
   function isChild(v) { var a = AGE_GROUPS.find(function (x) { return x.value === v; }); return !!a && a.group === "child"; }
 
   global.WNGuestFields = {
     CATEGORIES: CATEGORIES, GENDERS: GENDERS, AGE_GROUPS: AGE_GROUPS,
-    normGender: normGender, normAgeGroup: normAgeGroup, genderLabel: genderLabel, ageLabel: ageLabel, isChild: isChild
+    normGender: normGender, normAgeGroup: normAgeGroup, normCategory: normCategory, genderLabel: genderLabel, ageLabel: ageLabel, isChild: isChild
   };
   if (typeof module !== "undefined" && module.exports) module.exports = global.WNGuestFields;
 })(typeof window !== "undefined" ? window : globalThis);

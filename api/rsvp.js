@@ -1,10 +1,12 @@
 // Public, unauthenticated endpoint used by the guest-facing site (index.html).
 // GET  ?token=<guestId>  -> minimal info to personalise the page and prefill
 //                           the RSVP wizard. Never returns email or admin notes.
+// GET  ?request=<id>     -> status of an RSVP that is waiting for approval.
 // POST { token?, ... }   -> records the RSVP on the guest's record. Without a
 //                           token we first try to match an existing invitation
-//                           by phone, then by exact full name, so a guest who
-//                           replies from the generic link doesn't create a duplicate.
+//                           by phone, then by exact full name. Anyone we can't
+//                           match isn't on the invite list: their RSVP is held
+//                           as a pending request for the couple to approve.
 const { readData, writeData, newId } = require("../lib/blob-store");
 const Fields = require("../assets/js/guest-fields.js");
 
@@ -43,6 +45,16 @@ function publicView(guest) {
 }
 
 module.exports = async function handler(req, res) {
+  if (req.method === "GET" && req.query.request) {
+    var store = await readData();
+    var rq = store.requests.find(function (r) { return r.id === req.query.request; });
+    if (!rq) { res.status(200).json({ found: false }); return; }
+    var out = { found: true, requestId: rq.id, status: rq.status, firstName: rq.firstName || "", attend: rq.attend, guests: rq.guests };
+    if (rq.status === "approved" && rq.guestId) out.guestId = rq.guestId;
+    res.status(200).json(out);
+    return;
+  }
+
   if (req.method === "GET") {
     var token = req.query.token;
     if (!token) { res.status(400).json({ error: "token is required" }); return; }
@@ -97,36 +109,34 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    // Not on the invite list: hold the RSVP for approval instead of adding a guest.
     var nameParts = splitName(body.name);
     if (!nameParts.firstName) { res.status(400).json({ error: "Name is required" }); return; }
-    var newGuest = {
-      id: newId("guest"),
+    var fullN = normName(body.name);
+    var reqRec = data2.requests.find(function (r) {
+      if (r.status !== "pending") return false;
+      if (body.requestId && r.id === body.requestId) return true;
+      return (phone && samePhone(r.phone, phone)) || normName((r.firstName || "") + " " + (r.lastName || "")) === fullN;
+    });
+    if (!reqRec) {
+      reqRec = { id: newId("req"), status: "pending", createdAt: now };
+      data2.requests.push(reqRec);
+    }
+    Object.assign(reqRec, {
       firstName: nameParts.firstName,
       lastName: nameParts.lastName,
-      phone: phone,
-      email: "",
-      invitationType: "individual",
-      familyName: "",
-      invitedFor: "",
-      gender: gender,
-      ageGroup: ageGroup,
-      invitedCount: requestedCount,
-      plusOneAllowed: false,
-      rsvpStatus: attend,
-      attendingCount: attend === "attending" ? requestedCount : 0,
-      plusOneName: body.plusOneName ? String(body.plusOneName).trim() : "",
-      rsvpMessage: message,
-      rsvpChannel: channel,
-      notes: ((message ? "RSVP message: " + message + " " : "") + "(self-registered via public RSVP form — not matched to an invitation)").trim(),
-      checkedIn: false,
-      checkInTime: null,
-      checkInMethod: "",
-      createdAt: now,
-      rsvpAt: now,
-    };
-    data2.guests.push(newGuest);
+      phone: phone || reqRec.phone || "",
+      gender: gender || reqRec.gender || "",
+      ageGroup: ageGroup || reqRec.ageGroup || "",
+      attend: attend,
+      guests: attend === "attending" ? requestedCount : 0,
+      plusOneName: attend === "attending" && body.plusOneName ? String(body.plusOneName).trim() : "",
+      message: message || reqRec.message || "",
+      channel: channel,
+      updatedAt: now,
+    });
     await writeData(data2);
-    res.status(201).json(Object.assign({ ok: true, mode: "created", matchedBy: "" }, publicView(newGuest)));
+    res.status(202).json({ ok: true, mode: "pending", requestId: reqRec.id, status: "pending", firstName: reqRec.firstName, rsvpStatus: attend, attendingCount: reqRec.guests });
     return;
   }
 

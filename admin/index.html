@@ -10,8 +10,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="/assets/js/qrcode.min.js"></script>
-<script src="/assets/js/countries.js?v=20260923h"></script>
-<script src="/assets/js/guest-fields.js?v=20260923h"></script>
+<script src="/assets/js/countries.js?v=20260923i"></script>
+<script src="/assets/js/guest-fields.js?v=20260923i"></script>
 <script src="/assets/js/jsQR.min.js"></script>
 <style>
   :root{
@@ -110,6 +110,17 @@
   @media (max-width:760px){ .mix-grid{ grid-template-columns:1fr; } }
   .mix-grid h4{ font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--text-muted); font-weight:500; margin:0 0 10px; }
   .mix-note{ margin-top:10px; font-size:.76rem; color:var(--text-muted); }
+  .nav-count{ margin-left:auto; background:var(--coral, #D97F55); color:#fff; border-radius:99px; font-size:.64rem; font-weight:600; padding:2px 8px; line-height:1.5; }
+  .nav-count[hidden]{ display:none; }
+  .pill-req-pending{ background:var(--warning-bg); color:var(--warning); }
+  .pill-req-approved{ background:var(--success-bg); color:var(--success); }
+  .pill-req-declined{ background:var(--error-bg); color:var(--error); }
+  .req-msg{ max-width:260px; font-size:.76rem; color:var(--plum-2); }
+  .approve-choice{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .approve-choice label{ display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border:1px solid var(--border); border-radius:8px; cursor:pointer; font-size:.84rem; }
+  .approve-choice label:has(input:checked){ border-color:var(--plum); background:var(--ivory-deep); }
+  .approve-choice input{ margin-top:3px; }
+  .approve-choice small{ display:block; color:var(--text-muted); font-size:.74rem; margin-top:2px; }
   .pill-notchecked{ background:var(--ivory-deep); color:var(--text-muted); }
   .pill-status-red{ background:var(--error-bg); color:var(--error); }
   .pill-status-amber{ background:var(--warning-bg); color:var(--warning); }
@@ -185,6 +196,7 @@
     <div class="brand">Watson &amp; Nyasha<small>Wedding Management Portal</small></div>
     <button class="navitem active" data-tab="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</button>
     <button class="navitem" data-tab="guests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><circle cx="17.5" cy="8.5" r="2.6"/><path d="M15.5 13.2c2.9.6 5 3 5 6.1"/></svg>Invites &amp; RSVPs</button>
+    <button class="navitem" data-tab="approvals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>Approvals<span class="nav-count" id="approvalCount" hidden></span></button>
     <button class="navitem" data-tab="checkin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v7M14 20h4"/></svg>Check-in</button>
     <button class="navitem" data-tab="gifts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="9" width="16" height="11" rx="1"/><path d="M4 9h16M12 9v11"/><path d="M12 9c-1.5 0-4-1-4-3.2A2.3 2.3 0 0 1 10.3 3C12 3 12 6 12 9z"/><path d="M12 9c1.5 0 4-1 4-3.2A2.3 2.3 0 0 0 13.7 3C12 3 12 6 12 9z"/></svg>Gifts</button>
     <button class="navitem" data-tab="providers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"/><path d="M3 12h18"/></svg>Service Providers</button>
@@ -201,6 +213,7 @@
       <select id="mobileNavSelect">
         <option value="dashboard">Dashboard</option>
         <option value="guests">Invites &amp; RSVPs</option>
+        <option value="approvals" id="approvalOption">Approvals</option>
         <option value="checkin">Check-in</option>
         <option value="gifts">Gifts</option>
         <option value="providers">Service Providers</option>
@@ -249,6 +262,27 @@
         <div class="empty-state" id="guestsEmpty" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/></svg>
           <h4>No guests yet</h4><p>Add your first guest, or log an RSVP as it comes in over WhatsApp.</p>
+        </div>
+      </div>
+
+      <div class="tabpanel" data-panel="approvals">
+        <div class="page-head">
+          <div><h2>RSVP Approvals</h2><p>People who replied from the general invitation link but aren't on your invite list. They were told their RSVP is pending approval. Approve to add them (or link them to an existing invite), or decline. Every decision is kept here.</p></div>
+          <div class="btn-row"><a class="btn btn-outline" href="/api/admin/export?type=requests&format=csv">Export CSV</a></div>
+        </div>
+        <div class="toolbar">
+          <input type="search" id="reqSearch" placeholder="Search by name or phone…">
+          <select id="reqFilter"><option value="pending">Pending approval</option><option value="approved">Approved</option><option value="declined">Declined</option><option value="">All requests</option></select>
+        </div>
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Name</th><th>Response</th><th>Message</th><th>Received</th><th>Status</th><th></th></tr></thead>
+            <tbody id="reqRows"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="reqEmpty" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+          <h4 id="reqEmptyTitle">Nothing waiting for approval</h4><p>When someone who isn't on the invite list RSVPs from the general link, they'll appear here for you to approve or decline.</p>
         </div>
       </div>
 
@@ -320,6 +354,7 @@
             <div class="report-row"><span>RSVP Report</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=rsvp&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=rsvp&format=pdf">PDF</a></div>
             <div class="report-row"><span>Attending Guest List <span style="color:var(--text-muted); font-size:.72rem;">(confirmed only)</span></span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=attending&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=attending&format=pdf">PDF</a></div>
             <div class="report-row"><span>All Invited Guests</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=invited&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=invited&format=pdf">PDF</a></div>
+            <div class="report-row"><span>RSVP Approval Requests <span style="color:var(--text-muted); font-size:.72rem;">(not on invite list)</span></span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=requests&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=requests&format=pdf">PDF</a></div>
             <div class="report-row"><span>Check-in Report</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=checkin&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=checkin&format=pdf">PDF</a></div>
           </div>
         </div>
@@ -333,6 +368,24 @@
       </div>
 
     </main>
+  </div>
+</div>
+
+<div class="overlay" id="approveModalOverlay" hidden>
+  <div class="modal">
+    <button class="modal-close" id="approveModalClose" aria-label="Close">&times;</button>
+    <h3>Approve RSVP</h3>
+    <p class="modal-sub" id="approveModalSub"></p>
+    <div class="approve-choice">
+      <label><input type="radio" name="approve-mode" value="new" checked><span>Add to the invite list<small>Creates a new invite with their RSVP already recorded.</small></span></label>
+      <label><input type="radio" name="approve-mode" value="link"><span>They're already invited under another name<small>Records this RSVP on their existing invite — no duplicate.</small></span></label>
+    </div>
+    <div class="field" id="approveNewFields"><label for="approve-invitedfor">Invited for</label><select id="approve-invitedfor"></select></div>
+    <div class="field" id="approveLinkFields" hidden><label for="approve-guest">Existing invite</label><select id="approve-guest"></select></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="approveModalCancel">Cancel</button>
+      <button class="btn btn-primary" id="approveModalSave">Approve</button>
+    </div>
   </div>
 </div>
 
@@ -350,7 +403,6 @@
       <div class="field"><label for="f-family">Family / group name</label><input id="f-family" type="text" placeholder="e.g. The Vhurudzai Family"></div>
       <div class="field"><label for="f-invitedfor">Invited for</label><select id="f-invitedfor"><option value="">—</option></select></div>
       <div class="field"><label for="f-gender">Gender <span style="text-transform:none;letter-spacing:0;">(optional)</span></label><select id="f-gender"><option value="">—</option></select></div>
-      <div class="field"><label for="f-age">Age group <span style="text-transform:none;letter-spacing:0;">(optional)</span></label><select id="f-age"><option value="">—</option></select></div>
       <div class="field"><label for="f-invited">Number invited</label><input id="f-invited" type="number" min="1" value="1"></div>
       <div class="field"><label for="f-rsvp">RSVP status</label><select id="f-rsvp"><option value="pending">Pending</option><option value="attending">Attending</option><option value="maybe">Maybe</option><option value="not_attending">Not Attending</option></select></div>
       <div class="field"><label for="f-attending">Attending count</label><input id="f-attending" type="number" min="0" value="0"></div>
@@ -550,6 +602,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/admin/app.js?v=20260923h"></script>
+<script src="/admin/app.js?v=20260923i"></script>
 </body>
 </html>

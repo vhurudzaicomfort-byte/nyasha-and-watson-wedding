@@ -35,6 +35,12 @@
   var STORE_KEY = "wn_guest_token";
   function storeGet() { try { return localStorage.getItem(STORE_KEY) || ""; } catch (e) { return ""; } }
   function storeSet(v) { try { if (v) localStorage.setItem(STORE_KEY, v); else localStorage.removeItem(STORE_KEY); } catch (e) {} }
+  // An RSVP from someone not on the invite list waits for the couple's approval;
+  // its id is remembered so this device can show the outcome later.
+  var REQ_KEY = "wn_rsvp_request";
+  function reqGet() { try { return localStorage.getItem(REQ_KEY) || ""; } catch (e) { return ""; } }
+  function reqSet(v) { try { if (v) localStorage.setItem(REQ_KEY, v); else localStorage.removeItem(REQ_KEY); } catch (e) {} }
+  var pendingRequest = null; // { requestId, status, firstName }
 
   /* ---------------- COVER ---------------- */
   var cover = document.getElementById("cover");
@@ -122,6 +128,13 @@
 
   function renderInviteHint() {
     var hint = document.getElementById("inviteHint");
+    if (!guestInfo && pendingRequest) {
+      hint.hidden = false;
+      hint.textContent = pendingRequest.status === "declined"
+        ? "Thank you for your RSVP" + (pendingRequest.firstName ? ", " + pendingRequest.firstName : "") + ". This celebration is strictly by invitation."
+        : "Thank you" + (pendingRequest.firstName ? ", " + pendingRequest.firstName : "") + " — your RSVP is pending approval by the couple.";
+      return;
+    }
     if (!guestInfo) { hint.hidden = true; return; }
     hint.hidden = false;
     var first = guestInfo.firstName || "friend";
@@ -134,6 +147,13 @@
 
   function renderRsvpAlready() {
     var box = document.getElementById("rsvpAlready");
+    if (!guestInfo && pendingRequest) {
+      box.innerHTML = pendingRequest.status === "declined"
+        ? "Thank you for replying. We couldn't find you on our invitation list, and as this celebration is <strong>strictly by invitation</strong>, we're unable to confirm a place. If you believe this is a mistake, please contact the couple."
+        : "Your RSVP is <strong>pending approval</strong>. We couldn't find you on our invitation list, so the couple will review it and confirm. You can update your reply below in the meantime.";
+      box.hidden = false;
+      return;
+    }
     if (!guestInfo || !guestInfo.rsvpStatus || guestInfo.rsvpStatus === "pending") { box.hidden = true; return; }
     var when = guestInfo.rsvpAt ? new Date(guestInfo.rsvpAt).toLocaleDateString("en-GB", { day: "numeric", month: "long" }) : "";
     var party = guestInfo.rsvpStatus === "attending" ? " · party of " + (guestInfo.attendingCount || 1) : "";
@@ -141,8 +161,27 @@
     box.hidden = false;
   }
 
+  function loadPendingRequest() {
+    var id = reqGet();
+    if (!id) { renderCheckin(); return; }
+    fetch("/api/rsvp?request=" + encodeURIComponent(id)).then(function (r) { return r.json(); }).then(function (info) {
+      if (!info || !info.found) { reqSet(""); renderCheckin(); return; }
+      if (info.status === "approved" && info.guestId) {
+        reqSet("");
+        adoptToken(info.guestId);
+        showToast("Good news — your invitation is confirmed!");
+        loadGuest();
+        return;
+      }
+      pendingRequest = { requestId: info.requestId, status: info.status, firstName: info.firstName };
+      renderInviteHint();
+      renderRsvpAlready();
+      renderCheckin();
+    }).catch(function () { renderCheckin(); });
+  }
+
   function loadGuest() {
-    if (!guestToken) { renderCheckin(); return; }
+    if (!guestToken) { loadPendingRequest(); return; }
     fetch("/api/rsvp?token=" + encodeURIComponent(guestToken)).then(function (r) { return r.json(); }).then(function (info) {
       if (!info || !info.found) {
         if (!urlToken) { storeSet(""); guestToken = ""; }
@@ -431,7 +470,7 @@
     return fetch("/api/rsvp", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        token: guestToken || undefined, channel: channel,
+        token: guestToken || undefined, requestId: (!guestToken && pendingRequest && pendingRequest.status === "pending") ? pendingRequest.requestId : undefined, channel: channel,
         name: state.name, phone: state.phone, gender: state.gender, ageGroup: state.ageGroup,
         attend: state.attend, guests: state.guests, plusOneName: state.plusone, message: state.message
       })
@@ -441,8 +480,31 @@
   }
 
   function showConfirm(result, channel) {
+    var pending = !!(result && result.mode === "pending");
+    document.getElementById("confirmPane").classList.toggle("is-pending", pending);
+    if (pending) {
+      reqSet(result.requestId);
+      pendingRequest = { requestId: result.requestId, status: "pending", firstName: result.firstName };
+      var pmsg = {
+        web: "",
+        whatsapp: "Your WhatsApp message is ready — just tap send. ",
+        sms: "Your SMS is ready — just tap send. ",
+        email: "Your email is ready — just tap send. ",
+        call: ""
+      }[channel] || "";
+      document.getElementById("confirmTitleText").textContent = "Thank you";
+      document.getElementById("confirmMsg").textContent = pmsg + "We couldn't find you on our invitation list, so your RSVP is pending approval. The couple will review it and be in touch.";
+      document.getElementById("confirmName").textContent = ", " + state.name.split(" ")[0];
+      document.getElementById("confirmSummary").innerHTML = summaryHtml();
+      document.getElementById("reviewPane").hidden = true;
+      document.getElementById("confirmPane").hidden = false;
+      document.getElementById("rsvpAlready").hidden = true;
+      renderInviteHint();
+      return;
+    }
+    document.getElementById("confirmTitleText").textContent = "Thank you";
     if (result) {
-      if (result.guestId) adoptToken(result.guestId);
+      if (result.guestId) { adoptToken(result.guestId); reqSet(""); pendingRequest = null; }
       guestInfo = Object.assign({}, guestInfo || {}, result);
       delete guestInfo.ok; delete guestInfo.mode;
       maxGuestsAllowed = Math.max(1, (guestInfo.invitedCount || 1) + (guestInfo.plusOneAllowed ? 1 : 0));
