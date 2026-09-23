@@ -87,6 +87,8 @@ async function main() {
   const plain = Inv.build(common);
   const still = renderRgba(plain);
   await sharp(still.png).jpeg({ quality: 93, chromaSubsampling: "4:4:4", mozjpeg: true }).toFile(path.join(OUT, BASE + ".jpg"));
+  // Lighter copy for link previews (WhatsApp skips large og:images)
+  await sharp(still.png).resize(720, 900).jpeg({ quality: 82, mozjpeg: true }).toFile(path.join(ROOT, "assets", "img", "og-card.jpg"));
 
   // 3) PDF — vector, with clickable RSVP and venue areas
   const scale = 0.5; // 540x675 pt page (7.5 x 9.375 in)

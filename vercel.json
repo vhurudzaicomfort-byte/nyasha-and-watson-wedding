@@ -1,6 +1,14 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "nyasha-and-watson-wedding.vercel.app" }],
+      "destination": "https://nyasha-watson.e-guests.com/:path*",
+      "permanent": false
+    }
+  ],
   "functions": {
     "api/admin/export.js": {
       "includeFiles": "{assets/fonts/**,node_modules/pdfkit/js/standard-fonts/**}"

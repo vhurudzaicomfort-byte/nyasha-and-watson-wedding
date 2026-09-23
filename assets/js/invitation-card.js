@@ -7,7 +7,7 @@
   "use strict";
 
   var W = 1080, H = 1350;
-  var SITE = "https://nyasha-and-watson-wedding.vercel.app";
+  var SITE = "https://nyasha-watson.e-guests.com";
   var MAPS_URL = "https://www.google.com/maps/search/?api=1&query=7%20Bay%20Noakes%2C%20Colne%20Valley%2C%20Chisipite%2C%20Harare%2C%20Zimbabwe";
   var C = { ivory: "#FBF7F0", plum: "#3E1730", plum2: "#5A2444", coral: "#D97F55", gold: "#B08A46", champ: "#E4D2B0", muted: "#8B7A6E" };
   var SWATCHES = [

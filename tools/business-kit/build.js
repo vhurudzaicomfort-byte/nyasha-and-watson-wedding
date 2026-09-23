@@ -16,7 +16,7 @@ const { capture } = require("./capture");
 const ROOT = path.join(__dirname, "..", "..");
 const OUT = path.join(ROOT, "business-kit");
 const SHOTS = path.join(OUT, "screenshots"), MOCK = path.join(OUT, "mockups"), WA = path.join(OUT, "whatsapp");
-const SITE_URL = "nyasha-and-watson-wedding.vercel.app";
+const SITE_URL = "nyasha-watson.e-guests.com";
 const PLUM = "5A2A55", GOLD = "A57C35", INK = "1E1B22", MUTED = "67626B";
 
 const shot = (n) => path.join(SHOTS, n + ".png");
