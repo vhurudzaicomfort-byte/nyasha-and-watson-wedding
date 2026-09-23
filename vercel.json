@@ -3,9 +3,9 @@
   "trailingSlash": false,
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/(.*)",
       "has": [{ "type": "host", "value": "nyasha-and-watson-wedding.vercel.app" }],
-      "destination": "https://nyasha-watson.e-guests.com/:path*",
+      "destination": "https://nyasha-watson.e-guests.com/$1",
       "permanent": false
     }
   ],
