@@ -24,10 +24,13 @@
 }
 *{box-sizing:border-box;}
 [hidden]{ display:none !important; }
-html{scroll-behavior:smooth;}
+html{scroll-behavior:smooth; overflow-x:hidden;}
 @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} *{animation-duration:.001ms !important; transition-duration:.001ms !important;} }
 
 body{ margin:0; background:var(--ivory); color:var(--text); font-family:'Poppins',sans-serif; font-weight:300; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+/* Sprays deliberately overhang card edges; clip (not hidden) keeps phones from
+   widening the page to fit them without turning html/body into scroll containers. */
+@supports (overflow-x:clip){ html, body{ overflow-x:clip; } }
 body.locked{ overflow:hidden; height:100%; }
 
 h1,h2,h3,h4{ font-family:'Bodoni Moda',serif; font-weight:600; color:var(--plum); margin:0; text-wrap:balance; }
