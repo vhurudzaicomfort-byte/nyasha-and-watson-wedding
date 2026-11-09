@@ -143,7 +143,7 @@ async function handleImport(req, res) {
 }
 
 module.exports = async function handler(req, res) {
-  if (!requireAuth(req, res)) return;
+  if (!(await requireAuth(req, res))) return;
 
   if (req.method === "GET") {
     const data = await readData();
@@ -162,7 +162,8 @@ module.exports = async function handler(req, res) {
       data.migrations.eGuestsProvider = new Date().toISOString();
       await writeData(data);
     }
-    res.status(200).json({ providers: data.providers.map(withComputed), currencies: CURRENCIES, paymentMethods: PAYMENT_METHODS });
+    const viewer = req.wnUser.role === "viewer";
+    res.status(200).json({ providers: data.providers.map(withComputed).map((p) => (viewer ? Object.assign({}, p, { phone: require("../../lib/auth").maskPhone(p.phone) }) : p)), currencies: CURRENCIES, paymentMethods: PAYMENT_METHODS });
     return;
   }
 

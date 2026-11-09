@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
     var token = req.query.token;
     if (!token) { res.status(400).json({ error: "token is required" }); return; }
     var data = await readData();
-    var guest = data.guests.find(function (g) { return g.id === token; });
+    var guest = data.guests.find(function (g) { return g.id === token && !g.removedAt; });
     if (!guest) { res.status(200).json({ found: false }); return; }
     // delivery tracking: the first time a guest opens their personal link (badge scans don't count)
     if (!guest.openedAt && !req.query.badge) { guest.openedAt = new Date().toISOString(); try { await writeData(data); } catch (e) {} }
@@ -89,12 +89,12 @@ module.exports = async function handler(req, res) {
 
     var data2 = await readData();
     var guest2 = null, matchedBy = "";
-    if (body.token) { guest2 = data2.guests.find(function (g) { return g.id === body.token; }); if (guest2) matchedBy = "link"; }
-    if (!guest2 && phone) { guest2 = data2.guests.find(function (g) { return samePhone(g.phone, phone); }); if (guest2) matchedBy = "phone"; }
+    if (body.token) { guest2 = data2.guests.find(function (g) { return g.id === body.token && !g.removedAt; }); if (guest2) matchedBy = "link"; }
+    if (!guest2 && phone) { guest2 = data2.guests.find(function (g) { return !g.removedAt && samePhone(g.phone, phone); }); if (guest2) matchedBy = "phone"; }
     if (!guest2 && body.name) {
       var n = normName(body.name);
       // Name alone is guessable, so it may only claim an invitation nobody has answered yet.
-      var byName = data2.guests.filter(function (g) { return normName(fullName(g)) === n; });
+      var byName = data2.guests.filter(function (g) { return !g.removedAt && normName(fullName(g)) === n; });
       if (byName.length === 1 && (byName[0].rsvpStatus || "pending") === "pending") { guest2 = byName[0]; matchedBy = "name"; }
     }
 

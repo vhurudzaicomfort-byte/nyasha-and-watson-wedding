@@ -6,6 +6,9 @@
   var providers = [];
   var requests = [];
   var tables = [];
+  var removedGuests = [];
+  var me = null;
+  var picked = {};
   var currencies = ["USD"];
   var paymentMethods = ["Cash"];
   var FG = window.WNGuestFields;
@@ -71,6 +74,7 @@
     navItems.forEach(function (n) { n.classList.toggle("active", n.dataset.tab === tab); });
     panels.forEach(function (p) { p.classList.toggle("active", p.dataset.panel === tab); });
     document.getElementById("mobileNavSelect").value = tab;
+    if (tab === "users") renderUsers();
   }
   navItems.forEach(function (n) { n.addEventListener("click", function () { activateTab(n.dataset.tab); }); });
   document.getElementById("mobileNavSelect").addEventListener("change", function (e) { activateTab(e.target.value); });
@@ -93,11 +97,22 @@
   /* ---------------- LOAD + RENDER ---------------- */
   function loadAll() {
     return Promise.all([api("/api/admin/guests"), api("/api/admin/gifts"), api("/api/admin/providers")]).then(function (res) {
-      guests = res[0].guests; requests = res[0].requests || []; tables = res[0].tables || []; if (res[0].categories && res[0].categories.length) categories = res[0].categories;
+      var all = res[0].guests || [];
+      guests = all.filter(function (g) { return !g.removedAt; }); removedGuests = all.filter(function (g) { return g.removedAt; });
+      me = res[0].me || me; applyRole();
+      requests = res[0].requests || []; tables = res[0].tables || []; if (res[0].categories && res[0].categories.length) categories = res[0].categories;
       gifts = res[1].gifts; currencies = res[1].currencies; paymentMethods = res[1].paymentMethods;
       providers = res[2].providers;
       renderAll();
     });
+  }
+  // Owners see Portal Users; viewers get the read-only view (the API enforces both).
+  function applyRole() {
+    var role = me ? me.role : "owner";
+    document.body.classList.toggle("role-viewer", role === "viewer");
+    var owner = role === "owner";
+    document.getElementById("usersNav").hidden = !owner;
+    var opt = document.getElementById("usersOption"); opt.hidden = !owner; opt.disabled = !owner;
   }
   function renderAll() {
     populateInvitedForFilter();
@@ -237,7 +252,9 @@
     var fDelivery = document.getElementById("filterDelivery").value;
     var fPhone = document.getElementById("filterPhone").value;
 
-    var rows = guests.filter(function (g) {
+    var showRemoved = document.getElementById("showRemoved").checked;
+    document.getElementById("removedCount").textContent = removedGuests.length ? "(" + removedGuests.length + ")" : "";
+    var rows = (showRemoved ? removedGuests : guests).filter(function (g) {
       if (q) {
         var hay = (fullName(g) + " " + (g.phone || "") + " " + (g.familyName || "") + " " + tableName(g) + " " + (g.notes || "")).toLowerCase();
         if (hay.indexOf(q) === -1) return false;
@@ -266,16 +283,25 @@
       var subLine = [g.familyName || capitalize(g.invitationType || "individual"), g.invitedFor].filter(Boolean).join(" · ");
       var meta = [FG.genderLabel(g.gender), g.rsvpChannel && status !== "pending" ? "Replied via " + (CHANNELS[g.rsvpChannel] || g.rsvpChannel) : ""].filter(Boolean).join(" · ");
       var dv = delivery(g);
+      var lastC = (g.contacts || []).slice(-1)[0];
+      if (lastC) meta = (meta ? meta + " · " : "") + "Last contact: " + lastC.channel + " · " + fmtDate(lastC.at);
+      if (g.removedAt) meta = (meta ? meta + " · " : "") + "Removed " + fmtDate(g.removedAt) + (g.removedBy ? " by " + g.removedBy : "");
       return "<tr>" +
+        '<td class="pick"><input type="checkbox" class="pick-one" data-id="' + g.id + '"' + (picked[g.id] ? " checked" : "") + ' aria-label="Select ' + escapeHtml(fullName(g)) + '"></td>' +
         '<td><div class="g-name">' + escapeHtml(fullName(g)) + '</div><div class="g-sub">' + escapeHtml(subLine) + "</div>" + (meta ? '<div class="g-meta">' + escapeHtml(meta) + "</div>" : "") + '<div class="g-meta"><span class="pill pill-delivery-' + dv + '">' + DELIVERY[dv] + "</span>" + (g.phone ? "" : ' <span style="font-size:.68rem;">· no phone</span>') + "</div>" + (g.reviewFlag ? '<div class="g-meta"><span class="pill pill-review" title="' + escapeHtml(g.reviewFlag) + '">Needs review: ' + escapeHtml(g.reviewFlag.length > 60 ? g.reviewFlag.slice(0, 57) + "…" : g.reviewFlag) + "</span></div>" : "") + "</td>" +
         '<td><span class="pill pill-' + status + '">' + status.replace("_", " ") + "</span></td>" +
         "<td>" + (g.attendingCount != null && g.attendingCount !== "" ? g.attendingCount : "—") + " / " + (g.invitedCount || 1) + "</td>" +
         "<td>" + (tableName(g) ? '<span class="pill pill-table">' + escapeHtml(tableName(g)) + "</span>" : '<span style="color:var(--text-muted);">—</span>') + "</td>" +
         "<td>" + checkinPill(g) + "</td>" +
-        '<td><div class="row-actions">' + iconBtn("edit", g.id, "Edit") + iconBtn("link", g.id, "Copy invite link") + iconBtn("invite", g.id, "Send invite via WhatsApp") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Delete") + "</div></td>" +
+        '<td><div class="row-actions">' + (g.removedAt
+          ? iconBtn("restore", g.id, "Restore to the guest list") + iconBtn("purge", g.id, "Delete permanently")
+          : iconBtn("edit", g.id, "Edit") + iconBtn("link", g.id, "Copy invite link") + iconBtn("invite", g.id, "Send invite via WhatsApp") + iconBtn("contact", g.id, "Log contact") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Remove")) + "</div></td>" +
         "</tr>";
     }).join("");
+    shownIds = rows.map(function (g) { return g.id; });
+    renderBulkBar();
   }
+  var shownIds = [];
   function iconBtn(action, id, title) {
     var icons = {
       edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
@@ -283,6 +309,9 @@
       invite: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
       badge: '<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 18h8"/>',
       checkin: '<path d="M20 6L9 17l-5-5"/>',
+      contact: '<path d="M21 12a8.5 8.5 0 0 1-12.4 7.5L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4"/>',
+      restore: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+      purge: '<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/><path d="M10 11v6M14 11v6"/>',
       delete: '<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/>',
       "gift-edit": '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
       "gift-delete": '<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/>',
@@ -298,6 +327,136 @@
   document.getElementById("filterCheckin").addEventListener("change", renderGuestTable);
   document.getElementById("filterGender").addEventListener("change", renderGuestTable);
   document.getElementById("filterTable").addEventListener("change", renderGuestTable);
+  document.getElementById("showRemoved").addEventListener("change", function () { picked = {}; renderGuestTable(); });
+
+  /* ---------------- BULK ACTIONS ---------------- */
+  function pickedIds() { return Object.keys(picked).filter(function (id) { return picked[id]; }); }
+  function renderBulkBar() {
+    var ids = pickedIds(), removedView = document.getElementById("showRemoved").checked;
+    document.getElementById("bulkBar").hidden = !ids.length;
+    document.getElementById("bulkCount").textContent = ids.length + " selected";
+    var all = document.getElementById("pickAll");
+    all.checked = shownIds.length > 0 && shownIds.every(function (id) { return picked[id]; });
+    var ops = removedView ? [["restore", "Restore to the guest list"]] : [["markSent", "Mark invitation sent"], ["seat", "Seat at a table…"], ["rsvp", "Set RSVP…"], ["invitedFor", "Set invited for…"], ["remove", "Remove"]];
+    var sel = document.getElementById("bulkOp"), cur = sel.value;
+    sel.innerHTML = ops.map(function (o) { return '<option value="' + o[0] + '">' + o[1] + "</option>"; }).join("");
+    if (ops.some(function (o) { return o[0] === cur; })) sel.value = cur;
+    renderBulkValue();
+  }
+  function renderBulkValue() {
+    var op = document.getElementById("bulkOp").value, v = document.getElementById("bulkValue");
+    var opts = null;
+    if (op === "seat") opts = tables.map(function (tb) { return [tb.id, tb.name + " · " + Math.max(0, seatsLeft(tb)) + " free"]; }).concat([["", "Not seated (take off their table)"]]);
+    if (op === "rsvp") opts = [["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Not attending"], ["pending", "Pending"]];
+    if (op === "invitedFor") opts = categories.map(function (c) { return [c, c]; });
+    v.hidden = !opts;
+    if (opts) v.innerHTML = opts.map(function (o) { return '<option value="' + escapeHtml(o[0]) + '">' + escapeHtml(o[1]) + "</option>"; }).join("");
+  }
+  document.getElementById("bulkOp").addEventListener("change", renderBulkValue);
+  document.getElementById("guestRows").addEventListener("change", function (e) {
+    var cb = e.target.closest(".pick-one"); if (!cb) return;
+    picked[cb.dataset.id] = cb.checked; renderBulkBar();
+  });
+  document.getElementById("pickAll").addEventListener("change", function (e) {
+    shownIds.forEach(function (id) { picked[id] = e.target.checked; });
+    renderGuestTable();
+  });
+  document.getElementById("bulkClear").addEventListener("click", function () { picked = {}; renderGuestTable(); });
+  document.getElementById("bulkApply").addEventListener("click", function () {
+    var ids = pickedIds(), op = document.getElementById("bulkOp").value, value = document.getElementById("bulkValue").hidden ? null : document.getElementById("bulkValue").value;
+    if (!ids.length) return;
+    var go = function () {
+      api("/api/admin/guests", { method: "POST", body: { action: "bulk", ids: ids, op: op, value: value } }).then(function (res) {
+        picked = {};
+        showToast(res.done + " guest(s) updated");
+        if (res.notSeated && res.notSeated.length) askConfirm("Some guests weren't seated", "Not enough free seats for: " + res.notSeated.join(", ") + ".");
+        return loadAll();
+      }).catch(function (e) { showToast(e.message || "Could not apply that"); });
+    };
+    if (op === "remove") askConfirm("Remove " + ids.length + " guest(s)?", "They move to Removed and give up their tables. You can restore them any time.").then(function (ok) { if (ok) go(); });
+    else go();
+  });
+
+  /* ---------------- LOG CONTACT ---------------- */
+  var contactGuest = null;
+  function openContactModal(g) {
+    contactGuest = g;
+    document.getElementById("contactModalTitle").textContent = "Log Contact — " + fullName(g);
+    document.getElementById("c-date").value = new Date().toISOString().slice(0, 10);
+    document.getElementById("c-note").value = "";
+    document.getElementById("c-sent").checked = !g.inviteSentAt;
+    document.getElementById("contactHistory").innerHTML = (g.contacts || []).slice().reverse().map(function (c) {
+      return "<div><strong>" + escapeHtml(c.channel) + "</strong> · " + escapeHtml(fmtDate(c.at)) + (c.by ? " <small>by " + escapeHtml(c.by) + "</small>" : "") + (c.note ? "<br>" + escapeHtml(c.note) : "") + "</div>";
+    }).join("") || '<p class="mix-note">No contact logged yet.</p>';
+    document.getElementById("contactModalOverlay").hidden = false;
+  }
+  function closeContact() { document.getElementById("contactModalOverlay").hidden = true; contactGuest = null; }
+  document.getElementById("contactModalClose").addEventListener("click", closeContact);
+  document.getElementById("contactModalCancel").addEventListener("click", closeContact);
+  document.getElementById("contactModalSave").addEventListener("click", function () {
+    if (!contactGuest) return;
+    var g = contactGuest;
+    api("/api/admin/guests", { method: "POST", body: { action: "logContact", guestId: g.id, channel: document.getElementById("c-channel").value, at: document.getElementById("c-date").value, note: document.getElementById("c-note").value, invitationSent: document.getElementById("c-sent").checked } })
+      .then(function () { showToast("Contact logged for " + fullName(g)); closeContact(); return loadAll(); })
+      .catch(function (e) { showToast(e.message || "Could not save"); });
+  });
+
+  /* ---------------- PORTAL USERS (owners) ---------------- */
+  var USER_STATUS = { active: ["Active", "pill-status-green"], invited: ["Invited", "pill-status-amber"], deactivated: ["Deactivated", "pill-status-red"] };
+  function renderUsers() {
+    api("/api/admin/session?users=1").then(function (res) {
+      var mine = res.me || {};
+      var mainRow = '<tr><td><div class="g-name">Main login</div><div class="g-sub">The shared portal password</div></td><td>owner</td><td><span class="pill pill-status-green">Active</span></td><td>—</td><td></td></tr>';
+      document.getElementById("userRows").innerHTML = mainRow + res.users.map(function (u) {
+        var st = USER_STATUS[u.status] || [u.status, "pill-status-neutral"], self = u.id === mine.id;
+        var roleCell = self ? escapeHtml(u.role) + " (you)" : '<select class="user-role" data-id="' + u.id + '" style="border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-family:inherit; font-size:.78rem;">' + ["owner", "planner", "viewer"].map(function (rl) { return '<option value="' + rl + '"' + (u.role === rl ? " selected" : "") + ">" + rl + "</option>"; }).join("") + "</select>";
+        var acts = self ? "" : '<div class="row-actions">' +
+          (u.status !== "deactivated" ? '<button class="btn btn-outline btn-sm" data-ulink="' + u.id + '">' + (u.status === "invited" ? "Invitation link" : "Password reset link") + "</button>" : "") +
+          '<button class="btn btn-outline btn-sm" data-uactive="' + u.id + '" data-on="' + (u.status === "deactivated" ? "1" : "0") + '">' + (u.status === "deactivated" ? "Reactivate" : "Deactivate") + "</button>" +
+          '<button class="btn btn-danger btn-sm" data-uremove="' + u.id + '">Remove</button></div>';
+        return '<tr><td><div class="g-name">' + escapeHtml(u.name) + '</div><div class="g-sub">' + escapeHtml(u.email) + "</div></td><td>" + roleCell + '</td><td><span class="pill ' + st[1] + '">' + st[0] + "</span></td><td>" + (u.lastLoginAt ? escapeHtml(new Date(u.lastLoginAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })) : "—") + "</td><td>" + acts + "</td></tr>";
+      }).join("");
+    }).catch(function (e) { showToast(e.message || "Could not load portal users"); });
+  }
+  function userAction(body, msg) {
+    return api("/api/admin/session", { method: "POST", body: body }).then(function (res) { if (msg) showToast(msg); renderUsers(); return res; }).catch(function (e) { showToast(e.message || "Could not update"); });
+  }
+  function showLink(name, token, reset) {
+    var url = location.origin + "/admin/login.html?invite=" + encodeURIComponent(token);
+    document.getElementById("linkModalTitle").textContent = reset ? "Password Reset Link" : "Invitation Link";
+    document.getElementById("linkModalSub").textContent = "Send this to " + name + ". It works once and expires in " + (reset ? "2" : "7") + " days.";
+    document.getElementById("linkModalUrl").value = url;
+    document.getElementById("linkModalWa").href = "https://wa.me/?text=" + encodeURIComponent("Hi " + name.split(" ")[0] + ", here is your link to the Watson & Nyasha wedding portal" + (reset ? " to set a new password" : " — choose your password to get started") + ": " + url);
+    document.getElementById("linkModalOverlay").hidden = false;
+  }
+  document.getElementById("linkModalClose").addEventListener("click", function () { document.getElementById("linkModalOverlay").hidden = true; });
+  document.getElementById("linkModalCopy").addEventListener("click", function () {
+    var v = document.getElementById("linkModalUrl").value;
+    (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { showToast("Link copied"); }).catch(function () { document.getElementById("linkModalUrl").select(); });
+  });
+  document.getElementById("userRows").addEventListener("change", function (e) {
+    var s = e.target.closest(".user-role"); if (s) userAction({ action: "update", id: s.dataset.id, role: s.value }, "Role updated");
+  });
+  document.getElementById("userRows").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var row = b.closest("tr"), name = row.querySelector(".g-name").textContent;
+    if (b.dataset.ulink) userAction({ action: "link", id: b.dataset.ulink }).then(function (res) { if (res) showLink(name, res.token, res.reset); });
+    if (b.dataset.uactive) userAction({ action: "update", id: b.dataset.uactive, active: b.dataset.on === "1" }, b.dataset.on === "1" ? name + " reactivated" : name + " deactivated — signed out everywhere");
+    if (b.dataset.uremove) askConfirm("Remove " + name + "?", "They lose access straight away.").then(function (ok) { if (ok) userAction({ action: "remove", id: b.dataset.uremove }, name + " removed"); });
+  });
+  function closeUserModal() { document.getElementById("userModalOverlay").hidden = true; }
+  document.getElementById("inviteUserBtn").addEventListener("click", function () {
+    document.getElementById("u-name").value = ""; document.getElementById("u-email").value = ""; document.getElementById("u-role").value = "planner";
+    document.getElementById("userModalOverlay").hidden = false; document.getElementById("u-name").focus();
+  });
+  document.getElementById("userModalClose").addEventListener("click", closeUserModal);
+  document.getElementById("userModalCancel").addEventListener("click", closeUserModal);
+  document.getElementById("userModalSave").addEventListener("click", function () {
+    var name = document.getElementById("u-name").value.trim();
+    userAction({ action: "invite", name: name, email: document.getElementById("u-email").value.trim(), role: document.getElementById("u-role").value }).then(function (res) {
+      if (res && res.token) { closeUserModal(); showLink(name, res.token, false); }
+    });
+  });
   document.getElementById("filterReview").addEventListener("change", renderGuestTable);
   document.getElementById("filterDelivery").addEventListener("change", renderGuestTable);
   document.getElementById("filterPhone").addEventListener("change", renderGuestTable);
@@ -307,9 +466,14 @@
     var btn = e.target.closest(".icon-btn");
     if (!btn) return;
     var id = btn.dataset.id, action = btn.dataset.action;
-    var g = guests.find(function (x) { return x.id === id; });
+    var g = guests.find(function (x) { return x.id === id; }) || removedGuests.find(function (x) { return x.id === id; });
     if (!g) return;
     if (action === "edit") openGuestModal(g);
+    else if (action === "contact") openContactModal(g);
+    else if (action === "restore") api("/api/admin/guests?id=" + g.id, { method: "PATCH", body: { removedAt: null } }).then(function () { showToast(fullName(g) + " is back on the guest list"); return loadAll(); });
+    else if (action === "purge") askConfirm("Delete " + fullName(g) + " permanently?", "This can't be undone. Their RSVP and history are deleted too.").then(function (ok) {
+      if (ok) api("/api/admin/guests?id=" + g.id, { method: "DELETE" }).then(function () { showToast("Deleted permanently"); return loadAll(); });
+    });
     else if (action === "link") copyInviteLink(g);
     else if (action === "invite") sendInvite(g);
     else if (action === "badge") openBadgeModal(g);
@@ -349,9 +513,9 @@
       .catch(function () { showToast("Could not update check-in"); });
   }
   function deleteGuest(g) {
-    askConfirm("Remove " + fullName(g) + "?", "This permanently removes them from the guest list.").then(function (ok) {
+    askConfirm("Remove " + fullName(g) + "?", "They move to Removed (tick Removed above the list to see them), give up their table, and their invitation link stops working. You can restore them any time.").then(function (ok) {
       if (!ok) return;
-      api("/api/admin/guests?id=" + g.id, { method: "DELETE" }).then(function () { showToast("Guest removed"); return loadAll(); }).catch(function () { showToast("Could not remove guest"); });
+      api("/api/admin/guests?id=" + g.id, { method: "PATCH", body: { removedAt: new Date().toISOString() } }).then(function () { showToast(fullName(g) + " removed — restore from Removed"); return loadAll(); }).catch(function () { showToast("Could not remove guest"); });
     });
   }
 

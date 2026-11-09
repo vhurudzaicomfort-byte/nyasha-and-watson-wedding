@@ -98,7 +98,7 @@ async function handleImport(req, res) {
 }
 
 module.exports = async function handler(req, res) {
-  if (!requireAuth(req, res)) return;
+  if (!(await requireAuth(req, res))) return;
 
   if (req.method === "GET") {
     const data = await readData();

@@ -93,7 +93,7 @@ function seatFromFile(data, guest, tableName, createdTables) {
 }
 
 module.exports = async function handler(req, res) {
-  if (!requireAuth(req, res)) return;
+  if (!(await requireAuth(req, res))) return;
   if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
 
   const body = req.body || {};
@@ -145,7 +145,7 @@ module.exports = async function handler(req, res) {
     // Everyone already on the site who isn't in this file: kept, but flagged for the couple to review.
     if (body.flagMissing) {
       const label = "Not on the list imported " + now.slice(0, 10) + " — please review";
-      data.guests.forEach((g) => { if (!touched[g.id] && !g.reviewFlag) { g.reviewFlag = label; flagged++; } });
+      data.guests.forEach((g) => { if (!touched[g.id] && !g.reviewFlag && !g.removedAt) { g.reviewFlag = label; flagged++; } });
     }
     await writeData(data);
     res.status(200).json({ ok: true, created, updated, skipped, flagged, warnings, createdTables });
@@ -160,7 +160,7 @@ module.exports = async function handler(req, res) {
 
   const preview = records.map((fields) => {
     const draft = toGuestDraft(fields);
-    const dup = findDuplicate(data.guests, draft);
+    const dup = findDuplicate(data.guests.filter((g) => !g.removedAt), draft);
     const d = dup && dup.guest;
     return {
       fields,
@@ -178,7 +178,7 @@ module.exports = async function handler(req, res) {
     totalRows: preview.length,
     invalidRows: invalidCount,
     duplicateCount: preview.filter((p) => p.duplicate).length,
-    notInFile: data.guests.filter((g) => !matchedIds[g.id]).length,
+    notInFile: data.guests.filter((g) => !matchedIds[g.id] && !g.removedAt).length,
     rows: preview,
   });
 };

@@ -1,4 +1,4 @@
-const { requireAuth } = require("../../lib/auth");
+const { requireAuth, maskPhone } = require("../../lib/auth");
 const { readData } = require("../../lib/blob-store");
 const { buildReportPdf } = require("../../lib/pdf-report");
 const { buildTemplate, buildReport: buildReportXlsx } = require("../../lib/xlsx");
@@ -63,7 +63,9 @@ function computeProviderStatus(provider) {
 
 function deliveryLabel(g) { return g.openedAt ? "Opened" : g.inviteSentAt ? "Sent, not opened" : "Not sent"; }
 function buildReport(type, data, origin) {
-  var guests = data.guests, gifts = data.gifts || [], providers = data.providers || [];
+  // viewers' exports carry masked phone numbers, like the portal
+  var phone = data.__mask ? function (p) { return maskPhone(WNPhone.formatPhone(p)); } : WNPhone.formatPhone;
+  var guests = data.guests.filter(function (g) { return !g.removedAt; }), gifts = data.gifts || [], providers = data.providers || [];
   var columns, rows, filename, title, weights;
   var tablesById = {}; (data.tables || []).forEach(function (t) { tablesById[t.id] = t; });
   function tableOf(g) { var t = g.tableId && tablesById[g.tableId]; return t ? t.name : ""; }
@@ -172,7 +174,7 @@ function buildReport(type, data, origin) {
 }
 
 module.exports = async function handler(req, res) {
-  if (!requireAuth(req, res)) return;
+  if (!(await requireAuth(req, res))) return;
   var type = req.query.type || "rsvp";
   var format = (req.query.format || "csv").toLowerCase();
 
@@ -188,6 +190,7 @@ module.exports = async function handler(req, res) {
   }
 
   var data = await readData();
+  if (req.wnUser.role === "viewer") data.__mask = true;
   var proto = String(req.headers["x-forwarded-proto"] || "https").split(",")[0];
   var report = buildReport(type, data, proto + "://" + (req.headers["x-forwarded-host"] || req.headers.host || "nyasha-watson.e-guests.com"));
   if (!report) { res.status(400).json({ error: "Unknown report type" }); return; }

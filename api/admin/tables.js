@@ -12,7 +12,7 @@ const Seat = require("../../lib/seating");
 function cleanCapacity(v, fallback) { var n = Math.round(Number(v)); return n >= 1 && n <= 100 ? n : fallback; }
 
 module.exports = async function handler(req, res) {
-  if (!requireAuth(req, res)) return;
+  if (!(await requireAuth(req, res))) return;
   var body = req.body || {};
 
   if (req.method === "GET") {

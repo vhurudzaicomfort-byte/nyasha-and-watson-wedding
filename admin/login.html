@@ -24,6 +24,8 @@
   button:disabled{ opacity:.5; cursor:not-allowed; }
   .error{ margin-top:14px; padding:10px 12px; background:var(--error-bg); color:var(--error); border-radius:6px; font-size:.82rem; display:none; }
   .error.show{ display:block; }
+  .field{ margin-bottom:16px; }
+  .hint{ font-size:.74rem; color:#8B7A6E; margin-top:6px; }
 </style>
 </head>
 <body>
@@ -31,14 +33,38 @@
   <h1>Nyasha &amp; Watson</h1>
   <p class="sub">Wedding Management Portal</p>
   <form id="loginForm">
-    <label for="password">Password</label>
-    <input type="password" id="password" name="password" autocomplete="current-password" required autofocus>
+    <div class="field" id="emailField">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" autocomplete="username">
+      <p class="hint">Leave empty to use the main portal password.</p>
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label for="password" id="pwLabel">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required>
+      <p class="hint" id="pwHint" hidden>At least 8 characters, with letters and a number.</p>
+    </div>
     <button type="submit" id="submitBtn">Sign In</button>
     <div class="error" id="errorMsg"></div>
   </form>
 </div>
 <script>
+  var params = new URLSearchParams(location.search);
+  var invite = params.get('invite') || '';
   var form = document.getElementById('loginForm');
+  // invitation / password-reset link: greet them and ask for a new password
+  if (invite) {
+    document.getElementById('emailField').hidden = true;
+    document.getElementById('pwLabel').textContent = 'Choose a password';
+    document.getElementById('password').setAttribute('autocomplete', 'new-password');
+    document.getElementById('pwHint').hidden = false;
+    document.getElementById('submitBtn').textContent = 'Set Password & Sign In';
+    fetch('/api/admin/login?invite=' + encodeURIComponent(invite)).then(function (r) { return r.json(); }).then(function (d) {
+      var sub = document.querySelector('p.sub');
+      if (d.ok) sub.textContent = (d.reset ? 'Set a new password, ' : 'Welcome, ') + d.name + (d.reset ? '' : ' — choose your password') + ' (' + d.email + ')';
+      else { sub.textContent = 'This link has expired or was already used. Ask the owner for a new one.'; document.getElementById('submitBtn').disabled = true; }
+    });
+  }
+  (invite ? document.getElementById('password') : document.getElementById('email')).focus();
   var btn = document.getElementById('submitBtn');
   var err = document.getElementById('errorMsg');
   form.addEventListener('submit', function (e) {
@@ -48,17 +74,17 @@
     fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: document.getElementById('password').value })
+      body: JSON.stringify(invite ? { invite: invite, password: document.getElementById('password').value } : { email: document.getElementById('email').value.trim(), password: document.getElementById('password').value })
     }).then(function (res) {
       if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || 'Sign in failed'); });
       return res.json();
     }).then(function () {
-      var params = new URLSearchParams(location.search);
-      location.href = params.get('next') || '/admin/index.html';
+      var next = params.get('next') || '';
+      location.href = /^\/admin\//.test(next) ? next : '/admin/index.html';
     }).catch(function (e) {
       err.textContent = e.message || 'Incorrect password';
       err.classList.add('show');
-      btn.disabled = false; btn.textContent = 'Sign In';
+      btn.disabled = false; btn.textContent = invite ? 'Set Password & Sign In' : 'Sign In';
     });
   });
 </script>

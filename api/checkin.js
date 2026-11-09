@@ -43,7 +43,7 @@ module.exports = async function handler(req, res) {
     const token = req.query.token;
     if (!token) { res.status(400).json({ error: "token is required" }); return; }
     const data = await readData();
-    const guest = data.guests.find((g) => g.id === token);
+    const guest = data.guests.find((g) => g.id === token && !g.removedAt);
     if (!guest) { res.status(200).json({ found: false }); return; }
     res.status(200).json({
       found: true,
@@ -63,8 +63,8 @@ module.exports = async function handler(req, res) {
     if (!body.token && !body.phone) { res.status(400).json({ error: "token or phone is required" }); return; }
 
     const data = await readData();
-    let guest = body.token ? data.guests.find((g) => g.id === body.token) : null;
-    if (!guest && body.phone) guest = data.guests.find((g) => samePhone(g.phone, body.phone));
+    let guest = body.token ? data.guests.find((g) => g.id === body.token && !g.removedAt) : null;
+    if (!guest && body.phone) guest = data.guests.find((g) => !g.removedAt && samePhone(g.phone, body.phone));
     if (!guest) { res.status(200).json({ ok: false, reason: "not_found" }); return; }
 
     if (mode !== "self-unverified") {

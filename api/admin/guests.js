@@ -1,4 +1,4 @@
-const { requireAuth } = require("../../lib/auth");
+const { requireAuth, maskPhone } = require("../../lib/auth");
 const { readData, writeData, newId } = require("../../lib/blob-store");
 const Fields = require("../../assets/js/guest-fields.js");
 const Seat = require("../../lib/seating");
@@ -86,8 +86,50 @@ async function handleRequestAction(body, res) {
   res.status(200).json({ ok: true, request: reqRec });
 }
 
+// Bulk actions on ticked guests: remove / restore / markSent / seat / invitedFor / rsvp
+async function handleBulk(body, req, res) {
+  var ids = Array.isArray(body.ids) ? body.ids : [];
+  if (!ids.length) { res.status(400).json({ error: "Tick at least one guest" }); return; }
+  var data = await readData(), now = new Date().toISOString(), done = 0, notSeated = [];
+  var picked = data.guests.filter(function (g) { return ids.indexOf(g.id) !== -1; });
+  var table = body.op === "seat" && body.value ? data.tables.find(function (t) { return t.id === body.value; }) : null;
+  if (body.op === "seat" && body.value && !table) { res.status(400).json({ error: "That table no longer exists" }); return; }
+  picked.forEach(function (g) {
+    if (body.op === "remove") { if (!g.removedAt) { g.removedAt = now; g.removedBy = req.wnUser.name; g.tableId = null; done++; } }
+    else if (body.op === "restore") { if (g.removedAt) { g.removedAt = null; done++; } }
+    else if (body.op === "markSent") { if (!g.inviteSentAt) { g.inviteSentAt = now; done++; } }
+    else if (body.op === "invitedFor") { g.invitedFor = Fields.normCategory(body.value); done++; }
+    else if (body.op === "rsvp" && ["pending", "attending", "maybe", "not_attending"].indexOf(body.value) !== -1) {
+      if ((g.rsvpStatus || "pending") !== body.value) {
+        g.rsvpStatus = body.value; g.rsvpAt = body.value === "pending" ? null : now; g.rsvpChannel = body.value === "pending" ? "" : "admin";
+        g.attendingCount = body.value === "attending" ? (Number(g.attendingCount) || Number(g.invitedCount) || 1) : 0; done++;
+      }
+    } else if (body.op === "seat") {
+      if (g.removedAt) return;
+      if (!table) { if (g.tableId) { g.tableId = null; done++; } return; }
+      if (g.tableId === table.id) return;
+      if (Seat.occupied(data.guests, table.id, g.id) + Seat.seatsFor(g) > table.capacity) { notSeated.push(((g.firstName || "") + " " + (g.lastName || "")).trim()); return; }
+      g.tableId = table.id; done++;
+    }
+  });
+  await writeData(data);
+  res.status(200).json({ ok: true, done: done, notSeated: notSeated });
+}
+
+// A contact made with a guest (WhatsApp, call…): kept as a history; counts as the invite being sent.
+async function handleLogContact(body, req, res) {
+  var data = await readData();
+  var g = data.guests.find(function (x) { return x.id === body.guestId; });
+  if (!g) { res.status(404).json({ error: "Guest not found" }); return; }
+  var at = /^\d{4}-\d{2}-\d{2}/.test(String(body.at || "")) ? new Date(body.at).toISOString() : new Date().toISOString();
+  g.contacts = (g.contacts || []).concat([{ at: at, channel: String(body.channel || "WhatsApp").slice(0, 30), note: String(body.note || "").trim().slice(0, 500), by: req.wnUser.name }]);
+  if (!g.inviteSentAt && body.invitationSent !== false) g.inviteSentAt = at;
+  await writeData(data);
+  res.status(200).json({ guest: g });
+}
+
 module.exports = async function handler(req, res) {
-  if (!requireAuth(req, res)) return;
+  if (!(await requireAuth(req, res))) return;
 
   if (req.method === "GET") {
     var data = await readData();
@@ -102,12 +144,18 @@ module.exports = async function handler(req, res) {
     data.requests.forEach(function (r) { if ("ageGroup" in r) { delete r.ageGroup; migrated = true; } });
     if (migrated) await writeData(data);
     var requests = data.requests.slice().sort(function (a, b) { return (b.updatedAt || b.createdAt || "").localeCompare(a.updatedAt || a.createdAt || ""); });
-    res.status(200).json({ guests: data.guests, categories: CATEGORIES, requests: requests, tables: Seat.tableSummaries(data) });
+    // viewers never receive full phone numbers
+    var mask = req.wnUser.role === "viewer";
+    var outGuests = mask ? data.guests.map(function (g) { return Object.assign({}, g, { phone: maskPhone(g.phone), email: g.email ? "(hidden)" : "" }); }) : data.guests;
+    var outReq = mask ? requests.map(function (r) { return Object.assign({}, r, { phone: maskPhone(r.phone) }); }) : requests;
+    res.status(200).json({ guests: outGuests, categories: CATEGORIES, requests: outReq, tables: Seat.tableSummaries(data), me: req.wnUser });
     return;
   }
 
   if (req.method === "POST") {
     var body = req.body || {};
+    if (body.action === "bulk") { await handleBulk(body, req, res); return; }
+    if (body.action === "logContact") { await handleLogContact(body, req, res); return; }
     if (body.action) { await handleRequestAction(body, res); return; }
     var data2 = await readData();
     var guest = {
@@ -163,7 +211,7 @@ module.exports = async function handler(req, res) {
     if (patch.checkedIn === true && !patch.checkInMethod) patch.checkInMethod = "usher";
     if (patch.checkedIn === false) patch.checkInMethod = "";
     var allowed = ["firstName", "lastName", "phone", "email", "invitationType", "familyName", "invitedFor", "gender",
-      "invitedCount", "plusOneAllowed", "rsvpStatus", "attendingCount", "notes", "reviewFlag", "inviteSentAt",
+      "invitedCount", "plusOneAllowed", "rsvpStatus", "attendingCount", "notes", "reviewFlag", "inviteSentAt", "removedAt",
       "checkedIn", "checkInTime", "checkInMethod", "rsvpAt", "rsvpChannel"];
     // table: checked against the seats left once this guest's (possibly new) party size is known
     if (Object.prototype.hasOwnProperty.call(patch, "tableId")) {
@@ -180,6 +228,7 @@ module.exports = async function handler(req, res) {
     allowed.forEach(function (k) {
       if (Object.prototype.hasOwnProperty.call(patch, k)) data3.guests[idx][k] = patch[k];
     });
+    if (patch.removedAt) { data3.guests[idx].tableId = null; data3.guests[idx].removedBy = req.wnUser.name; }
     await writeData(data3);
     res.status(200).json({ guest: data3.guests[idx] });
     return;

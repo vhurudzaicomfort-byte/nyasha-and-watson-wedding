@@ -185,6 +185,21 @@
   .pill-delivery-opened{ background:var(--success-bg); color:var(--success); }
   .pill-delivery-sent{ background:var(--warning-bg); color:var(--warning); }
   .pill-delivery-not{ background:var(--ivory-deep); color:var(--text-muted); }
+  .bulk-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:10px 14px; margin-bottom:12px; background:var(--surface); border:1px solid var(--gold); border-radius:10px; font-size:.82rem; color:var(--plum-2); }
+  .bulk-bar[hidden]{ display:none; }
+  .bulk-bar select{ border:1px solid var(--border); background:var(--ivory); padding:8px 10px; font-size:.78rem; border-radius:6px; font-family:inherit; color:var(--text); }
+  .toolbar label.toggle{ display:inline-flex; align-items:center; gap:7px; font-size:.8rem; color:var(--plum-2); padding:0 6px; cursor:pointer; }
+  td.pick, th.pick{ width:34px; padding-right:0; }
+  td.pick input, th.pick input{ width:16px; height:16px; cursor:pointer; }
+  .contact-list{ display:flex; flex-direction:column; gap:6px; margin-top:16px; max-height:180px; overflow-y:auto; }
+  .contact-list div{ font-size:.8rem; padding:8px 12px; border:1px solid var(--border); border-radius:6px; color:var(--plum-2); }
+  .contact-list small{ color:var(--text-muted); }
+  .viewer-note{ display:none; margin-bottom:18px; padding:10px 14px; border-radius:8px; background:var(--warning-bg); color:var(--warning); font-size:.82rem; }
+  body.role-viewer .viewer-note{ display:block; }
+  body.role-viewer .btn-primary, body.role-viewer #importGuestsBtn, body.role-viewer #importGiftsBtn, body.role-viewer #importProvidersBtn, body.role-viewer #bulkTablesBtn,
+  body.role-viewer .icon-btn[data-action="edit"], body.role-viewer .icon-btn[data-action="delete"], body.role-viewer .icon-btn[data-action="checkin"], body.role-viewer .icon-btn[data-action="contact"], body.role-viewer .icon-btn[data-action="invite"],
+  body.role-viewer .icon-btn[data-action="gift-edit"], body.role-viewer .icon-btn[data-action="gift-delete"], body.role-viewer .icon-btn[data-action="provider-delete"],
+  body.role-viewer .seat-select, body.role-viewer td.pick, body.role-viewer th.pick, body.role-viewer #tSeatWrap .phone-row, body.role-viewer [data-unseat], body.role-viewer #tableModalDelete, body.role-viewer #tableModalSave{ display:none !important; }
   .badge-canvas-wrap{ text-align:center; }
   #badgeCanvas{ display:none; }
   .badge-preview{ max-width:300px; width:100%; margin:0 auto; border-radius:10px; box-shadow:0 14px 30px -16px rgba(62,23,48,.4); border:1px solid var(--border); }
@@ -230,6 +245,7 @@
     <button class="navitem" data-tab="checkin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v7M14 20h4"/></svg>Check-in</button>
     <button class="navitem" data-tab="gifts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="9" width="16" height="11" rx="1"/><path d="M4 9h16M12 9v11"/><path d="M12 9c-1.5 0-4-1-4-3.2A2.3 2.3 0 0 1 10.3 3C12 3 12 6 12 9z"/><path d="M12 9c1.5 0 4-1 4-3.2A2.3 2.3 0 0 0 13.7 3C12 3 12 6 12 9z"/></svg>Gifts</button>
     <button class="navitem" data-tab="providers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"/><path d="M3 12h18"/></svg>Service Providers</button>
+    <button class="navitem" data-tab="users" id="usersNav" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>Portal Users</button>
     <button class="navitem" data-tab="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V5a1 1 0 0 1 1-1h11l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M9 13h6M9 17h6M9 9h3"/></svg>Reports</button>
     <div class="sidebar-foot">
       5 December 2026<br>Colne Valley Nature Reserve Park<br><br>Wedding Management Portal.
@@ -248,11 +264,13 @@
         <option value="checkin">Check-in</option>
         <option value="gifts">Gifts</option>
         <option value="providers">Service Providers</option>
+        <option value="users" id="usersOption" hidden disabled>Portal Users</option>
         <option value="reports">Reports</option>
       </select>
     </div>
 
     <main class="main">
+      <p class="viewer-note">You have view-only access — you can look and export, but not change anything. Phone numbers are masked.</p>
 
       <div class="tabpanel active" data-panel="dashboard">
         <div class="page-head"><div><h2>Dashboard</h2><p>A live overview of RSVPs, gifts and check-ins.</p></div></div>
@@ -298,12 +316,20 @@
           <select id="filterTable"><option value="">All tables</option></select>
           <select id="filterDelivery"><option value="">Any delivery</option><option value="not">Not sent</option><option value="sent">Sent, not opened</option><option value="opened">Opened</option></select>
           <select id="filterPhone"><option value="">Phone: all</option><option value="yes">Has a phone</option><option value="no">No phone</option></select>
+          <label class="toggle"><input type="checkbox" id="showRemoved"> Removed <span id="removedCount" style="color:var(--text-muted);"></span></label>
           <select id="filterReview"><option value="">Review: all</option><option value="yes">Needs review</option><option value="no">No review needed</option></select>
         </div>
         <p class="mix-note" id="guestCountNote" style="margin:-8px 0 12px;"></p>
+        <div class="bulk-bar" id="bulkBar" hidden>
+          <strong id="bulkCount">0 selected</strong>
+          <select id="bulkOp"></select>
+          <select id="bulkValue" hidden></select>
+          <button class="btn btn-primary btn-sm" type="button" id="bulkApply">Apply</button>
+          <button class="btn btn-outline btn-sm" type="button" id="bulkClear">Clear</button>
+        </div>
         <div class="table-wrap">
           <table class="data">
-            <thead><tr><th>Guest / Party</th><th>RSVP</th><th>Party</th><th>Table</th><th>Check-in</th><th></th></tr></thead>
+            <thead><tr><th class="pick"><input type="checkbox" id="pickAll" aria-label="Select all shown"></th><th>Guest / Party</th><th>RSVP</th><th>Party</th><th>Table</th><th>Check-in</th><th></th></tr></thead>
             <tbody id="guestRows"></tbody>
           </table>
         </div>
@@ -338,6 +364,20 @@
           <p class="mix-note" id="unseatedNote" style="margin:-6px 0 12px;"></p>
           <div class="table-wrap"><table class="data" style="min-width:560px;"><thead><tr><th>Guest / Party</th><th>RSVP</th><th>Seats</th><th>Seat at</th></tr></thead><tbody id="unseatedRows"></tbody></table></div>
         </div>
+      </div>
+
+      <div class="tabpanel" data-panel="users">
+        <div class="page-head">
+          <div><h2>Portal Users</h2><p>Give the couple, planners or family their own sign-in. Owner = everything, including portal users. Planner = guests, RSVPs, tables, check-in, gifts and providers, but not portal users. Viewer = read-only, phone numbers masked.</p></div>
+          <button class="btn btn-primary" id="inviteUserBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Invite Someone</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data" style="min-width:640px;">
+            <thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Last Sign-in</th><th></th></tr></thead>
+            <tbody id="userRows"></tbody>
+          </table>
+        </div>
+        <p class="mix-note" style="margin-top:12px;">The main shared password keeps working as an owner login. Invitation links work once and expire after 7 days (password resets after 2).</p>
       </div>
 
       <div class="tabpanel" data-panel="approvals">
@@ -721,6 +761,55 @@
     <div class="modal-actions">
       <button class="btn btn-outline" id="bulkTablesCancel">Cancel</button>
       <button class="btn btn-primary" id="bulkTablesSave">Add Tables</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="contactModalOverlay" hidden>
+  <div class="modal">
+    <button class="modal-close" id="contactModalClose" aria-label="Close">&times;</button>
+    <h3 id="contactModalTitle">Log Contact</h3>
+    <p class="modal-sub">Record a call, message or visit. It counts as the invitation being sent.</p>
+    <div class="form-grid">
+      <div class="field"><label for="c-channel">How</label><select id="c-channel"><option>WhatsApp</option><option>Phone call</option><option>SMS</option><option>In person</option><option>Email</option><option>Other</option></select></div>
+      <div class="field"><label for="c-date">Date</label><input id="c-date" type="date"></div>
+      <div class="field full"><label for="c-note">Note</label><textarea id="c-note" placeholder="e.g. Sent the invitation link; will confirm numbers by Friday"></textarea></div>
+      <div class="field checkline full"><input type="checkbox" id="c-sent" checked><label for="c-sent">This was the invitation (mark as sent)</label></div>
+    </div>
+    <div class="contact-list" id="contactHistory"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="contactModalCancel">Cancel</button>
+      <button class="btn btn-primary" id="contactModalSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="userModalOverlay" hidden>
+  <div class="modal">
+    <button class="modal-close" id="userModalClose" aria-label="Close">&times;</button>
+    <h3>Invite Someone</h3>
+    <p class="modal-sub">They get a one-time link to choose their own password. Send it to them yourself on WhatsApp or email.</p>
+    <div class="form-grid">
+      <div class="field"><label for="u-name">Name</label><input id="u-name" type="text"></div>
+      <div class="field"><label for="u-email">Email (their sign-in)</label><input id="u-email" type="email"></div>
+      <div class="field full"><label for="u-role">Role</label><select id="u-role"><option value="planner">Planner — guests, RSVPs, tables, check-in, gifts, providers</option><option value="owner">Owner — everything, including portal users</option><option value="viewer">Viewer — read-only, phone numbers masked</option></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="userModalCancel">Cancel</button>
+      <button class="btn btn-primary" id="userModalSave">Create Invitation</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="linkModalOverlay" hidden>
+  <div class="modal">
+    <button class="modal-close" id="linkModalClose" aria-label="Close">&times;</button>
+    <h3 id="linkModalTitle">Invitation Link</h3>
+    <p class="modal-sub" id="linkModalSub"></p>
+    <div class="field"><input id="linkModalUrl" type="text" readonly></div>
+    <div class="modal-actions">
+      <a class="btn btn-outline" id="linkModalWa" target="_blank" rel="noopener">WhatsApp</a>
+      <button class="btn btn-primary" id="linkModalCopy">Copy Link</button>
     </div>
   </div>
 </div>
