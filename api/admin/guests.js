@@ -1,6 +1,7 @@
 const { requireAuth } = require("../../lib/auth");
 const { readData, writeData, newId } = require("../../lib/blob-store");
 const Fields = require("../../assets/js/guest-fields.js");
+const Seat = require("../../lib/seating");
 
 const CATEGORIES = Fields.CATEGORIES;
 
@@ -101,7 +102,7 @@ module.exports = async function handler(req, res) {
     data.requests.forEach(function (r) { if ("ageGroup" in r) { delete r.ageGroup; migrated = true; } });
     if (migrated) await writeData(data);
     var requests = data.requests.slice().sort(function (a, b) { return (b.updatedAt || b.createdAt || "").localeCompare(a.updatedAt || a.createdAt || ""); });
-    res.status(200).json({ guests: data.guests, categories: CATEGORIES, requests: requests });
+    res.status(200).json({ guests: data.guests, categories: CATEGORIES, requests: requests, tables: Seat.tableSummaries(data) });
     return;
   }
 
@@ -124,6 +125,8 @@ module.exports = async function handler(req, res) {
       rsvpStatus: body.rsvpStatus || "pending",
       attendingCount: Number(body.attendingCount) || 0,
       notes: String(body.notes || "").trim(),
+      tableId: null,
+      reviewFlag: String(body.reviewFlag || "").trim(),
       checkedIn: false,
       checkInTime: null,
       createdAt: new Date().toISOString(),
@@ -134,6 +137,12 @@ module.exports = async function handler(req, res) {
     if (!guest.firstName) {
       res.status(400).json({ error: "First name is required" });
       return;
+    }
+    if (body.tableId) {
+      var t0 = data2.tables.find(function (t) { return t.id === body.tableId; });
+      if (!t0) { res.status(400).json({ error: "That table no longer exists" }); return; }
+      if (Seat.occupied(data2.guests, t0.id) + Seat.seatsFor(guest) > t0.capacity) { res.status(409).json({ error: t0.name + " doesn't have enough free seats" }); return; }
+      guest.tableId = t0.id;
     }
     data2.guests.push(guest);
     await writeData(data2);
@@ -154,8 +163,20 @@ module.exports = async function handler(req, res) {
     if (patch.checkedIn === true && !patch.checkInMethod) patch.checkInMethod = "usher";
     if (patch.checkedIn === false) patch.checkInMethod = "";
     var allowed = ["firstName", "lastName", "phone", "email", "invitationType", "familyName", "invitedFor", "gender",
-      "invitedCount", "plusOneAllowed", "rsvpStatus", "attendingCount", "notes",
+      "invitedCount", "plusOneAllowed", "rsvpStatus", "attendingCount", "notes", "reviewFlag", "inviteSentAt",
       "checkedIn", "checkInTime", "checkInMethod", "rsvpAt", "rsvpChannel"];
+    // table: checked against the seats left once this guest's (possibly new) party size is known
+    if (Object.prototype.hasOwnProperty.call(patch, "tableId")) {
+      var tid = patch.tableId || null;
+      if (tid) {
+        var tb = data3.tables.find(function (t) { return t.id === tid; });
+        if (!tb) { res.status(400).json({ error: "That table no longer exists" }); return; }
+        var after = Object.assign({}, data3.guests[idx], patch);
+        var used = Seat.occupied(data3.guests, tid, id);
+        if (used + Seat.seatsFor(after) > tb.capacity) { res.status(409).json({ error: tb.name + " has " + Math.max(0, tb.capacity - used) + " seat(s) left — this invitation needs " + Seat.seatsFor(after) }); return; }
+      }
+      data3.guests[idx].tableId = tid;
+    }
     allowed.forEach(function (k) {
       if (Object.prototype.hasOwnProperty.call(patch, k)) data3.guests[idx][k] = patch[k];
     });

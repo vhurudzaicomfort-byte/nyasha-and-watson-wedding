@@ -27,7 +27,12 @@ function samePhone(a, b) {
 function normName(s) { return String(s || "").trim().toLowerCase().replace(/\s+/g, " "); }
 function fullName(g) { return ((g.firstName || "") + " " + (g.lastName || "")).trim(); }
 
-function publicView(guest) {
+// The guest's own table only — never anyone else's seating.
+function tableName(data, guest) {
+  var t = guest.tableId && (data.tables || []).find(function (x) { return x.id === guest.tableId; });
+  return t ? t.name : "";
+}
+function publicView(guest, data) {
   return {
     found: true,
     guestId: guest.id,
@@ -41,6 +46,7 @@ function publicView(guest) {
     gender: guest.gender || "",
     rsvpAt: guest.rsvpAt || null,
     checkedIn: !!guest.checkedIn,
+    table: guest.rsvpStatus === "not_attending" || !data ? "" : tableName(data, guest),
   };
 }
 
@@ -61,7 +67,9 @@ module.exports = async function handler(req, res) {
     var data = await readData();
     var guest = data.guests.find(function (g) { return g.id === token; });
     if (!guest) { res.status(200).json({ found: false }); return; }
-    res.status(200).json(publicView(guest));
+    // delivery tracking: the first time a guest opens their personal link (badge scans don't count)
+    if (!guest.openedAt && !req.query.badge) { guest.openedAt = new Date().toISOString(); try { await writeData(data); } catch (e) {} }
+    res.status(200).json(publicView(guest, data));
     return;
   }
 
@@ -105,7 +113,7 @@ module.exports = async function handler(req, res) {
       guest2.rsvpChannel = channel;
       guest2.rsvpAt = now;
       await writeData(data2);
-      var view = publicView(guest2);
+      var view = publicView(guest2, data2);
       if (matchedBy === "name") delete view.guestId;
       res.status(200).json(Object.assign({ ok: true, mode: "updated", matchedBy: matchedBy, capped: requestedCount > cap }, view));
       return;

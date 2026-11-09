@@ -33,6 +33,11 @@ function samePhone(a, b) {
   return x.slice(-9) === y.slice(-9);
 }
 
+function tableName(data, guest) {
+  const t = guest.tableId && (data.tables || []).find((x) => x.id === guest.tableId);
+  return t && guest.rsvpStatus !== "not_attending" ? t.name : "";
+}
+
 module.exports = async function handler(req, res) {
   if (req.method === "GET") {
     const token = req.query.token;
@@ -46,6 +51,7 @@ module.exports = async function handler(req, res) {
       checkedIn: !!guest.checkedIn,
       checkInTime: guest.checkInTime || null,
       rsvpStatus: guest.rsvpStatus || "pending",
+      table: tableName(data, guest),
     });
     return;
   }
@@ -69,6 +75,7 @@ module.exports = async function handler(req, res) {
     }
 
     const view = { firstName: guest.firstName || "" };
+    if (view.firstName && (body.token || mode !== "self-unverified")) view.table = tableName(data, guest);
     // A phone number alone only unlocks the guest's personal link once they've proven they're at the venue.
     if (body.token || mode !== "self-unverified") view.guestId = guest.id;
     if (guest.checkedIn) { res.status(200).json(Object.assign({ ok: true, alreadyCheckedIn: true }, view)); return; }

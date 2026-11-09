@@ -136,7 +136,7 @@
     hint.hidden = false;
     var first = guestInfo.firstName || "friend";
     var st = guestInfo.rsvpStatus;
-    if (st === "attending") hint.textContent = "Welcome back, " + first + " — you're joyfully accepting · party of " + (guestInfo.attendingCount || 1) + ".";
+    if (st === "attending") hint.textContent = "Welcome back, " + first + " — you're joyfully accepting · party of " + (guestInfo.attendingCount || 1) + (guestInfo.table ? " · " + guestInfo.table : "") + ".";
     else if (st === "maybe") hint.textContent = "Welcome back, " + first + " — we've noted you're not sure yet. Update your RSVP any time.";
     else if (st === "not_attending") hint.textContent = "Welcome, " + first + " — we'll miss you, and thank you for letting us know.";
     else hint.textContent = "Welcome, " + first + " — your invitation includes " + maxGuestsAllowed + (maxGuestsAllowed > 1 ? " guests." : " guest.");
@@ -156,7 +156,8 @@
     if (!guestInfo || !guestInfo.rsvpStatus || guestInfo.rsvpStatus === "pending") { box.hidden = true; return; }
     var when = guestInfo.rsvpAt ? new Date(guestInfo.rsvpAt).toLocaleDateString("en-GB", { day: "numeric", month: "long" }) : "";
     var party = guestInfo.rsvpStatus === "attending" ? " · party of " + (guestInfo.attendingCount || 1) : "";
-    box.innerHTML = "You've already replied: <strong>" + attendLabel(guestInfo.rsvpStatus) + "</strong>" + party + (when ? " (" + escapeHtml(when) + ")" : "") + ". Need to change it? Just go through the steps below again.";
+    var seat = guestInfo.rsvpStatus === "attending" && guestInfo.table ? " Your table: <strong>" + escapeHtml(guestInfo.table) + "</strong>." : "";
+    box.innerHTML = "You've already replied: <strong>" + attendLabel(guestInfo.rsvpStatus) + "</strong>" + party + (when ? " (" + escapeHtml(when) + ")" : "") + "." + seat + " Need to change it? Just go through the steps below again.";
     box.hidden = false;
   }
 
@@ -181,7 +182,7 @@
 
   function loadGuest() {
     if (!guestToken) { loadPendingRequest(); return; }
-    fetch("/api/rsvp?token=" + encodeURIComponent(guestToken)).then(function (r) { return r.json(); }).then(function (info) {
+    fetch("/api/rsvp?token=" + encodeURIComponent(guestToken) + (new URLSearchParams(location.search).get("badge") ? "&badge=1" : "")).then(function (r) { return r.json(); }).then(function (info) {
       if (!info || !info.found) {
         if (!urlToken) { storeSet(""); guestToken = ""; }
         renderCheckin();
@@ -231,7 +232,7 @@
     if (checked) {
       checkinBanner.hidden = false;
       checkinBanner.classList.add("done");
-      checkinBanner.innerHTML = "&#10003;&nbsp; You're checked in — see you at the celebration!";
+      checkinBanner.innerHTML = "&#10003;&nbsp; You're checked in — " + (guestInfo.table ? "your table is <strong>" + escapeHtml(guestInfo.table) + "</strong>." : "see you at the celebration!");
     } else if (today) {
       checkinBanner.hidden = false;
       checkinBanner.classList.remove("done");
@@ -248,8 +249,8 @@
   function handleCheckinResult(res, mode) {
     if (res && res.ok) {
       if (res.guestId) adoptToken(res.guestId);
-      guestInfo = Object.assign(guestInfo || {}, { checkedIn: true, firstName: (guestInfo && guestInfo.firstName) || res.firstName || "" });
-      if (!res.alreadyCheckedIn) showToast(mode === "auto" ? "Welcome! You've been checked in automatically." : "You're checked in — welcome!");
+      guestInfo = Object.assign(guestInfo || {}, { checkedIn: true, firstName: (guestInfo && guestInfo.firstName) || res.firstName || "", table: res.table || (guestInfo && guestInfo.table) || "" });
+      if (!res.alreadyCheckedIn) showToast((mode === "auto" ? "Welcome! You've been checked in automatically." : "You're checked in — welcome!") + (res.table ? " Your table: " + res.table + "." : ""));
       renderCheckin();
       return;
     }

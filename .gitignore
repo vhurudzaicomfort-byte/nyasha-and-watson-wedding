@@ -6,3 +6,6 @@ Thumbs.db
 
 .vercel
 /business-kit/
+
+.data-local/
+guest-list-nov-2026/
