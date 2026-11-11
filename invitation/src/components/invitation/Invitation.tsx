@@ -43,7 +43,7 @@ interface Props {
  */
 export function InvitationExperience({ invitation, guest, shareUrl, musicSrc, skipEnvelope, env }: Props) {
   const [phase, setPhase] = useState<EnvelopePhase>(skipEnvelope ? "done" : "closed");
-  const music = useMusic(musicSrc || invitation.musicSrc);
+  const music = useMusic(musicSrc || invitation.musicSrc, musicSrc ? undefined : invitation.music);
   const open = phase === "done";
 
   // Lock scroll while the envelope is showing.

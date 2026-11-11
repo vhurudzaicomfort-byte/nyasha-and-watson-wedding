@@ -68,6 +68,13 @@ export const ourLoveStory: Invitation = {
     "Due to restrictions and safety reasons at our venue, we are unable to extend this invitation to children.",
   ],
 
+  // Chorus of "Those Eyes" (New West), 1:44.6–2:19.6 of the supplied recording,
+  // levelled to -16 LUFS. The beat lines up exactly 30.00 s apart, so each pass
+  // starts at 1.4 s (just before "Cause' all of the small things") and cross-fades
+  // in as the previous pass reaches 31.4 s ("and the small things you do" has ended).
+  musicSrc: "/audio/those-eyes-chorus.m4a",
+  music: { fallbackSrc: "/audio/those-eyes-chorus.mp3", loopIn: 1.4, loopAt: 31.4, volume: 0.5, firstFade: 3 },
+
   rsvp: {
     deadline: null, // no deadline announced in the design
     defaultPartySize: 2,

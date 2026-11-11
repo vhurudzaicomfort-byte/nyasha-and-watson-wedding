@@ -51,7 +51,7 @@
       ]
     },
     {
-      "source": "/images/(.*)",
+      "source": "/(images|audio)/(.*)",
       "headers": [
         {
           "key": "Cache-Control",

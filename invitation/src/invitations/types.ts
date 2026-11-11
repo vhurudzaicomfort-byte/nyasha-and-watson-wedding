@@ -78,6 +78,23 @@ export interface RsvpSettings {
   whatsappNumber?: string;
 }
 
+/**
+ * Playback settings for a music file. Times are seconds into the file.
+ * The first play starts at 0 and fades in; each later pass starts at `loopIn`
+ * and is cross-faded in exactly when the previous pass reaches `loopAt`
+ * (loopAt - loopIn should be a whole number of bars so the beat never slips).
+ */
+export interface MusicTrackOptions {
+  /** Same audio in a second format for browsers that can't play the first (e.g. MP3 for an M4A). */
+  fallbackSrc?: string;
+  loopIn?: number;
+  loopAt?: number;
+  /** 0–1 playback level. */
+  volume?: number;
+  /** Seconds of fade-in on the first play. */
+  firstFade?: number;
+}
+
 export interface Invitation {
   /** URL slug: /invitation/<slug>, /rsvp/<slug>. */
   slug: string;
@@ -100,6 +117,8 @@ export interface Invitation {
   closingLine: string;
   /** Optional licensed music track (path under /public or absolute URL). */
   musicSrc?: string;
+  /** How musicSrc is played: loop points, fallback format and level. */
+  music?: MusicTrackOptions;
   /**
    * Optional photographic decorations (paths under /public, PNG with
    * transparent background recommended). When absent, procedural SVG
