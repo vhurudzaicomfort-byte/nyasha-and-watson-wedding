@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>W&amp;N Wedding Desk</title>
+<title>Nyasha &amp; Watson · Wedding Portal</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%233E1730%22/><text x=%2250%22 y=%2266%22 font-family=%22Georgia,%20serif%22 font-size=%2240%22 fill=%22%23E8D9BE%22 text-anchor=%22middle%22>N%26W</text></svg>">
+<link rel="icon" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
 <script src="/assets/js/qrcode.min.js"></script>
 <script src="/assets/js/countries.js?v=20260923o"></script>
 <script src="/assets/js/guest-fields.js?v=20260923o"></script>
@@ -232,12 +232,97 @@
   .payment-row .pr-del{ background:none; border:none; color:var(--error); cursor:pointer; font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; }
   a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
 </style>
+<style id="eguest-theme">
+  /* ---------------------------------------------------------------------------
+     Invitation design language (tokens from invitation/src/app/globals.css),
+     layered over the portal's own variables so every screen follows it.
+     --------------------------------------------------------------------------- */
+  :root{
+    --ivory:#f7f2e9; --ivory-deep:#efe6d8; --champagne:#efe3c9; --champagne-line:#e6d3a3;
+    --plum:#3b2531; --plum-2:#5a3a4b; --plum-soft:#8c6a7f; --coral:#c9825c; --coral-soft:#f0b48e;
+    --gold:#9c7e46; --gold-bright:#c4a46a; --text:#2b1f26; --text-muted:#6b5a63;
+    --border:#e8dcc7; --surface:#fffdf9; --success:#4f6b52; --success-bg:#e6efe3;
+    --warning:#a7743a; --warning-bg:#f8eddc; --error:#9b3b3b; --error-bg:#f6e3e1;
+    --sidebar:#22141c; --marble:#fbf8f2; --mauve-mist:#e8dde3;
+    --font-display:"Cormorant Garamond",Georgia,serif; --font-script:"Pinyon Script",cursive; --font-sans:"Jost",system-ui,sans-serif;
+    --radius:18px; --shadow-card:0 30px 80px -40px rgba(43,31,38,.35),0 10px 30px -22px rgba(43,31,38,.25); --ease-out:cubic-bezier(.22,1,.36,1);
+  }
+  body{ background:var(--ivory); background-image:radial-gradient(90% 60% at 100% 0%, rgba(232,221,227,.55), transparent 60%), radial-gradient(70% 50% at 0% 100%, rgba(239,227,201,.5), transparent 60%); background-attachment:fixed; font-family:var(--font-sans); color:var(--text); }
+
+  /* sidebar: deep plum like the invitation cover, florals at the foot */
+  .sidebar{ background:radial-gradient(140% 70% at 50% 0%, #4a2f3e 0%, var(--plum) 45%, var(--plum-deep,#22141c) 100%); color:#ecdfe6; position:sticky; overflow:hidden; }
+  .sidebar::after{ content:""; position:absolute; left:-46px; bottom:-26px; width:250px; height:250px; background:url("/images/roses-burgundy-corner.webp") left bottom/contain no-repeat; filter:drop-shadow(0 10px 18px rgba(10,4,8,.55)); opacity:.95; pointer-events:none; z-index:0; }
+  .sidebar > *{ position:relative; z-index:1; }
+  .brand{ font-family:var(--font-script); font-weight:400; font-size:1.9rem; line-height:1.1; color:#f7f2e9; padding:2px 10px 20px; display:flex; align-items:center; gap:.3em; flex-wrap:wrap; }
+  .brand img{ height:.82em; width:auto; filter:drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
+  .brand small{ flex-basis:100%; font-family:var(--font-sans); font-size:.6rem; letter-spacing:.28em; color:var(--gold-bright); margin-top:8px; }
+  .navitem{ font-family:var(--font-sans); letter-spacing:.04em; border-radius:12px; color:#e6d6de; transition:background .2s var(--ease-out), color .2s; }
+  .navitem:hover{ background:rgba(230,211,163,.08); }
+  .navitem.active{ background:rgba(230,211,163,.14); color:#fff; box-shadow:inset 2px 0 0 var(--gold-bright); }
+  .navitem svg{ color:var(--gold-bright); opacity:.9; }
+  .sidebar-foot{ color:#b99fae; }
+  /* keep the florals clear of the footer text: reserve room beneath it */
+  .sidebar{ padding-bottom:168px; overflow-y:auto; }
+  .sidebar::after{ position:fixed; left:-30px; bottom:-18px; width:190px; height:170px; }
+  .brand{ font-size:1.36rem; flex-wrap:nowrap; white-space:nowrap; }
+  .brand small{ position:absolute; left:10px; bottom:4px; margin:0; font-size:.55rem; letter-spacing:.2em; }
+  .sidebar > .brand{ position:relative; padding-bottom:30px; }
+  @media (max-height:700px){ .sidebar{ padding-bottom:26px; } .sidebar::after{ display:none; } }
+  .logout-btn{ border-color:rgba(230,211,163,.35); color:#efe3c9; border-radius:999px; font-family:var(--font-sans); }
+  .logout-btn:hover{ background:rgba(230,211,163,.12); }
+  .topbar{ background:linear-gradient(180deg,#4a2f3e,var(--plum)); }
+  .topbar .brand{ font-size:1.5rem; padding:0; }
+  .topbar .brand small{ display:none; }
+
+  /* headings & surfaces */
+  h1,h2,h3,h4{ font-family:var(--font-display); color:var(--plum); }
+  .page-head h2{ font-size:2.2rem; font-weight:500; letter-spacing:.01em; }
+  .page-head p{ font-family:var(--font-display); font-size:1.05rem; font-style:italic; color:var(--text-muted); }
+  .panel, .stat-card, .table-wrap, .table-card, .bulk-bar{ border-radius:var(--radius); border-color:rgba(196,164,106,.42); background:linear-gradient(180deg,#fffdf9,var(--marble)); box-shadow:var(--shadow-card); }
+  .panel h3{ font-size:1.35rem; font-weight:500; }
+  .stat-card .sc-label{ font-family:var(--font-sans); letter-spacing:.2em; color:var(--gold); }
+  .stat-card .sc-val{ font-family:var(--font-display); font-weight:500; color:var(--plum); }
+  .stat-card.accent{ border-color:var(--gold-bright); box-shadow:0 0 0 1px rgba(196,164,106,.35), var(--shadow-card); }
+  .bar-fill{ background:linear-gradient(90deg,var(--gold-bright),var(--coral-soft)); }
+  .bar-track{ background:var(--mauve-mist); }
+
+  /* tables */
+  table.data th{ font-family:var(--font-sans); letter-spacing:.16em; background:rgba(239,230,216,.7); color:var(--plum-2); border-bottom-color:rgba(196,164,106,.35); }
+  table.data td{ border-bottom-color:rgba(232,220,199,.8); }
+  table.data tr:hover td{ background:rgba(232,221,227,.35); }
+  .g-name{ font-family:var(--font-display); font-size:1.1rem; font-weight:500; color:var(--plum); }
+
+  /* buttons, fields, pills */
+  .btn{ border-radius:999px; font-family:var(--font-sans); letter-spacing:.14em; text-transform:uppercase; font-size:.7rem; transition:transform .2s var(--ease-out), box-shadow .2s, background .2s, border-color .2s; }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn-primary{ background:linear-gradient(180deg,#4a2f3e,var(--plum)); box-shadow:0 12px 22px -14px rgba(34,20,28,.75); }
+  .btn-primary:hover{ background:linear-gradient(180deg,#5a3a4b,#432a38); }
+  .btn-outline{ background:#fffdf9; border-color:rgba(196,164,106,.6); color:var(--plum); }
+  .btn-outline:hover{ border-color:var(--gold); background:#fff; }
+  .icon-btn{ border-radius:10px; border-color:rgba(196,164,106,.45); background:#fffdf9; }
+  .icon-btn:hover{ border-color:var(--gold); color:var(--plum); }
+  .toolbar input[type=search], .toolbar select, .field input, .field select, .field textarea, .phone-row select{ border-color:rgba(196,164,106,.5); border-radius:12px; background:#fffdf9; font-family:var(--font-sans); }
+  .toolbar input[type=search]:focus, .toolbar select:focus, .field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(196,164,106,.22); }
+  .field label{ font-family:var(--font-sans); letter-spacing:.18em; color:var(--text-muted); }
+  .pill{ font-family:var(--font-sans); letter-spacing:.08em; }
+
+  /* modals & toast */
+  .overlay{ background:rgba(34,20,28,.55); backdrop-filter:blur(3px); }
+  .modal{ border-radius:var(--radius); background:linear-gradient(180deg,#fffdf9,var(--marble)); border:1px solid rgba(196,164,106,.45); box-shadow:0 40px 90px -30px rgba(0,0,0,.5); animation:wnRise .35s var(--ease-out) both; }
+  .modal h3{ font-size:1.6rem; font-weight:500; }
+  #toast, .toast{ border-radius:999px; font-family:var(--font-sans); background:var(--plum); box-shadow:0 18px 40px -18px rgba(0,0,0,.6); }
+  @keyframes wnRise{ from{ opacity:0; transform:translateY(10px) scale(.99); } to{ opacity:1; transform:none; } }
+  .tabpanel.active{ animation:wnFade .3s var(--ease-out) both; }
+  @keyframes wnFade{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce){ .modal, .tabpanel.active{ animation:none; } .btn:hover{ transform:none; } }
+</style>
+
 </head>
 <body>
 
 <div class="app" id="appRoot">
   <aside class="sidebar">
-    <div class="brand">Watson &amp; Nyasha<small>Wedding Management Portal</small></div>
+    <div class="brand">Nyasha <img src="/images/wedding-rings.webp" alt="and"> Watson<small>Wedding Management Portal</small></div>
     <button class="navitem active" data-tab="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</button>
     <button class="navitem" data-tab="guests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><circle cx="17.5" cy="8.5" r="2.6"/><path d="M15.5 13.2c2.9.6 5 3 5 6.1"/></svg>Invites &amp; RSVPs</button>
     <button class="navitem" data-tab="tables"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="5"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>Tables &amp; Seating</button>
@@ -255,7 +340,7 @@
 
   <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
     <div class="topbar">
-      <div class="brand" style="padding:0; font-size:1rem;">W&amp;N Wedding Management Portal</div>
+      <div class="brand">Nyasha <img src="/images/wedding-rings.webp" alt="and"> Watson</div>
       <select id="mobileNavSelect">
         <option value="dashboard">Dashboard</option>
         <option value="guests">Invites &amp; RSVPs</option>
@@ -377,7 +462,13 @@
             <tbody id="userRows"></tbody>
           </table>
         </div>
-        <p class="mix-note" style="margin-top:12px;">The main shared password keeps working as an owner login. Invitation links work once and expire after 7 days (password resets after 2).</p>
+        <p class="mix-note" style="margin-top:12px;">Everyone signs in with their email and password. The shared portal password still works as an owner login while everyone moves over. Invitation links work once and expire after 7 days (password resets after 2). "Reset requested" means that person used Forgot password: send them a password reset link.</p>
+        <div class="panel" style="margin-top:22px;">
+          <h3>Backups</h3>
+          <p class="mix-note" style="margin:-6px 0 14px;">A complete copy of the guest list, RSVPs, tables, gifts, providers and portal users, kept privately with the site. Restoring takes a fresh backup of the current state first.</p>
+          <div class="btn-row" style="margin-bottom:14px;"><button class="btn btn-primary btn-sm" type="button" id="backupNowBtn">Back Up Now</button></div>
+          <div class="table-wrap"><table class="data" style="min-width:520px;"><thead><tr><th>Backup</th><th>Size</th><th></th></tr></thead><tbody id="backupRows"></tbody></table></div>
+        </div>
       </div>
 
       <div class="tabpanel" data-panel="approvals">

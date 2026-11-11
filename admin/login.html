@@ -2,91 +2,218 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign in — W&amp;N Wedding Desk</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sign in · Nyasha &amp; Watson Wedding Portal</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%233E1730%22/><text x=%2250%22 y=%2266%22 font-family=%22Georgia,%20serif%22 font-size=%2240%22 fill=%22%23E8D9BE%22 text-anchor=%22middle%22>N%26W</text></svg>">
+<meta name="theme-color" content="#3b2531">
+<link rel="icon" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500&family=Pinyon+Script&display=swap" rel="stylesheet">
 <style>
-  :root{ --ivory:#FBF7F0; --plum:#3E1730; --plum-2:#5A2444; --gold:#B08A46; --border:#E4D5BE; --surface:#FFFDF9; --error:#A73E3E; --error-bg:#F6E3E1; }
+  /* Design tokens from the invitation (invitation/src/app/globals.css) */
+  :root{
+    --ivory:#f7f2e9; --ivory-deep:#efe6d8; --marble:#fbf8f2; --plum:#3b2531; --plum-deep:#22141c; --mauve:#8c6a7f; --mauve-mist:#e8dde3;
+    --gold:#c4a46a; --gold-light:#e6d3a3; --gold-deep:#9c7e46; --peach:#f0b48e; --ink:#2b1f26; --ink-soft:#6b5a63; --ink-faint:#9a8b92;
+    --error:#9b3b3b; --error-bg:#f6e3e1; --ok:#4f6b52; --ok-bg:#e7efe3;
+    --font-display:"Cormorant Garamond",Georgia,serif; --font-script:"Pinyon Script",cursive; --font-sans:"Jost",system-ui,sans-serif;
+    --radius:18px; --ease-out:cubic-bezier(.22,1,.36,1);
+  }
   *{box-sizing:border-box;}
-  body{ margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--ivory); font-family:'Jost',sans-serif; font-weight:300; color:#3A2430; padding:20px; }
-  .card{ width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:38px 32px; box-shadow:0 18px 44px -22px rgba(62,23,48,.35); }
-  h1{ font-family:'Cormorant Garamond',serif; font-weight:600; font-size:1.7rem; color:var(--plum); margin:0 0 4px; text-align:center; }
-  p.sub{ text-align:center; font-size:.82rem; color:#8B7A6E; margin:0 0 26px; }
-  label{ display:block; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--plum-2); margin-bottom:8px; }
-  input{ width:100%; border:1px solid var(--border); background:var(--ivory); padding:12px 14px; font-size:.9rem; border-radius:6px; font-family:inherit; color:#3A2430; }
-  input:focus{ outline:2px solid var(--gold); outline-offset:1px; }
-  button{ width:100%; margin-top:18px; background:var(--plum); color:#fff; border:none; padding:13px; border-radius:6px; font-size:.8rem; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; font-family:inherit; }
-  button:hover{ background:var(--plum-2); }
-  button:disabled{ opacity:.5; cursor:not-allowed; }
-  .error{ margin-top:14px; padding:10px 12px; background:var(--error-bg); color:var(--error); border-radius:6px; font-size:.82rem; display:none; }
-  .error.show{ display:block; }
-  .field{ margin-bottom:16px; }
-  .hint{ font-size:.74rem; color:#8B7A6E; margin-top:6px; }
+  html,body{margin:0;min-height:100%;}
+  body{min-height:100svh;display:grid;place-items:center;padding:28px 16px;font-family:var(--font-display);color:var(--ink);overflow-x:hidden;
+    background:radial-gradient(120% 80% at 50% 0%,#5a3a4b 0%,var(--plum) 46%,var(--plum-deep) 100%);}
+  .floral{position:fixed;pointer-events:none;user-select:none;filter:drop-shadow(0 14px 22px rgba(10,4,8,.55)) drop-shadow(0 2px 4px rgba(10,4,8,.35));}
+  .floral.tl{top:-24px;left:-34px;width:clamp(230px,34vw,470px);}
+  .floral.br{bottom:-30px;right:-28px;width:clamp(190px,26vw,380px);transform:scaleX(-1);}
+  .card{position:relative;width:100%;max-width:410px;padding:40px 34px 30px;background:linear-gradient(180deg,#fffdf9,var(--marble));
+    border:1px solid rgba(196,164,106,.55);border-radius:var(--radius);
+    box-shadow:0 40px 90px -30px rgba(0,0,0,.6),0 10px 30px -18px rgba(0,0,0,.4);animation:rise .7s var(--ease-out) both;}
+  .card::before{content:"";position:absolute;inset:8px;border:1px solid rgba(196,164,106,.3);border-radius:12px;pointer-events:none;}
+  @keyframes rise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:reduce){.card{animation:none;}}
+  .names{margin:0;text-align:center;font-family:var(--font-script);font-weight:400;font-size:2.55rem;line-height:1.1;color:var(--plum);
+    display:flex;align-items:center;justify-content:center;gap:.35em;flex-wrap:wrap;}
+  .names img{height:.95em;width:auto;filter:drop-shadow(0 3px 5px rgba(60,30,20,.3));}
+  .eyebrow{margin:10px 0 4px;text-align:center;font-family:var(--font-sans);font-size:.66rem;font-weight:500;letter-spacing:.32em;text-transform:uppercase;color:var(--gold-deep);}
+  .sub{margin:0 0 24px;text-align:center;font-size:1.02rem;font-style:italic;color:var(--ink-soft);}
+  .rule{display:flex;align-items:center;gap:10px;justify-content:center;margin:14px auto 18px;width:70%;}
+  .rule i{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+  .rule b{width:7px;height:7px;transform:rotate(45deg);background:var(--gold);}
+  form{display:grid;gap:15px;}
+  form[hidden]{display:none;}
+  label{display:block;font-family:var(--font-sans);font-size:.66rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:7px;}
+  .field[hidden]{display:none;}
+  input{width:100%;font:400 1.08rem var(--font-display);color:var(--ink);padding:12px 14px;background:#fffdf9;border:1px solid rgba(196,164,106,.55);border-radius:12px;transition:border-color .2s,box-shadow .2s;}
+  input:focus{outline:none;border-color:var(--gold-deep);box-shadow:0 0 0 3px rgba(196,164,106,.25);}
+  input[aria-invalid="true"]{border-color:var(--error);}
+  .pw{position:relative;}
+  .pw input{padding-right:48px;}
+  .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:0;background:none;border-radius:9px;color:var(--ink-faint);cursor:pointer;display:grid;place-items:center;}
+  .eye:hover{color:var(--plum);background:rgba(196,164,106,.12);}
+  .eye svg{width:20px;height:20px;}
+  .hint{margin:6px 0 0;font-family:var(--font-sans);font-size:.74rem;color:var(--ink-faint);}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:-4px;}
+  .link{background:none;border:0;padding:4px 0;font:500 .74rem var(--font-sans);letter-spacing:.06em;color:var(--mauve);cursor:pointer;text-decoration:underline;text-decoration-color:rgba(140,106,127,.35);text-underline-offset:3px;}
+  .link:hover{color:var(--plum);}
+  .btn{width:100%;margin-top:4px;padding:14px 18px;border:0;border-radius:999px;cursor:pointer;font:500 .76rem var(--font-sans);letter-spacing:.24em;text-transform:uppercase;color:#fff;
+    background:linear-gradient(180deg,#4a2f3e,var(--plum));box-shadow:0 12px 24px -14px rgba(34,20,28,.8);transition:transform .2s var(--ease-out),box-shadow .2s;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 16px 28px -14px rgba(34,20,28,.85);}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+  .msg{display:none;margin:2px 0 0;padding:11px 14px;border-radius:12px;font:400 .84rem var(--font-sans);line-height:1.5;}
+  .msg.show{display:block;}
+  .msg.err{background:var(--error-bg);color:var(--error);}
+  .msg.ok{background:var(--ok-bg);color:var(--ok);}
+  .foot{margin:22px 0 0;text-align:center;font-family:var(--font-sans);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint);}
+  @media (max-width:480px){.card{padding:34px 22px 24px;}.names{font-size:2.15rem;}}
 </style>
 </head>
 <body>
-<div class="card">
-  <h1>Nyasha &amp; Watson</h1>
-  <p class="sub">Wedding Management Portal</p>
-  <form id="loginForm">
+<img class="floral tl" src="/images/roses-burgundy-branch.webp" alt="" aria-hidden="true">
+<img class="floral br" src="/images/roses-burgundy-corner.webp" alt="" aria-hidden="true">
+<main class="card">
+  <h1 class="names">Nyasha <img src="/images/wedding-rings.webp" alt="and"> Watson</h1>
+  <p class="eyebrow">Wedding Management Portal</p>
+  <div class="rule" aria-hidden="true"><i></i><b></b><i></i></div>
+  <p class="sub" id="sub">Sign in with your email and password.</p>
+
+  <form id="loginForm" novalidate>
     <div class="field" id="emailField">
-      <label for="email">Email</label>
-      <input type="email" id="email" name="email" autocomplete="username">
-      <p class="hint">Leave empty to use the main portal password.</p>
+      <label for="email">Email address</label>
+      <input type="email" id="email" name="email" autocomplete="username" inputmode="email" required>
     </div>
-    <div class="field" style="margin-bottom:0;">
+    <div class="field">
       <label for="password" id="pwLabel">Password</label>
-      <input type="password" id="password" name="password" autocomplete="current-password" required>
+      <div class="pw">
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+        <button type="button" class="eye" id="eye" aria-label="Show password" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path id="eyeSlash" d="M4 4l16 16" hidden/></svg>
+        </button>
+      </div>
       <p class="hint" id="pwHint" hidden>At least 8 characters, with letters and a number.</p>
     </div>
-    <button type="submit" id="submitBtn">Sign In</button>
-    <div class="error" id="errorMsg"></div>
+    <div class="row" id="loginLinks">
+      <button type="button" class="link" id="forgotLink">Forgot password?</button>
+      <button type="button" class="link" id="sharedLink">Use the shared portal password</button>
+    </div>
+    <button type="submit" class="btn" id="submitBtn">Sign In</button>
+    <div class="msg err" id="errorMsg" role="alert"></div>
   </form>
-</div>
+
+  <form id="forgotForm" novalidate hidden>
+    <div class="field">
+      <label for="forgotEmail">Email address</label>
+      <input type="email" id="forgotEmail" autocomplete="username" inputmode="email" required>
+    </div>
+    <button type="submit" class="btn" id="forgotBtn">Send Reset Link</button>
+    <div class="msg" id="forgotMsg" role="status"></div>
+    <div class="row" style="justify-content:center;"><button type="button" class="link" id="backLink">Back to sign in</button></div>
+  </form>
+
+  <p class="foot">Saturday 5 December 2026 · Colne Valley</p>
+</main>
 <script>
+(function () {
   var params = new URLSearchParams(location.search);
-  var invite = params.get('invite') || '';
-  var form = document.getElementById('loginForm');
+  var invite = params.get("invite") || "";
+  var shared = false;
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $("loginForm"), btn = $("submitBtn"), err = $("errorMsg"), email = $("email"), pw = $("password");
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  var label = function () { return invite ? "Set Password & Sign In" : "Sign In"; };
+
+  function showError(text, field) {
+    err.textContent = text; err.classList.add("show");
+    [email, pw].forEach(function (f) { f.setAttribute("aria-invalid", f === field ? "true" : "false"); });
+    if (field) field.focus();
+  }
+  function clearError() { err.classList.remove("show"); [email, pw].forEach(function (f) { f.removeAttribute("aria-invalid"); }); }
+
+  // show / hide password
+  $("eye").addEventListener("click", function () {
+    var show = pw.type === "password";
+    pw.type = show ? "text" : "password";
+    this.setAttribute("aria-pressed", String(show));
+    this.setAttribute("aria-label", show ? "Hide password" : "Show password");
+    $("eyeSlash").hidden = !show;
+    pw.focus();
+  });
+
+  function setShared(on) {
+    shared = on;
+    $("emailField").hidden = on;
+    $("sub").textContent = on ? "Sign in with the shared portal password." : "Sign in with your email and password.";
+    $("sharedLink").textContent = on ? "Sign in with email instead" : "Use the shared portal password";
+    $("forgotLink").hidden = on;
+    clearError();
+    (on ? pw : email).focus();
+  }
+  $("sharedLink").addEventListener("click", function () { setShared(!shared); });
+
+  // forgot password
+  $("forgotLink").addEventListener("click", function () {
+    form.hidden = true; $("forgotForm").hidden = false;
+    $("forgotEmail").value = email.value; $("forgotEmail").focus();
+    $("sub").textContent = "Enter your email and we'll send a link to set a new password.";
+  });
+  $("backLink").addEventListener("click", function () {
+    $("forgotForm").hidden = true; form.hidden = false; $("forgotMsg").className = "msg"; setShared(false);
+  });
+  $("forgotForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var v = $("forgotEmail").value.trim(), m = $("forgotMsg");
+    if (!EMAIL_RE.test(v)) { m.className = "msg err show"; m.textContent = "Please enter a valid email address."; return; }
+    $("forgotBtn").disabled = true;
+    fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ forgot: v }) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { m.className = "msg ok show"; m.textContent = d.message || "If that email has access, a reset link is on its way."; })
+      .catch(function () { m.className = "msg err show"; m.textContent = "Couldn't send the request — please check your connection."; })
+      .then(function () { $("forgotBtn").disabled = false; });
+  });
+
   // invitation / password-reset link: greet them and ask for a new password
   if (invite) {
-    document.getElementById('emailField').hidden = true;
-    document.getElementById('pwLabel').textContent = 'Choose a password';
-    document.getElementById('password').setAttribute('autocomplete', 'new-password');
-    document.getElementById('pwHint').hidden = false;
-    document.getElementById('submitBtn').textContent = 'Set Password & Sign In';
-    fetch('/api/admin/login?invite=' + encodeURIComponent(invite)).then(function (r) { return r.json(); }).then(function (d) {
-      var sub = document.querySelector('p.sub');
-      if (d.ok) sub.textContent = (d.reset ? 'Set a new password, ' : 'Welcome, ') + d.name + (d.reset ? '' : ' — choose your password') + ' (' + d.email + ')';
-      else { sub.textContent = 'This link has expired or was already used. Ask the owner for a new one.'; document.getElementById('submitBtn').disabled = true; }
+    $("emailField").hidden = true; $("loginLinks").hidden = true;
+    $("pwLabel").textContent = "Choose a password";
+    pw.setAttribute("autocomplete", "new-password");
+    $("pwHint").hidden = false;
+    btn.textContent = label();
+    fetch("/api/admin/login?invite=" + encodeURIComponent(invite)).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.ok) $("sub").textContent = (d.reset ? "Set a new password, " : "Welcome, ") + d.name + (d.reset ? "" : " — choose your password") + " (" + d.email + ")";
+      else { $("sub").textContent = "This link has expired or was already used. Ask an owner for a new one."; btn.disabled = true; }
     });
   }
-  (invite ? document.getElementById('password') : document.getElementById('email')).focus();
-  var btn = document.getElementById('submitBtn');
-  var err = document.getElementById('errorMsg');
-  form.addEventListener('submit', function (e) {
+  (invite ? pw : email).focus();
+
+  form.addEventListener("submit", function (e) {
     e.preventDefault();
-    err.classList.remove('show');
-    btn.disabled = true; btn.textContent = 'Signing In…';
-    fetch('/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(invite ? { invite: invite, password: document.getElementById('password').value } : { email: document.getElementById('email').value.trim(), password: document.getElementById('password').value })
-    }).then(function (res) {
-      if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || 'Sign in failed'); });
-      return res.json();
-    }).then(function () {
-      var next = params.get('next') || '';
-      location.href = /^\/admin\//.test(next) ? next : '/admin/index.html';
-    }).catch(function (e) {
-      err.textContent = e.message || 'Incorrect password';
-      err.classList.add('show');
-      btn.disabled = false; btn.textContent = invite ? 'Set Password & Sign In' : 'Sign In';
-    });
+    clearError();
+    var body;
+    if (invite) {
+      if (pw.value.length < 8 || !/[0-9]/.test(pw.value) || !/[A-Za-z]/.test(pw.value)) return showError("Use at least 8 characters, with letters and a number.", pw);
+      body = { invite: invite, password: pw.value };
+    } else if (shared) {
+      if (!pw.value) return showError("Enter the portal password.", pw);
+      body = { password: pw.value };
+    } else {
+      if (!EMAIL_RE.test(email.value.trim())) return showError("Please enter a valid email address.", email);
+      if (!pw.value) return showError("Please enter your password.", pw);
+      body = { email: email.value.trim(), password: pw.value };
+    }
+    btn.disabled = true; btn.textContent = "Signing In…";
+    fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      .then(function (res) {
+        if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || "Sign in failed"); });
+        return res.json();
+      }).then(function () {
+        var next = params.get("next") || "";
+        location.href = /^\/admin\//.test(next) ? next : "/admin/index.html";
+      }).catch(function (e2) {
+        showError(e2.message || "Incorrect email or password", invite || shared ? pw : null);
+        btn.disabled = false; btn.textContent = label();
+      });
   });
+})();
 </script>
 </body>
 </html>

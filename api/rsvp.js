@@ -85,6 +85,7 @@ module.exports = async function handler(req, res) {
     var channel = CHANNELS.indexOf(body.channel) !== -1 ? body.channel : "web";
     var gender = Fields.normGender(body.gender);
     var phone = String(body.phone || "").trim();
+    var email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email || "").trim()) ? String(body.email).trim().slice(0, 120) : "";
     var requestedCount = Math.max(1, Math.min(10, Number(body.guests) || 1));
 
     var data2 = await readData();
@@ -109,6 +110,7 @@ module.exports = async function handler(req, res) {
         guest2.notes = (guest2.notes ? guest2.notes + " | " : "") + "RSVP message: " + message;
       }
       if (phone && (matchedBy === "link" || !guest2.phone)) guest2.phone = phone;
+      if (email && !guest2.email) guest2.email = email;
       if (gender) guest2.gender = gender;
       guest2.rsvpChannel = channel;
       guest2.rsvpAt = now;
@@ -136,6 +138,7 @@ module.exports = async function handler(req, res) {
       firstName: nameParts.firstName,
       lastName: nameParts.lastName,
       phone: phone || reqRec.phone || "",
+      email: email || reqRec.email || "",
       gender: gender || reqRec.gender || "",
       attend: attend,
       guests: attend === "attending" ? requestedCount : 0,

@@ -1,0 +1,392 @@
+.section {
+  position: relative;
+  padding: clamp(3.5rem, 9vw, 5.5rem) var(--gutter);
+  background: var(--marble);
+  border-top: 1px solid rgba(196, 164, 106, 0.3);
+  border-bottom: 1px solid rgba(196, 164, 106, 0.3);
+  overflow: hidden;
+}
+
+.marble {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sprig {
+  position: absolute;
+  width: clamp(200px, 40vw, 340px);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.sprigR {
+  top: -1rem;
+  right: -5rem;
+  transform: rotate(118deg);
+}
+
+.inner {
+  position: relative;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  text-align: center;
+  display: grid;
+  gap: 1.6rem;
+}
+
+.theme span {
+  display: inline-block;
+  padding: 0.5rem 1.2rem;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.36em;
+  text-indent: 0.36em;
+  text-transform: uppercase;
+  color: var(--plum);
+  border-top: 1px solid var(--gold);
+  border-bottom: 1px solid var(--gold);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: 1rem;
+  max-width: 34rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.col {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.col p {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 0.82rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.colScript {
+  font-size: 2.2rem;
+  color: var(--accent);
+}
+
+.divider {
+  width: 1px;
+  height: 4.4rem;
+  margin-top: 0.6rem;
+  background: linear-gradient(180deg, transparent, var(--gold), transparent);
+}
+
+.note p {
+  margin: 0;
+}
+
+.swatches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+  max-width: 30rem;
+  margin-inline: auto;
+}
+
+.swatches li {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+}
+
+.swatch {
+  position: relative;
+  display: block;
+  width: clamp(54px, 16vw, 78px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), transparent 45%),
+    radial-gradient(circle at 70% 75%, rgba(0, 0, 0, 0.08), transparent 50%),
+    var(--swatch);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
+    0 10px 20px -12px rgba(43, 31, 38, 0.5);
+  outline: 1px solid rgba(196, 164, 106, 0.6);
+  outline-offset: 4px;
+  transition: transform 0.5s var(--ease-out);
+}
+
+.swatch:hover {
+  transform: scale(1.06);
+}
+
+.swatchActive {
+  transform: scale(1.12);
+  outline-color: var(--plum);
+  outline-width: 2px;
+}
+
+.hint {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.detail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  min-height: 2.6rem;
+  margin-top: 0.8rem;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.35s, transform 0.35s var(--ease-out);
+}
+
+.detailOpen {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.detailDot {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  outline: 1px solid rgba(196, 164, 106, 0.6);
+  outline-offset: 2px;
+}
+
+.detailName {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--plum);
+}
+
+.copyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(196, 164, 106, 0.6);
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  color: var(--gold-deep);
+  transition: background 0.2s;
+}
+
+.copyBtn:hover {
+  background: rgba(196, 164, 106, 0.12);
+}
+
+.copyBtn svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.gownBtn {
+  display: block;
+  width: 100%;
+  border-radius: 12px;
+  transition: transform 0.45s var(--ease-out), filter 0.45s;
+}
+
+.gowns li[data-active="true"] .gownBtn {
+  transform: translateY(-6px) scale(1.08);
+  filter: drop-shadow(0 16px 16px rgba(43, 31, 38, 0.25));
+}
+
+.gowns li[data-dim="true"] .gownBtn {
+  opacity: 0.45;
+  filter: saturate(0.6);
+}
+
+.gowns li[data-active="true"] span {
+  color: var(--plum);
+}
+
+/* watercolour bleed */
+.swatch i {
+  position: absolute;
+  inset: -6%;
+  border-radius: 48% 52% 46% 54% / 52% 46% 54% 48%;
+  background: var(--swatch);
+  opacity: 0.35;
+  filter: blur(3px);
+  z-index: -1;
+}
+
+.swatchName {
+  font-family: var(--font-sans);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+@media (max-width: 420px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+  .divider {
+    width: 4rem;
+    height: 1px;
+    margin: 0 auto;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .swatches {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.2rem 0.6rem;
+  }
+}
+
+/* ---------- attire inspiration ---------- */
+.inspiration {
+  width: 100%;
+}
+
+/* The attire photo is a transparent cut-out: the models stand on the page
+   itself, grounded by a soft floor shadow rather than boxed in a frame. */
+.photos {
+  position: relative;
+  display: grid;
+  gap: 0.8rem;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding-bottom: 0.6rem;
+}
+
+.photos::after {
+  content: "";
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: 0.1rem;
+  height: 1.6rem;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(59, 37, 49, 0.22), rgba(59, 37, 49, 0.08) 55%, transparent 75%);
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+.photos img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 14px 14px rgba(59, 37, 49, 0.16)) drop-shadow(0 2px 3px rgba(59, 37, 49, 0.12));
+}
+
+.figures {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1rem;
+  max-width: 38rem;
+  margin: 0 auto;
+  padding: 1.4rem 1rem 1rem;
+  background: linear-gradient(180deg, rgba(255, 253, 249, 0.75), rgba(247, 242, 233, 0.9));
+  border: 1px solid rgba(196, 164, 106, 0.45);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 40px -30px rgba(43, 31, 38, 0.5);
+}
+
+.group {
+  display: grid;
+  gap: 0.6rem;
+  align-content: end;
+}
+
+.group + .group {
+  border-left: 1px solid rgba(196, 164, 106, 0.4);
+  padding-left: 1rem;
+}
+
+.gowns {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+  align-items: end;
+}
+
+.tuxedos {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gowns li {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+}
+
+.gowns svg {
+  width: 100%;
+  max-width: 68px;
+  height: auto;
+  filter: drop-shadow(0 10px 10px rgba(43, 31, 38, 0.12));
+}
+
+.gowns span {
+  font-family: var(--font-sans);
+  font-size: 0.52rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.groupLabel {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-script);
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+
+@media (max-width: 560px) {
+  .figures {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+  .group + .group {
+    border-left: 0;
+    padding-left: 0;
+    border-top: 1px solid rgba(196, 164, 106, 0.4);
+    padding-top: 1.2rem;
+  }
+  .tuxedos {
+    max-width: 10rem;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+img.sprig[data-photo] {
+  width: clamp(240px, 52vw, 420px);
+  opacity: 1;
+  filter: drop-shadow(0 10px 18px rgba(43, 31, 38, 0.18));
+}
+
+img.sprigR[data-photo] {
+  top: -2.5rem;
+  right: -6rem;
+  transform: rotate(22deg);
+}

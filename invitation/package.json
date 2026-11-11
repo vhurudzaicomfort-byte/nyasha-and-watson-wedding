@@ -1,0 +1,32 @@
+{
+  "name": "nyasha-watson-invitation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Nyasha & Watson invitation (eGuest design), built as a static page for nyasha-watson.e-guests.com.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && node scripts/publish.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/jost": "^5.3.0",
+    "@fontsource/pinyon-script": "^5.3.0",
+    "motion": "^14.12.0",
+    "next": "^16.4.6",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^5.9.3"
+  }
+}

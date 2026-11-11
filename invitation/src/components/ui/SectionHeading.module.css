@@ -1,0 +1,21 @@
+.heading {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  text-align: center;
+  margin-bottom: clamp(1.6rem, 5vw, 2.6rem);
+}
+
+.script {
+  font-size: clamp(2rem, 7vw, 2.8rem);
+  color: var(--accent);
+  margin-bottom: -0.4rem;
+}
+
+.intro {
+  max-width: 34rem;
+  margin: 1rem 0 0;
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}

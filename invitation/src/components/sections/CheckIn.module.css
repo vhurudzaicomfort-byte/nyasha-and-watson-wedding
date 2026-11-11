@@ -1,0 +1,117 @@
+.section {
+  position: relative;
+  padding: clamp(3rem, 8vw, 4.5rem) var(--gutter) clamp(2.5rem, 7vw, 4rem);
+  background: linear-gradient(180deg, var(--ivory), var(--marble));
+}
+
+.inner {
+  max-width: 34rem;
+  margin: 0 auto;
+  display: grid;
+  gap: 1.4rem;
+  text-align: center;
+}
+
+.card {
+  padding: clamp(1.4rem, 5vw, 2.2rem);
+  background: linear-gradient(180deg, #fffdf9, var(--marble));
+  border: 1px solid rgba(196, 164, 106, 0.5);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.cardDone {
+  border-color: rgba(79, 107, 82, 0.35);
+}
+
+.form,
+.done {
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+}
+
+.rule {
+  margin: 0;
+  font-size: 0.98rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 20rem;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.field input {
+  font: 400 1rem var(--font-display);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+  padding: 0.7rem 0.9rem;
+  background: #fffdf9;
+  border: 1px solid rgba(196, 164, 106, 0.55);
+  border-radius: 12px;
+}
+
+.field input:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+.msg {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--leaf);
+}
+
+.icon svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(2rem, 7vw, 2.6rem);
+  line-height: 1.1;
+  color: var(--plum);
+}
+
+.text {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.table {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.2rem 0 0;
+  padding: 0.8rem 1.6rem;
+  border: 1px solid rgba(196, 164, 106, 0.55);
+  border-radius: 12px;
+  background: #fffdf9;
+}
+
+.table strong {
+  font-size: 1.6rem;
+  font-weight: 500;
+  color: var(--plum);
+}

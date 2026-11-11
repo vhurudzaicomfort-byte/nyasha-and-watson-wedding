@@ -1,0 +1,173 @@
+.section {
+  position: relative;
+  padding: clamp(4rem, 10vw, 6rem) var(--gutter) clamp(3rem, 8vw, 5rem);
+  overflow: hidden;
+}
+
+.corner {
+  position: absolute;
+  width: clamp(170px, 42vw, 300px);
+  pointer-events: none;
+  opacity: 0.95;
+}
+
+.cornerTL {
+  top: -1.5rem;
+  left: -2.5rem;
+}
+
+.cornerBR {
+  bottom: -2rem;
+  right: -2.5rem;
+  transform: scaleX(-1) rotate(180deg) !important;
+}
+
+.inner {
+  position: relative;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  text-align: center;
+  display: grid;
+  gap: 2rem;
+}
+
+.head {
+  display: grid;
+  justify-items: center;
+}
+
+.script {
+  font-size: 2.2rem;
+  color: var(--accent);
+  margin-bottom: -1.2rem;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.6rem, 9vw, 3.6rem);
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  text-transform: uppercase;
+  color: var(--plum);
+}
+
+.flourish {
+  margin-top: 0.2rem;
+}
+
+.dateBlock {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: center;
+}
+
+.weekday {
+  font-family: var(--font-sans);
+  font-weight: 300;
+  font-size: 0.78rem;
+  letter-spacing: 0.4em;
+  text-indent: 0.4em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.dateRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: clamp(0.8rem, 4vw, 1.6rem);
+  width: 100%;
+  max-width: 26rem;
+}
+
+.month,
+.year {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--plum);
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--gold);
+  border-bottom: 1px solid var(--gold);
+}
+
+.day {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(4.2rem, 18vw, 6rem);
+  line-height: 0.9;
+  color: var(--accent);
+}
+
+.time {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem 1.6rem;
+  font-family: var(--font-sans);
+  font-size: 0.74rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.venue {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  color: var(--gold-deep);
+}
+
+.venue svg {
+  width: 26px;
+  height: 26px;
+}
+
+.venueName {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.4rem, 5.5vw, 1.9rem);
+  letter-spacing: 0.06em;
+  color: var(--plum);
+}
+
+.venueAddr {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 300;
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1.9;
+  color: var(--ink-soft);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.7rem;
+}
+
+img.corner[data-photo] {
+  width: clamp(150px, 36vw, 260px);
+  opacity: 1;
+  filter: drop-shadow(0 10px 18px rgba(43, 31, 38, 0.18));
+}
+
+img.cornerTL[data-photo] {
+  top: -1.5rem;
+  left: -2rem;
+  transform: rotate(-6deg);
+}
+
+img.cornerBR[data-photo] {
+  bottom: -2rem;
+  right: -2rem;
+  transform: scaleX(-1) scaleY(-1) rotate(-6deg) !important;
+}

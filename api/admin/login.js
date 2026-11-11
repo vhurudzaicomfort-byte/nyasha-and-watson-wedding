@@ -3,6 +3,9 @@
 //   { email, password }          -> a portal user
 //   { invite, password }         -> accept an invitation (or a reset link): set the password and sign in
 //   GET ?invite=<token>          -> who the invitation is for (so the page can greet them)
+//   { forgot: email }            -> password reset request: owners see it in Portal Users; when
+//                                   RESEND_API_KEY and MAIL_FROM are set, the reset link is emailed.
+//                                   The reply never says whether the email has access.
 const crypto = require("crypto");
 const A = require("../../lib/auth");
 const { readData, writeData } = require("../../lib/blob-store");
@@ -30,6 +33,31 @@ module.exports = async function handler(req, res) {
   }
   var body = req.body || {};
   var password = String(body.password || "");
+
+  if (body.forgot) {
+    var fe = String(body.forgot || "").trim().toLowerCase();
+    var df = await readData(); df.users = df.users || [];
+    var uf = df.users.find(function (u) { return (u.email || "").toLowerCase() === fe && u.status !== "deactivated"; });
+    var recent = uf && uf.resetRequestedAt && Date.now() - Date.parse(uf.resetRequestedAt) < 10 * 60 * 1000;
+    if (uf && !recent) {
+      uf.resetRequestedAt = new Date().toISOString();
+      var mailed = false;
+      if (process.env.RESEND_API_KEY && process.env.MAIL_FROM) {
+        uf.invite = { token: crypto.randomBytes(24).toString("base64url"), exp: Date.now() + 2 * 864e5 };
+        var origin = (req.headers["x-forwarded-proto"] || "https") + "://" + (req.headers["x-forwarded-host"] || req.headers.host);
+        var link = origin + "/admin/login.html?invite=" + encodeURIComponent(uf.invite.token);
+        try {
+          var r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: "Bearer " + process.env.RESEND_API_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({ from: process.env.MAIL_FROM, to: [uf.email], subject: "Reset your Nyasha & Watson portal password", text: ["Hi " + (uf.name || "") + ",", "", "Use this link to set a new password for the Nyasha & Watson wedding portal. It works once and expires in 2 days:", link, "", "If you didn't ask for this, you can ignore this email."].join("\n") }) });
+          mailed = r.ok;
+        } catch (e) { mailed = false; }
+        if (mailed) uf.resetRequestedAt = null;
+      }
+      await writeData(df);
+    }
+    res.status(200).json({ ok: true, message: "If that email has access to the portal, a reset link is on its way — or an owner will send you one shortly." });
+    return;
+  }
 
   // invitation / reset link
   if (body.invite) {

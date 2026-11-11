@@ -86,11 +86,12 @@
   }
   function genderLabel(v) { var g = GENDERS.find(function (x) { return x.value === v; }); return g ? g.label : ""; }
 
-  // RSVPs close at the end of 10 November (Harare time). The site and the API
-  // both read this, so the page and the server always agree.
-  var RSVP_DEADLINE_LABEL = "10 November 2026";
-  var RSVP_CLOSES_AT = "2026-11-11T00:00:00+02:00";
-  function rsvpClosed(now) { return (now == null ? Date.now() : +now) >= Date.parse(RSVP_CLOSES_AT); }
+  // RSVP deadline (Harare time), read by both the invitation and the API.
+  // Reopened on 11 November 2026 with no deadline, as in the approved design:
+  // set RSVP_CLOSES_AT (e.g. "2026-11-30T00:00:00+02:00") and a label to close again.
+  var RSVP_DEADLINE_LABEL = "";
+  var RSVP_CLOSES_AT = null;
+  function rsvpClosed(now) { return !!RSVP_CLOSES_AT && (now == null ? Date.now() : +now) >= Date.parse(RSVP_CLOSES_AT); }
 
   global.WNGuestFields = {
     CATEGORIES: CATEGORIES, GENDERS: GENDERS, INVITATION_TYPES: INVITATION_TYPES,

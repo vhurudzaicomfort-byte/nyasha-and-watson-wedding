@@ -74,7 +74,7 @@
     navItems.forEach(function (n) { n.classList.toggle("active", n.dataset.tab === tab); });
     panels.forEach(function (p) { p.classList.toggle("active", p.dataset.panel === tab); });
     document.getElementById("mobileNavSelect").value = tab;
-    if (tab === "users") renderUsers();
+    if (tab === "users") { renderUsers(); renderBackups(); }
   }
   navItems.forEach(function (n) { n.addEventListener("click", function () { activateTab(n.dataset.tab); }); });
   document.getElementById("mobileNavSelect").addEventListener("change", function (e) { activateTab(e.target.value); });
@@ -409,6 +409,7 @@
       var mainRow = '<tr><td><div class="g-name">Main login</div><div class="g-sub">The shared portal password</div></td><td>owner</td><td><span class="pill pill-status-green">Active</span></td><td>—</td><td></td></tr>';
       document.getElementById("userRows").innerHTML = mainRow + res.users.map(function (u) {
         var st = USER_STATUS[u.status] || [u.status, "pill-status-neutral"], self = u.id === mine.id;
+        if (u.resetRequestedAt && u.status !== "deactivated") st = ["Reset requested", "pill-status-amber"];
         var roleCell = self ? escapeHtml(u.role) + " (you)" : '<select class="user-role" data-id="' + u.id + '" style="border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-family:inherit; font-size:.78rem;">' + ["owner", "planner", "viewer"].map(function (rl) { return '<option value="' + rl + '"' + (u.role === rl ? " selected" : "") + ">" + rl + "</option>"; }).join("") + "</select>";
         var acts = self ? "" : '<div class="row-actions">' +
           (u.status !== "deactivated" ? '<button class="btn btn-outline btn-sm" data-ulink="' + u.id + '">' + (u.status === "invited" ? "Invitation link" : "Password reset link") + "</button>" : "") +
@@ -418,6 +419,25 @@
       }).join("");
     }).catch(function (e) { showToast(e.message || "Could not load portal users"); });
   }
+  function renderBackups() {
+    api("/api/admin/session?backups=1").then(function (res) {
+      document.getElementById("backupRows").innerHTML = res.backups.length ? res.backups.map(function (b) {
+        var name = b.pathname.split("/").pop().replace(/\.json$/, "");
+        var when = new Date(b.uploadedAt).toLocaleString(undefined, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+        return '<tr><td><div class="g-name">' + escapeHtml(when) + '</div><div class="g-sub">' + escapeHtml(name) + "</div></td><td>" + Math.round(b.size / 1024) + ' KB</td><td><button class="btn btn-outline btn-sm" data-restore="' + escapeHtml(b.pathname) + '">Restore</button></td></tr>';
+      }).join("") : '<tr><td colspan="3" style="color:var(--text-muted);">No backups yet.</td></tr>';
+    }).catch(function () {});
+  }
+  document.getElementById("backupNowBtn").addEventListener("click", function () {
+    api("/api/admin/session", { method: "POST", body: { action: "backup", label: "manual" } }).then(function (r) { showToast("Backed up " + r.guests + " invitations"); renderBackups(); }).catch(function (e) { showToast(e.message || "Backup failed"); });
+  });
+  document.getElementById("backupRows").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-restore]"); if (!b) return;
+    askConfirm("Restore this backup?", "The guest list, RSVPs, tables, gifts, providers and users go back to how they were then. A backup of the current state is taken first, so this can be undone.").then(function (ok) {
+      if (!ok) return;
+      api("/api/admin/session", { method: "POST", body: { action: "restore", pathname: b.dataset.restore } }).then(function (r) { showToast("Restored (" + r.guests + " invitations)"); renderBackups(); return loadAll(); }).catch(function (e2) { showToast(e2.message || "Restore failed"); });
+    });
+  });
   function userAction(body, msg) {
     return api("/api/admin/session", { method: "POST", body: body }).then(function (res) { if (msg) showToast(msg); renderUsers(); return res; }).catch(function (e) { showToast(e.message || "Could not update"); });
   }
@@ -426,7 +446,7 @@
     document.getElementById("linkModalTitle").textContent = reset ? "Password Reset Link" : "Invitation Link";
     document.getElementById("linkModalSub").textContent = "Send this to " + name + ". It works once and expires in " + (reset ? "2" : "7") + " days.";
     document.getElementById("linkModalUrl").value = url;
-    document.getElementById("linkModalWa").href = "https://wa.me/?text=" + encodeURIComponent("Hi " + name.split(" ")[0] + ", here is your link to the Watson & Nyasha wedding portal" + (reset ? " to set a new password" : " — choose your password to get started") + ": " + url);
+    document.getElementById("linkModalWa").href = "https://wa.me/?text=" + encodeURIComponent("Hi " + name.split(" ")[0] + ", here is your link to the Nyasha & Watson wedding portal" + (reset ? " to set a new password" : " — choose your password to get started") + ": " + url);
     document.getElementById("linkModalOverlay").hidden = false;
   }
   document.getElementById("linkModalClose").addEventListener("click", function () { document.getElementById("linkModalOverlay").hidden = true; });
@@ -731,7 +751,7 @@
       drawSpray(ctx, spray, w, h, 230, "br", 62);
       ctx.textAlign = "center";
       ctx.fillStyle = "#8B7A6E"; ctx.font = '400 22px Jost, sans-serif';
-      ctx.fillText("WATSON & NYASHA", w / 2, 90);
+      ctx.fillText("NYASHA & WATSON", w / 2, 90);
       ctx.fillStyle = "#B08A46"; ctx.font = '500 20px Jost, sans-serif';
       ctx.fillText("G U E S T   P A S S", w / 2, 124);
       ctx.strokeStyle = "#E4D2B0"; ctx.beginPath(); ctx.moveTo(80, 150); ctx.lineTo(w - 80, 150); ctx.stroke();
