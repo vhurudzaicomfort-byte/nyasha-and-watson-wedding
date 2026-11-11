@@ -16,7 +16,7 @@ function publicUser(u) {
 }
 
 module.exports = async function handler(req, res) {
-  if (req.method === "GET" && !req.query.users) {
+  if (req.method === "GET" && !req.query.users && !req.query.backups) {
     if (!A.readSession(req)) { res.status(200).json({ authed: false }); return; }
     if (!(await A.requireAuth(req, res))) return;
     res.status(200).json({ authed: true, user: req.wnUser, roles: A.ROLES });
