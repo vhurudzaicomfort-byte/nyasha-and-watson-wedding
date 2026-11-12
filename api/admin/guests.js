@@ -243,6 +243,8 @@ module.exports = async function handler(req, res) {
       if (Object.prototype.hasOwnProperty.call(patch, k)) data3.guests[idx][k] = patch[k];
     });
     if (patch.removedAt) { data3.guests[idx].tableId = null; data3.guests[idx].removedBy = req.wnUser.name; }
+    // device limit (lib/devices.js): free the link's device slots, e.g. after a guest changed phone
+    if (patch.resetDevices === true) { data3.guests[idx].devices = []; data3.guests[idx].blockedOpens = 0; data3.guests[idx].lastBlockedAt = null; }
     await writeData(data3);
     res.status(200).json({ guest: data3.guests[idx] });
     return;

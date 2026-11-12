@@ -35,13 +35,16 @@ interface Props {
   skipEnvelope?: boolean;
   /** Platform overrides (RSVP transport, embed/download permissions). */
   env?: Partial<InvitationEnv>;
+  /** Shown at the top when this device was refused for a personal link (device limit). */
+  notice?: string;
 }
 
 /**
  * Client orchestrator: envelope → reveal → sections. Holds the music engine
  * so it survives across the opening transition and the replay.
  */
-export function InvitationExperience({ invitation, guest, shareUrl, musicSrc, skipEnvelope, env }: Props) {
+export function InvitationExperience({ invitation, guest, shareUrl, musicSrc, skipEnvelope, env, notice }: Props) {
+  const [noticeOpen, setNoticeOpen] = useState(!!notice);
   const [phase, setPhase] = useState<EnvelopePhase>(skipEnvelope ? "done" : "closed");
   const music = useMusic(musicSrc || invitation.musicSrc, musicSrc ? undefined : invitation.music);
   const open = phase === "done";
@@ -98,6 +101,21 @@ export function InvitationExperience({ invitation, guest, shareUrl, musicSrc, sk
     <DecorContext.Provider value={invitation.decor ?? {}}>
     <ToastProvider>
     <div style={themeVars} className={styles.root}>
+      {notice && noticeOpen && (
+        <div className={styles.notice} role="alert">
+          <p>
+            {notice}{" "}
+            {invitation.rsvp.fallbackPhones.map((ph, i) => (
+              <span key={ph}>
+                {i ? " or " : "Call "}
+                <a href={`tel:+263${ph.replace(/D/g, "").replace(/^0/, "")}`}>{ph}</a>
+              </span>
+            ))}
+            .
+          </p>
+          <button type="button" onClick={() => setNoticeOpen(false)} aria-label="Dismiss">×</button>
+        </div>
+      )}
       {!skipEnvelope && (
         <Envelope
           phase={phase}

@@ -35,7 +35,8 @@ http.createServer(async (req, res) => {
       const chunks = []; for await (const c of req) chunks.push(c);
       const raw = Buffer.concat(chunks).toString("utf8");
       req.body = /json/.test(req.headers["content-type"] || "") && raw ? JSON.parse(raw) : raw || undefined;
-      if (process.env.WN_DEV_AUTOLOGIN !== "0") req.headers.cookie = AUTO + (req.headers.cookie ? "; " + req.headers.cookie : "");
+      // portal APIs only: the public endpoints (/api/rsvp, /api/checkin) must see visitors as visitors
+      if (process.env.WN_DEV_AUTOLOGIN !== "0" && url.pathname.startsWith("/api/admin/")) req.headers.cookie = AUTO + (req.headers.cookie ? "; " + req.headers.cookie : "");
       await require(file)(req, vercelRes(res));
       return;
     }
