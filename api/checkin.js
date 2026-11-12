@@ -8,6 +8,8 @@
 //     all; accepted, but recorded as unverified so ushers can see it in the portal.
 // Ushers check guests in from the admin portal (recorded as "usher").
 const { readData, writeData } = require("../lib/blob-store");
+const Auth = require("../lib/auth");
+const Devices = require("../lib/devices");
 
 // Approximate venue location (best available geocode for Colne Valley Nature
 // Reserve Park / Bay Noakes Road, Chisipite, Harare — the venue itself isn't
@@ -66,6 +68,15 @@ module.exports = async function handler(req, res) {
     let guest = body.token ? data.guests.find((g) => g.id === body.token && !g.removedAt) : null;
     if (!guest && body.phone) guest = data.guests.find((g) => !g.removedAt && samePhone(g.phone, body.phone));
     if (!guest) { res.status(200).json({ ok: false, reason: "not_found" }); return; }
+    // a personal link only works on its allowed devices (lib/devices.js)
+    if (body.token && guest.id === body.token && !Auth.isAuthed(req)) {
+      const gate = Devices.admit(guest, body.device, req.headers["user-agent"]);
+      if (!gate.ok) {
+        if (gate.changed) { try { await writeData(data); } catch (e) {} }
+        res.status(200).json({ ok: false, reason: "device_limit", error: Devices.BLOCKED_MESSAGE });
+        return;
+      }
+    }
 
     if (mode !== "self-unverified") {
       const lat = Number(body.lat), lng = Number(body.lng);

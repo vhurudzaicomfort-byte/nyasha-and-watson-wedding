@@ -16,6 +16,8 @@
 const { readData, writeData } = require("../lib/blob-store");
 const Fields = require("../assets/js/guest-fields.js");
 const Match = require("../assets/js/guest-match.js");
+const Auth = require("../lib/auth");
+const Devices = require("../lib/devices");
 
 const CHANNELS = ["web", "whatsapp", "sms", "email", "call"];
 
@@ -63,8 +65,20 @@ module.exports = async function handler(req, res) {
     var data = await readData();
     var guest = data.guests.find(function (g) { return g.id === token && !g.removedAt; });
     if (!guest) { res.status(200).json({ found: false }); return; }
+    var changed = false;
+    // devices: a link only works on its allowed number of devices (admins and badge scans exempt)
+    if (!req.query.badge && !Auth.isAuthed(req)) {
+      var gate = Devices.admit(guest, req.query.device, req.headers["user-agent"]);
+      if (gate.changed) changed = true;
+      if (!gate.ok) {
+        if (changed) { try { await writeData(data); } catch (e) {} }
+        res.status(200).json({ found: false, blocked: true, error: Devices.BLOCKED_MESSAGE });
+        return;
+      }
+    }
     // delivery tracking: the first time a guest opens their personal link (badge scans don't count)
-    if (!guest.openedAt && !req.query.badge) { guest.openedAt = new Date().toISOString(); try { await writeData(data); } catch (e) {} }
+    if (!guest.openedAt && !req.query.badge) { guest.openedAt = new Date().toISOString(); changed = true; }
+    if (changed) { try { await writeData(data); } catch (e) {} }
     res.status(200).json(publicView(guest, data));
     return;
   }
@@ -99,6 +113,14 @@ module.exports = async function handler(req, res) {
     }
 
     var now = new Date().toISOString();
+    if (guest2 && !Auth.isAuthed(req)) {
+      var gate2 = Devices.admit(guest2, body.device, req.headers["user-agent"]);
+      if (!gate2.ok) {
+        if (gate2.changed) { try { await writeData(data2); } catch (e) {} }
+        res.status(403).json({ ok: false, blocked: true, error: Devices.BLOCKED_MESSAGE });
+        return;
+      }
+    }
     if (guest2) {
       var cap = (Number(guest2.invitedCount) || 1) + (guest2.plusOneAllowed ? 1 : 0);
       guest2.rsvpStatus = attend;

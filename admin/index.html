@@ -632,6 +632,12 @@
       <div class="field checkline"><input type="checkbox" id="f-plusone"><label for="f-plusone">Plus-one allowed</label></div>
       <div class="field checkline"><input type="checkbox" id="f-sent"><label for="f-sent">Invitation sent</label></div>
       <div class="field full"><label for="f-notes">Notes</label><textarea id="f-notes" placeholder="Anything else worth remembering"></textarea></div>
+      <div class="field full" id="devicesField" hidden>
+        <label>Devices using the personal link</label>
+        <div id="devicesBox" class="mix-note" style="margin:2px 0 8px;"></div>
+        <button class="btn btn-outline btn-sm" type="button" id="resetDevicesBtn">Reset devices</button>
+        <p class="mix-note" style="margin-top:8px;">A personal link works on up to 2 devices (or one per person on bigger invitations). Further devices, such as someone the link was forwarded to, are refused. Reset if the guest changed phone or browser.</p>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" id="guestModalCancel">Cancel</button>

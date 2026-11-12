@@ -288,7 +288,7 @@
       if (g.removedAt) meta = (meta ? meta + " · " : "") + "Removed " + fmtDate(g.removedAt) + (g.removedBy ? " by " + g.removedBy : "");
       return "<tr>" +
         '<td class="pick"><input type="checkbox" class="pick-one" data-id="' + g.id + '"' + (picked[g.id] ? " checked" : "") + ' aria-label="Select ' + escapeHtml(fullName(g)) + '"></td>' +
-        '<td><div class="g-name">' + escapeHtml(fullName(g)) + '</div><div class="g-sub">' + escapeHtml(subLine) + "</div>" + (meta ? '<div class="g-meta">' + escapeHtml(meta) + "</div>" : "") + '<div class="g-meta"><span class="pill pill-delivery-' + dv + '">' + DELIVERY[dv] + "</span>" + (g.phone ? "" : ' <span style="font-size:.68rem;">· no phone</span>') + "</div>" + (g.reviewFlag ? '<div class="g-meta"><span class="pill pill-review" title="' + escapeHtml(g.reviewFlag) + '">Needs review: ' + escapeHtml(g.reviewFlag.length > 60 ? g.reviewFlag.slice(0, 57) + "…" : g.reviewFlag) + "</span></div>" : "") + "</td>" +
+        '<td><div class="g-name">' + escapeHtml(fullName(g)) + '</div><div class="g-sub">' + escapeHtml(subLine) + "</div>" + (meta ? '<div class="g-meta">' + escapeHtml(meta) + "</div>" : "") + '<div class="g-meta"><span class="pill pill-delivery-' + dv + '">' + DELIVERY[dv] + "</span>" + (g.phone ? "" : ' <span style="font-size:.68rem;">· no phone</span>') + devicesNote(g) + "</div>" + (g.reviewFlag ? '<div class="g-meta"><span class="pill pill-review" title="' + escapeHtml(g.reviewFlag) + '">Needs review: ' + escapeHtml(g.reviewFlag.length > 60 ? g.reviewFlag.slice(0, 57) + "…" : g.reviewFlag) + "</span></div>" : "") + "</td>" +
         '<td><span class="pill pill-' + status + '">' + status.replace("_", " ") + "</span></td>" +
         "<td>" + (g.attendingCount != null && g.attendingCount !== "" ? g.attendingCount : "—") + " / " + (g.invitedCount || 1) + "</td>" +
         "<td>" + (tableName(g) ? '<span class="pill pill-table">' + escapeHtml(tableName(g)) + "</span>" : '<span style="color:var(--text-muted);">—</span>') + "</td>" +
@@ -302,6 +302,24 @@
     renderBulkBar();
   }
   var shownIds = [];
+  // device limit (lib/devices.js): 2 devices per personal link, or one per person on bigger invitations
+  function deviceLimit(g) { return Math.max(2, Number(g.invitedCount) || 1); }
+  function devicesNote(g) {
+    var n = (g.devices || []).length, out = "";
+    if (n) out += ' <span style="font-size:.68rem;">· link on ' + n + " of " + deviceLimit(g) + " devices</span>";
+    if (g.blockedOpens) out += ' <span class="pill pill-status-amber" title="Another device tried this personal link and was refused, often a forwarded link. Last: ' + escapeHtml(fmtDate(g.lastBlockedAt)) + '">Blocked ' + g.blockedOpens + "×</span>";
+    return out;
+  }
+  function renderDevicesField(g) {
+    var box = document.getElementById("devicesField");
+    box.hidden = !g;
+    if (!g) return;
+    var list = g.devices || [];
+    document.getElementById("devicesBox").innerHTML = (list.length
+      ? list.map(function (d) { return "<div>" + escapeHtml(d.label || "Device") + " · first used " + escapeHtml(fmtDate(d.firstSeen)) + "</div>"; }).join("")
+      : "<div>Not opened on any device yet.</div>") +
+      "<div>" + list.length + " of " + deviceLimit(g) + " allowed" + (g.blockedOpens ? " · <strong>" + g.blockedOpens + " refused</strong> (last " + escapeHtml(fmtDate(g.lastBlockedAt)) + ")" : "") + "</div>";
+  }
   function iconBtn(action, id, title) {
     var icons = {
       edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
@@ -377,6 +395,19 @@
     };
     if (op === "remove") askConfirm("Remove " + ids.length + " guest(s)?", "They move to Removed and give up their tables. You can restore them any time.").then(function (ok) { if (ok) go(); });
     else go();
+  });
+
+  document.getElementById("resetDevicesBtn").addEventListener("click", function () {
+    if (!editingGuestId) return;
+    var gid = editingGuestId;
+    askConfirm("Reset devices?", "The personal link will work again on the next devices that open it. The guest's own phone will be recognised again when they reopen it.").then(function (ok) {
+      if (!ok) return;
+      api("/api/admin/guests?id=" + gid, { method: "PATCH", body: { resetDevices: true } }).then(function () {
+        showToast("Devices reset");
+        return loadAll();
+      }).then(function () { renderDevicesField(guests.find(function (x) { return x.id === gid; }) || null); })
+        .catch(function (e) { showToast(e.message || "Could not reset"); });
+    });
   });
 
   /* ---------------- A5 PDF INVITATIONS ---------------- */
@@ -713,6 +744,7 @@
     document.getElementById("f-attending").value = g ? (g.attendingCount || 0) : 0;
     document.getElementById("f-plusone").checked = g ? !!g.plusOneAllowed : false;
     document.getElementById("f-notes").value = g ? (g.notes || "") : "";
+    renderDevicesField(g || null);
     document.getElementById("f-review").value = g ? (g.reviewFlag || "") : "";
     document.getElementById("f-sent").checked = g ? !!(g.inviteSentAt || g.openedAt) : false;
     var curTable = g ? (g.tableId || "") : "";

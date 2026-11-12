@@ -15,11 +15,34 @@ import type { RsvpTransport } from "./env";
 
 const TOKEN_KEY = "wn_guest_token"; // same keys as the previous site, so returning guests are recognised
 const REQUEST_KEY = "wn_rsvp_request";
+const DEVICE_KEY = "wn_device";
 
 const store = {
   get: (k: string) => { try { return window.localStorage.getItem(k) || ""; } catch { return ""; } },
   set: (k: string, v: string) => { try { if (v) window.localStorage.setItem(k, v); else window.localStorage.removeItem(k); } catch { /* private mode */ } },
 };
+
+/**
+ * A random code for this browser, so a personal link works only on its allowed
+ * number of devices (the portal's lib/devices.js). Nothing personal is in it.
+ */
+let memoDevice = "";
+export function deviceId(): string {
+  if (memoDevice) return memoDevice;
+  let id = store.get(DEVICE_KEY);
+  if (!/^[A-Za-z0-9_-]{16,64}$/.test(id)) {
+    const bytes = new Uint8Array(18);
+    (window.crypto || (window as unknown as { msCrypto: Crypto }).msCrypto).getRandomValues(bytes);
+    id = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    store.set(DEVICE_KEY, id);
+  }
+  memoDevice = id;
+  return id;
+}
+
+/** Set when this device was refused for the personal link it opened. */
+let refused = "";
+export function deviceRefusal(): string { return refused; }
 
 interface PortalGuest {
   found: boolean;
@@ -74,8 +97,13 @@ export async function loadGuest(): Promise<GuestContext | null> {
   const { token, fromUrl, badge } = currentToken();
   if (!token) return null;
   try {
-    const res = await fetch(`/api/rsvp?token=${encodeURIComponent(token)}${badge ? "&badge=1" : ""}`, { cache: "no-store" });
-    const g = (await res.json()) as PortalGuest;
+    const res = await fetch(`/api/rsvp?token=${encodeURIComponent(token)}${badge ? "&badge=1" : ""}&device=${encodeURIComponent(deviceId())}`, { cache: "no-store" });
+    const g = (await res.json()) as PortalGuest & { blocked?: boolean; error?: string };
+    if (g.blocked) {
+      refused = g.error || "This personal invitation can't be opened on this device.";
+      store.set(TOKEN_KEY, "");
+      return null;
+    }
     const guest = toGuest(g);
     if (guest) store.set(TOKEN_KEY, guest.code);
     else if (!fromUrl) store.set(TOKEN_KEY, ""); // a removed invitation is forgotten on this device
@@ -116,6 +144,7 @@ export const portalTransport: RsvpTransport = async (payload) => {
     email: v.email || "",
     message: v.message || "",
     channel: "web",
+    device: deviceId(),
   };
   let res: Response;
   try {
@@ -158,7 +187,7 @@ export type CheckinResult = { ok: boolean; reason?: string; distanceMeters?: num
 
 export async function postCheckin(payload: Record<string, unknown>): Promise<CheckinResult> {
   try {
-    const res = await fetch("/api/checkin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const res = await fetch("/api/checkin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, device: deviceId() }) });
     const data = (await res.json().catch(() => ({}))) as CheckinResult;
     if (data.ok && data.guestId) adoptToken(data.guestId);
     return data;
