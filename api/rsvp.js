@@ -3,12 +3,15 @@
 //                           the RSVP wizard. Never returns email or admin notes.
 // GET  ?request=<id>     -> status of an RSVP that is waiting for approval.
 // POST { token?, ... }   -> records the RSVP on the guest's record. Without a
-//                           token we first try to match an existing invitation
-//                           by phone, then by exact full name. Anyone we can't
-//                           match isn't on the invite list: their RSVP is held
-//                           as a pending request for the couple to approve.
-//                           Refused (403) once the RSVP deadline has passed.
-const { readData, writeData, newId } = require("../lib/blob-store");
+//                           token we match an existing invitation by phone, then
+//                           email, then exact full name (a name alone may only
+//                           claim an invitation nobody has answered yet). Only
+//                           guests on the list can RSVP: anyone we can't match is
+//                           refused (403, notListed) and nothing is stored.
+//                           Also refused (403) once an RSVP deadline has passed.
+//                           (Requests made before this rule can still be approved
+//                           in the portal; GET ?request keeps reporting them.)
+const { readData, writeData } = require("../lib/blob-store");
 const Fields = require("../assets/js/guest-fields.js");
 
 const CHANNELS = ["web", "whatsapp", "sms", "email", "call"];
@@ -89,14 +92,21 @@ module.exports = async function handler(req, res) {
     var requestedCount = Math.max(1, Math.min(10, Number(body.guests) || 1));
 
     var data2 = await readData();
-    var guest2 = null, matchedBy = "";
+    var guest2 = null, matchedBy = "", nameHint = "";
     if (body.token) { guest2 = data2.guests.find(function (g) { return g.id === body.token && !g.removedAt; }); if (guest2) matchedBy = "link"; }
     if (!guest2 && phone) { guest2 = data2.guests.find(function (g) { return !g.removedAt && samePhone(g.phone, phone); }); if (guest2) matchedBy = "phone"; }
+    if (!guest2 && email) {
+      var em = email.toLowerCase();
+      guest2 = data2.guests.find(function (g) { return !g.removedAt && g.email && String(g.email).trim().toLowerCase() === em; });
+      if (guest2) matchedBy = "email";
+    }
     if (!guest2 && body.name) {
       var n = normName(body.name);
       // Name alone is guessable, so it may only claim an invitation nobody has answered yet.
       var byName = data2.guests.filter(function (g) { return !g.removedAt && normName(fullName(g)) === n; });
       if (byName.length === 1 && (byName[0].rsvpStatus || "pending") === "pending") { guest2 = byName[0]; matchedBy = "name"; }
+      else if (byName.length > 1) nameHint = "shared";
+      else if (byName.length === 1) nameHint = "answered";
     }
 
     var now = new Date().toISOString();
@@ -121,34 +131,15 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    // Not on the invite list: hold the RSVP for approval instead of adding a guest.
-    var nameParts = splitName(body.name);
-    if (!nameParts.firstName) { res.status(400).json({ error: "Name is required" }); return; }
-    var fullN = normName(body.name);
-    var reqRec = data2.requests.find(function (r) {
-      if (r.status !== "pending") return false;
-      if (body.requestId && r.id === body.requestId) return true;
-      return (phone && samePhone(r.phone, phone)) || normName((r.firstName || "") + " " + (r.lastName || "")) === fullN;
-    });
-    if (!reqRec) {
-      reqRec = { id: newId("req"), status: "pending", createdAt: now };
-      data2.requests.push(reqRec);
-    }
-    Object.assign(reqRec, {
-      firstName: nameParts.firstName,
-      lastName: nameParts.lastName,
-      phone: phone || reqRec.phone || "",
-      email: email || reqRec.email || "",
-      gender: gender || reqRec.gender || "",
-      attend: attend,
-      guests: attend === "attending" ? requestedCount : 0,
-      plusOneName: attend === "attending" && body.plusOneName ? String(body.plusOneName).trim() : "",
-      message: message || reqRec.message || "",
-      channel: channel,
-      updatedAt: now,
-    });
-    await writeData(data2);
-    res.status(202).json({ ok: true, mode: "pending", requestId: reqRec.id, status: "pending", firstName: reqRec.firstName, rsvpStatus: attend, attendingCount: reqRec.guests });
+    // Not on the guest list (by personal link, full name, phone or email): only invited
+    // guests can RSVP, so nothing is recorded.
+    if (!splitName(body.name).firstName && !phone && !email) { res.status(400).json({ error: "Please enter your full name" }); return; }
+    var why = nameHint === "shared"
+      ? "More than one guest has this name. Please add the phone number or email address on your invitation, or open your personal invitation link."
+      : nameHint === "answered"
+        ? "This invitation already has a reply. To change it, open your personal invitation link, or add the phone number or email address on your invitation."
+        : "Sorry, we couldn't find you on the guest list. Please use your full name as it appears on your invitation, or the phone number or email address the couple has for you.";
+    res.status(403).json({ ok: false, notListed: true, error: why });
     return;
   }
 

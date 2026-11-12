@@ -118,6 +118,20 @@
   color: var(--peach);
 }
 
+.powered a {
+  color: rgba(247, 242, 233, 0.72);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(230, 211, 163, 0.35);
+  padding-bottom: 1px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.powered a:hover,
+.powered a:focus-visible {
+  color: var(--champagne, #e6d3a3);
+  border-bottom-color: currentColor;
+}
+
 img.sprig[data-photo] {
   width: clamp(220px, 50vw, 420px);
   opacity: 0.95;

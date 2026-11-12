@@ -132,7 +132,7 @@ export const portalTransport: RsvpTransport = async (payload) => {
       ok: true,
       status: res.status,
       pending: true,
-      message: "Thank you. We couldn't find this name on our invitation list, so the couple will review your RSVP and confirm. You can update it here in the meantime.",
+      message: "Waiting for approval.",
     };
   }
   if (data.guestId) adoptToken(data.guestId);

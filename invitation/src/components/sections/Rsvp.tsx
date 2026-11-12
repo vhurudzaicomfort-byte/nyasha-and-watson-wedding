@@ -168,7 +168,9 @@ export function Rsvp({ invitation, guest, compact }: Props) {
                 {saved.pending ? "Thank you" : saved.attendance === "attending" ? "Thank you" : "We will miss you"}
               </h3>
               <p className={styles.successText}>
-                {serverMessage ||
+                {saved.pending
+                  ? "Waiting for approval."
+                  : serverMessage ||
                   (saved.attendance === "attending"
                     ? "Your response has been received. We cannot wait to celebrate with you."
                     : "Your response has been received. Thank you for letting us know.")}
@@ -192,12 +194,6 @@ export function Rsvp({ invitation, guest, compact }: Props) {
                   <div>
                     <dt>Your table</dt>
                     <dd>{guest.table}</dd>
-                  </div>
-                )}
-                {saved.pending && (
-                  <div>
-                    <dt>Status</dt>
-                    <dd>Awaiting confirmation</dd>
                   </div>
                 )}
               </dl>
@@ -244,7 +240,7 @@ export function Rsvp({ invitation, guest, compact }: Props) {
                   data-field="fullName"
                   type="text"
                   autoComplete="name"
-                  placeholder="e.g. Mr & Mrs T. Moyo"
+                  placeholder="As it appears on your invitation"
                   value={values.fullName}
                   onChange={(e) => set("fullName", e.target.value)}
                   aria-invalid={Boolean(errors.fullName)}
