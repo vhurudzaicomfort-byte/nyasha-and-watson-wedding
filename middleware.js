@@ -53,7 +53,7 @@ async function isAuthed(req, secret) {
   var payload = parts[0], sig = parts[1];
   var expected = await sign(payload, secret);
   if (!timingSafeEqualStr(expected, sig)) return false;
-  var exp = Number(payload);
+  var exp = Number(payload.split("~")[0]); // payload: <expiry>~<userId>~<tokenVersion> (older cookies: <expiry>)
   if (!exp || Date.now() > exp) return false;
   return true;
 }

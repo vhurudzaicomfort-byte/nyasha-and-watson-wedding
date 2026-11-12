@@ -1,0 +1,163 @@
+/*
+ * Art direction for the photographic florals (HD transparent WebP).
+ * One rule per placement ("slot", see invitation.decor.slots). Each bouquet is
+ * mirrored so its blooms sit in the corner and its stems trail inward, never
+ * rotated past what a real arrangement would do (blooms stay upright).
+ * Specificity (html img[data-photo][data-slot]) beats the section modules.
+ */
+
+html body img[data-photo="slot"][data-slot] {
+  position: absolute;
+  height: auto;
+  max-width: none;
+  opacity: 1;
+  pointer-events: none;
+  user-select: none;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  z-index: 0;
+  animation: none;
+  transform: none !important;
+}
+
+/* ---- on deep plum (envelope, cover, closing): a deeper, cooler shadow ---- */
+html body img[data-photo="slot"][data-slot^="envelope-"],
+html body img[data-photo="slot"][data-slot^="hero-"],
+html body img[data-photo="slot"][data-slot^="closing-"] {
+  filter: drop-shadow(0 14px 22px rgba(10, 4, 8, 0.55)) drop-shadow(0 2px 4px rgba(10, 4, 8, 0.35)) saturate(1.02);
+}
+
+/* ---- on ivory paper: a soft, warm contact shadow ---- */
+html body img[data-photo="slot"][data-slot^="details-"],
+html body img[data-photo="slot"][data-slot^="dress-"],
+html body img[data-photo="slot"][data-slot^="rsvp-"] {
+  filter: drop-shadow(0 10px 16px rgba(91, 62, 52, 0.18)) drop-shadow(0 2px 3px rgba(91, 62, 52, 0.12));
+}
+
+/* Envelope: florals tucked behind its corners (the envelope paints over their stems),
+   clear of the greeting above, and the title, button and music switch below. */
+html body img[data-photo="slot"][data-slot="envelope-l"] {
+  width: clamp(190px, 50vw, 300px);
+  top: 1.9rem;
+  left: -6.6rem;
+  transform: rotate(-8deg) !important;
+}
+html body img[data-photo="slot"][data-slot="envelope-r"] {
+  width: clamp(200px, 54vw, 320px);
+  top: 6.4rem;
+  right: -8.6rem;
+  transform: rotate(-24deg) !important;
+}
+
+/* Cover: branch from the top-left, bouquet anchored bottom-right. */
+html body img[data-photo="slot"][data-slot="hero-tl"] {
+  width: clamp(250px, 40vw, 560px);
+  top: -1.2rem;
+  left: -2.4rem;
+}
+html body img[data-photo="slot"][data-slot="hero-br"] {
+  width: clamp(190px, 28vw, 420px);
+  bottom: -2.2rem;
+  right: -2rem;
+  transform: scaleX(-1) !important;
+}
+
+/* Details: ivory cascade down the left edge, ivory & peach bouquet bottom-right. */
+html body img[data-photo="slot"][data-slot="details-tl"] {
+  width: clamp(120px, 17vw, 250px);
+  top: -0.6rem;
+  left: -1.4rem;
+}
+html body img[data-photo="slot"][data-slot="details-br"] {
+  width: clamp(150px, 21vw, 320px);
+  bottom: -1.4rem;
+  right: -1.6rem;
+}
+
+/* Dress code: burgundy branch from the top-right (echoes the plum gown). */
+html body img[data-photo="slot"][data-slot="dress-r"] {
+  width: clamp(190px, 28vw, 430px);
+  top: 0.4rem;
+  right: -2rem;
+  transform: scaleX(-1) !important;
+}
+
+/* RSVP: ivory & peach bouquet top-right, burgundy bouquet bottom-left. */
+html body img[data-photo="slot"][data-slot="rsvp-tr"] {
+  width: clamp(150px, 21vw, 330px);
+  top: 1.2rem;
+  right: -1.6rem;
+}
+html body img[data-photo="slot"][data-slot="rsvp-bl"] {
+  width: clamp(150px, 20vw, 310px);
+  bottom: -1.2rem;
+  left: -1.6rem;
+}
+
+/* Closing: bouquet bottom-left, branch from the top-right. */
+html body img[data-photo="slot"][data-slot="closing-l"] {
+  width: clamp(170px, 24vw, 340px);
+  bottom: -1.6rem;
+  left: -1.8rem;
+}
+html body img[data-photo="slot"][data-slot="closing-r"] {
+  width: clamp(200px, 30vw, 430px);
+  top: -1rem;
+  right: -2.2rem;
+  transform: scaleX(-1) !important;
+}
+
+/* Phones: smaller and tucked further into the corners so no text is covered. */
+@media (max-width: 640px) {
+  html body img[data-photo="slot"][data-slot="envelope-l"] { width: 170px; top: 1.6rem; left: -4.2rem; }
+  html body img[data-photo="slot"][data-slot="envelope-r"] { width: 190px; top: 7.6rem; right: -5.4rem; }
+  html body img[data-photo="slot"][data-slot="hero-tl"] { width: 210px; left: -3.6rem; top: -1.8rem; }
+  html body img[data-photo="slot"][data-slot="hero-br"] { width: 128px; right: -2.4rem; bottom: -2.6rem; }
+  html body img[data-photo="slot"][data-slot="details-tl"] { width: 70px; left: -1.4rem; top: -1.2rem; }
+  html body img[data-photo="slot"][data-slot="details-br"] { width: 92px; right: -1.6rem; bottom: -2.2rem; }
+  html body img[data-photo="slot"][data-slot="dress-r"] { width: 150px; right: -3rem; top: -1rem; }
+  html body img[data-photo="slot"][data-slot="rsvp-tr"] { width: 84px; top: -0.8rem; right: -1.6rem; }
+  html body img[data-photo="slot"][data-slot="rsvp-bl"] { width: 96px; left: -1.8rem; bottom: -2.4rem; }
+  html body img[data-photo="slot"][data-slot="closing-l"] { width: 120px; left: -2rem; bottom: -2rem; }
+  html body img[data-photo="slot"][data-slot="closing-r"] { width: 150px; right: -3rem; top: -1.4rem; }
+}
+
+/* ---- the gold rings in place of "&" ---- */
+[data-rings] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  line-height: 1;
+}
+[data-rings] img {
+  display: block;
+  height: 1.05em;
+  width: auto;
+  filter: drop-shadow(0 3px 5px rgba(20, 8, 12, 0.35));
+}
+
+/* ---- gold frame with rose corners as a 9-slice border ----
+ * Slices keep the floral corners at their true proportions; only the plain
+ * double gold lines stretch. The frame sits just outside the card (outset). */
+html [data-frame] {
+  --fs: 0.3;
+  border: 1px solid transparent;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  border-image-source: var(--frame-img);
+  border-image-slice: 250 395 290 360;
+  border-image-width: calc(250px * var(--fs)) calc(395px * var(--fs)) calc(290px * var(--fs)) calc(360px * var(--fs));
+  border-image-outset: calc(150px * var(--fs)) calc(240px * var(--fs)) calc(170px * var(--fs)) calc(215px * var(--fs));
+  border-image-repeat: stretch;
+  margin-block: calc(150px * var(--fs)) calc(170px * var(--fs));
+  filter: drop-shadow(0 8px 14px rgba(91, 62, 52, 0.12));
+}
+html [data-frame]:hover { box-shadow: none; }
+@media (max-width: 640px) {
+  /* keep the whole frame on screen: inset the card by the frame's side outsets */
+  html [data-frame] { --fs: 0.17; padding: 1.4rem 0.8rem; margin-inline: calc(240px * var(--fs)) calc(215px * var(--fs)); }
+}

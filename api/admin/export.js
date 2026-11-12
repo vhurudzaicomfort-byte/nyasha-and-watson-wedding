@@ -1,4 +1,4 @@
-const { requireAuth } = require("../../lib/auth");
+const { requireAuth, maskPhone } = require("../../lib/auth");
 const { readData } = require("../../lib/blob-store");
 const { buildReportPdf } = require("../../lib/pdf-report");
 const { buildTemplate, buildReport: buildReportXlsx } = require("../../lib/xlsx");
@@ -6,6 +6,7 @@ const { TEMPLATES } = require("../../lib/import-templates");
 const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const WNPhone = require("../../assets/js/countries.js");
 const Fields = require("../../assets/js/guest-fields.js");
+const Seat = require("../../lib/seating");
 
 var phone = WNPhone.formatPhone;
 var CHECKIN_METHODS = { usher: "Usher", self: "Self (at venue)", auto: "Automatic (GPS)", "self-unverified": "Self (location unavailable)" };
@@ -60,35 +61,78 @@ function computeProviderStatus(provider) {
   return { amountPaid: amountPaid, outstanding: outstanding, status: status };
 }
 
-function buildReport(type, data) {
-  var guests = data.guests, gifts = data.gifts || [], providers = data.providers || [];
+function deliveryLabel(g) { return g.openedAt ? "Opened" : g.inviteSentAt ? "Sent, not opened" : "Not sent"; }
+function buildReport(type, data, origin) {
+  // viewers' exports carry masked phone numbers, like the portal
+  var phone = data.__mask ? function (p) { return maskPhone(WNPhone.formatPhone(p)); } : WNPhone.formatPhone;
+  var guests = data.guests.filter(function (g) { return !g.removedAt; }), gifts = data.gifts || [], providers = data.providers || [];
   var columns, rows, filename, title, weights;
+  var tablesById = {}; (data.tables || []).forEach(function (t) { tablesById[t.id] = t; });
+  function tableOf(g) { var t = g.tableId && tablesById[g.tableId]; return t ? t.name : ""; }
+  function byName(a, b) { return fullName(a).localeCompare(fullName(b)); }
+
+  if (type === "links") {
+    // personal invitation links, to send each guest their own invite
+    columns = ["Name", "Phone", "Personal Link", "Delivery", "RSVP", "Table"];
+    weights = [1.6, 1.2, 2.6, 1, 0.9, 0.8];
+    rows = guests.slice().sort(byName).map(function (g) { return [fullName(g), phone(g.phone), (origin || "") + "/?g=" + encodeURIComponent(g.id), deliveryLabel(g), cap(g.rsvpStatus || "pending"), tableOf(g)]; });
+    var sent = guests.filter(function (g) { return g.inviteSentAt || g.openedAt; }).length, opened = guests.filter(function (g) { return g.openedAt; }).length;
+    return { columns: columns, rows: rows, filename: "Personal-Invitation-Links", title: "Personal Invitation Links", weights: weights,
+      subtitle: guests.length + " invitations · " + sent + " sent · " + opened + " opened · " + guests.filter(function (g) { return !g.phone; }).length + " without a phone number" };
+  }
+  if (type === "guestlist") {
+    // the one-page answer to "who is coming and where do they sit"
+    columns = ["Name", "Party", "RSVP Status", "Table", "Invited For", "Phone"];
+    weights = [2, 0.6, 1, 1, 1.1, 1.3];
+    rows = guests.slice().sort(byName).map(function (g) { return [fullName(g), Seat.seatsFor(g) || g.invitedCount || 1, cap(g.rsvpStatus || "pending"), tableOf(g) || "Not seated", g.invitedFor || "", phone(g.phone)]; });
+    var seated = guests.filter(function (g) { return tableOf(g); }).length;
+    return { columns: columns, rows: rows, filename: "Guest-List-with-Tables", title: "Guest List with Tables", weights: weights,
+      subtitle: guests.length + " invitations · " + seated + " seated · " + (guests.length - seated) + " not seated yet" };
+  }
+  if (type === "seating") {
+    // one block per table (in table order), then everyone still to be seated
+    columns = ["Table", "Seats", "Guest", "Party", "RSVP Status", "Invited For"];
+    weights = [1.1, 0.8, 2, 0.6, 1, 1.1];
+    rows = [];
+    Seat.tableSummaries(data).forEach(function (t) {
+      var at = guests.filter(function (g) { return g.tableId === t.id; }).sort(byName);
+      var seatLabel = t.seatsUsed + " / " + t.capacity + (t.over ? " (over)" : "");
+      if (!at.length) rows.push([t.name, seatLabel, "(empty)", "", "", ""]);
+      at.forEach(function (g, i) { rows.push([i ? "" : t.name, i ? "" : seatLabel, fullName(g), Seat.seatsFor(g), cap(g.rsvpStatus || "pending"), g.invitedFor || ""]); });
+    });
+    var unseated = guests.filter(function (g) { return !tableOf(g) && g.rsvpStatus !== "not_attending"; }).sort(byName);
+    unseated.forEach(function (g, i) { rows.push([i ? "" : "Not seated yet", "", fullName(g), Seat.seatsFor(g), cap(g.rsvpStatus || "pending"), g.invitedFor || ""]); });
+    var totalSeats = (data.tables || []).reduce(function (s, t) { return s + (Number(t.capacity) || 0); }, 0);
+    var used = Seat.tableSummaries(data).reduce(function (s, t) { return s + t.seatsUsed; }, 0);
+    return { columns: columns, rows: rows, filename: "Seating-Plan", title: "Seating Plan", weights: weights,
+      subtitle: (data.tables || []).length + " tables · " + used + " of " + totalSeats + " seats allocated · " + unseated.length + " invitations not seated yet" };
+  }
 
   if (type === "rsvp") {
-    columns = ["Name", "Phone", "Invited For", "Gender", "RSVP Status", "Invited", "Attending", "Plus-one", "Responded Via", "Responded At"];
-    weights = [1.7, 1.3, 1.2, 0.8, 1, 0.7, 0.8, 0.7, 1, 1.1];
-    rows = guests.map(function (g) { return [fullName(g), phone(g.phone), g.invitedFor || "", Fields.genderLabel(g.gender), cap(g.rsvpStatus || "pending"), g.invitedCount || 1, g.attendingCount || 0, g.plusOneAllowed ? "Yes" : "No", channelLabel(g), g.rsvpAt ? g.rsvpAt.slice(0, 10) : ""]; });
+    columns = ["Name", "Phone", "Invited For", "Gender", "RSVP Status", "Invited", "Attending", "Table", "Plus-one", "Responded Via", "Responded At"];
+    weights = [1.7, 1.3, 1.2, 0.8, 1, 0.7, 0.8, 0.9, 0.7, 1, 1.1];
+    rows = guests.map(function (g) { return [fullName(g), phone(g.phone), g.invitedFor || "", Fields.genderLabel(g.gender), cap(g.rsvpStatus || "pending"), g.invitedCount || 1, g.attendingCount || 0, tableOf(g), g.plusOneAllowed ? "Yes" : "No", channelLabel(g), g.rsvpAt ? g.rsvpAt.slice(0, 10) : ""]; });
     filename = "RSVP-Report"; title = "RSVP Report";
   } else if (type === "checkin") {
-    columns = ["Guest", "RSVP", "Party", "Checked In", "Method", "Check-in Time"];
-    weights = [2, 1, 0.7, 0.9, 1.4, 1.4];
+    columns = ["Guest", "RSVP", "Party", "Table", "Checked In", "Method", "Check-in Time"];
+    weights = [2, 1, 0.7, 0.9, 0.9, 1.4, 1.4];
     rows = guests.map(function (g) {
-      return [fullName(g), cap(g.rsvpStatus || "pending"), g.attendingCount || g.invitedCount || 1, g.checkedIn ? "Yes" : "No", methodLabel(g), g.checkInTime ? new Date(g.checkInTime).toLocaleString("en-GB", { timeZone: "Africa/Harare" }) : ""];
+      return [fullName(g), cap(g.rsvpStatus || "pending"), g.attendingCount || g.invitedCount || 1, tableOf(g), g.checkedIn ? "Yes" : "No", methodLabel(g), g.checkInTime ? new Date(g.checkInTime).toLocaleString("en-GB", { timeZone: "Africa/Harare" }) : ""];
     });
     filename = "Checkin-Report"; title = "Check-in Report";
   } else if (type === "attending") {
     var attendingGuests = guests.filter(function (g) { return g.rsvpStatus === "attending"; });
-    columns = ["Name", "Phone", "Email", "Family", "Invited For", "Gender", "Attending", "Checked In", "Notes"];
-    weights = [1.6, 1.3, 1.5, 1.2, 1.1, 0.7, 0.7, 0.8, 1.6];
+    columns = ["Name", "Phone", "Email", "Family", "Invited For", "Gender", "Attending", "Table", "Checked In", "Notes"];
+    weights = [1.6, 1.3, 1.5, 1.2, 1.1, 0.7, 0.7, 0.9, 0.8, 1.6];
     rows = attendingGuests.map(function (g) {
-      return [fullName(g), phone(g.phone), g.email || "", g.familyName || "", g.invitedFor || "", Fields.genderLabel(g.gender), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
+      return [fullName(g), phone(g.phone), g.email || "", g.familyName || "", g.invitedFor || "", Fields.genderLabel(g.gender), g.attendingCount || 0, tableOf(g), g.checkedIn ? "Yes" : "No", g.notes || ""];
     });
     filename = "Attending-Guest-List"; title = "Attending Guest List";
   } else if (type === "invited") {
-    columns = ["Name", "Phone", "Email", "Type", "Family", "Invited For", "Gender", "Invited", "RSVP", "Attending", "Checked In", "Notes"];
-    weights = [1.5, 1.2, 1.4, 0.7, 1.1, 1.1, 0.7, 0.6, 0.9, 0.7, 0.7, 1.4];
+    columns = ["Name", "Phone", "Email", "Type", "Family", "Invited For", "Gender", "Invited", "RSVP", "Attending", "Table", "Checked In", "Needs Review", "Notes"];
+    weights = [1.5, 1.2, 1.3, 0.7, 1.1, 1.1, 0.7, 0.6, 0.9, 0.7, 0.8, 0.7, 1.2, 1.4];
     rows = guests.map(function (g) {
-      return [fullName(g), phone(g.phone), g.email || "", cap(g.invitationType), g.familyName || "", g.invitedFor || "", Fields.genderLabel(g.gender), g.invitedCount || 1, cap(g.rsvpStatus || "pending"), g.attendingCount || 0, g.checkedIn ? "Yes" : "No", g.notes || ""];
+      return [fullName(g), phone(g.phone), g.email || "", cap(g.invitationType), g.familyName || "", g.invitedFor || "", Fields.genderLabel(g.gender), g.invitedCount || 1, cap(g.rsvpStatus || "pending"), g.attendingCount || 0, tableOf(g), g.checkedIn ? "Yes" : "No", g.reviewFlag || "", g.notes || ""];
     });
     filename = "Invited-Guests"; title = "All Invited Guests";
   } else if (type === "requests") {
@@ -130,7 +174,7 @@ function buildReport(type, data) {
 }
 
 module.exports = async function handler(req, res) {
-  if (!requireAuth(req, res)) return;
+  if (!(await requireAuth(req, res))) return;
   var type = req.query.type || "rsvp";
   var format = (req.query.format || "csv").toLowerCase();
 
@@ -146,7 +190,9 @@ module.exports = async function handler(req, res) {
   }
 
   var data = await readData();
-  var report = buildReport(type, data);
+  if (req.wnUser.role === "viewer") data.__mask = true;
+  var proto = String(req.headers["x-forwarded-proto"] || "https").split(",")[0];
+  var report = buildReport(type, data, proto + "://" + (req.headers["x-forwarded-host"] || req.headers.host || "nyasha-watson.e-guests.com"));
   if (!report) { res.status(400).json({ error: "Unknown report type" }); return; }
 
   if (format === "xlsx") {

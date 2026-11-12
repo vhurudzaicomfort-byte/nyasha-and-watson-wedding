@@ -1,0 +1,113 @@
+.btn {
+  --btn-bg: var(--gold);
+  --btn-fg: var(--plum-deep);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 3rem;
+  padding: 0.8rem 1.6rem;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+  border: 1px solid transparent;
+  transition:
+    transform 0.35s var(--ease-out),
+    box-shadow 0.35s var(--ease-out),
+    background-color 0.3s,
+    color 0.3s,
+    border-color 0.3s;
+  overflow: hidden;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.9s var(--ease-out);
+  z-index: -1;
+}
+
+.btn:hover::after,
+.btn:focus-visible::after {
+  transform: translateX(120%);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -14px rgba(43, 31, 38, 0.5);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.gold {
+  background: linear-gradient(135deg, var(--gold-light), var(--gold) 55%, var(--gold-deep));
+  color: var(--plum-deep);
+  box-shadow: 0 10px 24px -14px rgba(156, 126, 70, 0.8);
+}
+
+.plum {
+  background: linear-gradient(135deg, var(--plum), var(--plum-deep));
+  color: var(--gold-light);
+  border-color: rgba(230, 211, 163, 0.35);
+}
+
+.outline {
+  background: transparent;
+  color: var(--plum);
+  border-color: var(--gold);
+}
+
+.outline:hover {
+  background: rgba(196, 164, 106, 0.1);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--ink-soft);
+  min-height: 2.4rem;
+  padding: 0.4rem 0.8rem;
+  letter-spacing: 0.16em;
+}
+
+.ghost:hover {
+  color: var(--plum);
+  box-shadow: none;
+}
+
+.sm {
+  min-height: 2.5rem;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.68rem;
+}
+
+.icon {
+  display: inline-flex;
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.icon svg {
+  width: 100%;
+  height: 100%;
+}

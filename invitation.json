@@ -1,0 +1,49 @@
+{
+  "couple": {
+    "partnerOne": "Nyasha Mazuruse",
+    "partnerTwo": "Watson Chin'ombe"
+  },
+  "invitationLine": "You are cordially invited to celebrate",
+  "title": "Our Love Story",
+  "tagline": "Join us for an unforgettable celebration of love, laughter, and new beginnings.",
+  "date": "2026-12-05",
+  "dottedDate": "05.12.2026",
+  "weekday": "Saturday",
+  "longDate": "5 December 2026",
+  "arrival": "9:30 AM",
+  "ceremony": "10:00 AM",
+  "venue": {
+    "name": "Colne Valley Nature Reserve Park",
+    "addressLine": "7 Bay Noakes Road, Colne Valley, Chisipite",
+    "city": "Harare",
+    "country": "Zimbabwe",
+    "mapsQuery": "Colne Valley Nature Reserve Park, 7 Bay Noakes Road, Chisipite, Harare, Zimbabwe",
+    "mapsUrl": "https://maps.app.goo.gl/aFjWs1ofgq1LSQgJA"
+  },
+  "dressCode": {
+    "theme": "Classic • Elegant",
+    "ladies": "Elegant dresses",
+    "gentlemen": "Tailored tuxedo suits",
+    "palette": [
+      "Dusty Mauve",
+      "Soft Champagne",
+      "Peach",
+      "Ivory"
+    ]
+  },
+  "gifts": "Should you wish to bless us further, cash contributions would be greatly appreciated. Kindly note no physical gifts will be allowed.",
+  "guidelines": [
+    "Guests arrive at 9:30 AM. Please be seated by 10:00 AM.",
+    "Please remember that attendance at the wedding is strictly by RSVP and invitation.",
+    "Due to restrictions and safety reasons at our venue, we are unable to extend this invitation to children."
+  ],
+  "phones": [
+    "077 277 3973",
+    "077 269 2738"
+  ],
+  "images": {
+    "topLeft": "/images/roses-burgundy-branch.webp",
+    "bottomRight": "/images/roses-burgundy-corner.webp",
+    "rings": "/images/wedding-rings.webp"
+  }
+}

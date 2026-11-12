@@ -27,7 +27,12 @@ function samePhone(a, b) {
 function normName(s) { return String(s || "").trim().toLowerCase().replace(/\s+/g, " "); }
 function fullName(g) { return ((g.firstName || "") + " " + (g.lastName || "")).trim(); }
 
-function publicView(guest) {
+// The guest's own table only — never anyone else's seating.
+function tableName(data, guest) {
+  var t = guest.tableId && (data.tables || []).find(function (x) { return x.id === guest.tableId; });
+  return t ? t.name : "";
+}
+function publicView(guest, data) {
   return {
     found: true,
     guestId: guest.id,
@@ -41,6 +46,7 @@ function publicView(guest) {
     gender: guest.gender || "",
     rsvpAt: guest.rsvpAt || null,
     checkedIn: !!guest.checkedIn,
+    table: guest.rsvpStatus === "not_attending" || !data ? "" : tableName(data, guest),
   };
 }
 
@@ -59,9 +65,11 @@ module.exports = async function handler(req, res) {
     var token = req.query.token;
     if (!token) { res.status(400).json({ error: "token is required" }); return; }
     var data = await readData();
-    var guest = data.guests.find(function (g) { return g.id === token; });
+    var guest = data.guests.find(function (g) { return g.id === token && !g.removedAt; });
     if (!guest) { res.status(200).json({ found: false }); return; }
-    res.status(200).json(publicView(guest));
+    // delivery tracking: the first time a guest opens their personal link (badge scans don't count)
+    if (!guest.openedAt && !req.query.badge) { guest.openedAt = new Date().toISOString(); try { await writeData(data); } catch (e) {} }
+    res.status(200).json(publicView(guest, data));
     return;
   }
 
@@ -77,16 +85,17 @@ module.exports = async function handler(req, res) {
     var channel = CHANNELS.indexOf(body.channel) !== -1 ? body.channel : "web";
     var gender = Fields.normGender(body.gender);
     var phone = String(body.phone || "").trim();
+    var email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email || "").trim()) ? String(body.email).trim().slice(0, 120) : "";
     var requestedCount = Math.max(1, Math.min(10, Number(body.guests) || 1));
 
     var data2 = await readData();
     var guest2 = null, matchedBy = "";
-    if (body.token) { guest2 = data2.guests.find(function (g) { return g.id === body.token; }); if (guest2) matchedBy = "link"; }
-    if (!guest2 && phone) { guest2 = data2.guests.find(function (g) { return samePhone(g.phone, phone); }); if (guest2) matchedBy = "phone"; }
+    if (body.token) { guest2 = data2.guests.find(function (g) { return g.id === body.token && !g.removedAt; }); if (guest2) matchedBy = "link"; }
+    if (!guest2 && phone) { guest2 = data2.guests.find(function (g) { return !g.removedAt && samePhone(g.phone, phone); }); if (guest2) matchedBy = "phone"; }
     if (!guest2 && body.name) {
       var n = normName(body.name);
       // Name alone is guessable, so it may only claim an invitation nobody has answered yet.
-      var byName = data2.guests.filter(function (g) { return normName(fullName(g)) === n; });
+      var byName = data2.guests.filter(function (g) { return !g.removedAt && normName(fullName(g)) === n; });
       if (byName.length === 1 && (byName[0].rsvpStatus || "pending") === "pending") { guest2 = byName[0]; matchedBy = "name"; }
     }
 
@@ -101,11 +110,12 @@ module.exports = async function handler(req, res) {
         guest2.notes = (guest2.notes ? guest2.notes + " | " : "") + "RSVP message: " + message;
       }
       if (phone && (matchedBy === "link" || !guest2.phone)) guest2.phone = phone;
+      if (email && !guest2.email) guest2.email = email;
       if (gender) guest2.gender = gender;
       guest2.rsvpChannel = channel;
       guest2.rsvpAt = now;
       await writeData(data2);
-      var view = publicView(guest2);
+      var view = publicView(guest2, data2);
       if (matchedBy === "name") delete view.guestId;
       res.status(200).json(Object.assign({ ok: true, mode: "updated", matchedBy: matchedBy, capped: requestedCount > cap }, view));
       return;
@@ -128,6 +138,7 @@ module.exports = async function handler(req, res) {
       firstName: nameParts.firstName,
       lastName: nameParts.lastName,
       phone: phone || reqRec.phone || "",
+      email: email || reqRec.email || "",
       gender: gender || reqRec.gender || "",
       attend: attend,
       guests: attend === "attending" ? requestedCount : 0,

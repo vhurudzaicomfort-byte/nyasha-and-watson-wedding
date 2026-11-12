@@ -1,0 +1,13 @@
+.root {
+  min-height: 100svh;
+  background: var(--ivory);
+}
+
+.main {
+  opacity: 0;
+  transition: opacity 1.2s var(--ease-out);
+}
+
+.mainOpen {
+  opacity: 1;
+}

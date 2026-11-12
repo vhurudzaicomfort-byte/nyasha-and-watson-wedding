@@ -6,6 +6,30 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["--yes", "serve", "-l", "3000", "."],
       "port": 3000
+    },
+    {
+      "name": "wedding-site-local",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/dev-server.js"],
+      "port": 3010
+    },
+    {
+      "name": "e-guests-demo",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "-l", "3100", "C:/Users/info/OneDrive/Documents/e-Events/Product/demo-site"],
+      "port": 3100
+    },
+    {
+      "name": "e-guests-corporate",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "-l", "3200", "C:/Users/info/OneDrive/Documents/e-Events/Product/corporate-demo"],
+      "port": 3200
+    },
+    {
+      "name": "business-manager",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:/Users/info/OneDrive/Documents/e-Events/Business/Business Manager/dev-server.js"],
+      "port": 3400
     }
   ]
 }

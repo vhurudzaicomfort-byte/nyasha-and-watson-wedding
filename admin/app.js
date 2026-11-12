@@ -5,6 +5,10 @@
   var gifts = [];
   var providers = [];
   var requests = [];
+  var tables = [];
+  var removedGuests = [];
+  var me = null;
+  var picked = {};
   var currencies = ["USD"];
   var paymentMethods = ["Cash"];
   var FG = window.WNGuestFields;
@@ -34,6 +38,21 @@
   }
   function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
 
+  /* ---------------- SEATING HELPERS (same rules as lib/seating.js) ---------------- */
+  // Seats an invitation needs: confirmed number once attending, none once declined,
+  // otherwise the number invited (so tables are never planned beyond capacity).
+  function seatsFor(g) {
+    if (g.rsvpStatus === "not_attending") return 0;
+    if (g.rsvpStatus === "attending") return Math.max(1, Number(g.attendingCount) || Number(g.invitedCount) || 1);
+    return Math.max(1, Number(g.invitedCount) || 1);
+  }
+  function delivery(g) { return g.openedAt ? "opened" : g.inviteSentAt ? "sent" : "not"; }
+  var DELIVERY = { opened: "Opened", sent: "Sent, not opened", not: "Not sent" };
+  function tableById(id) { return id ? tables.find(function (x) { return x.id === id; }) || null : null; }
+  function tableName(g) { var tb = tableById(g.tableId); return tb ? tb.name : ""; }
+  function seatsUsed(tableId, exceptId) { return guests.reduce(function (s, g) { return g.tableId === tableId && g.id !== exceptId ? s + seatsFor(g) : s; }, 0); }
+  function seatsLeft(tb, exceptId) { return tb.capacity - seatsUsed(tb.id, exceptId); }
+
   /* ---------------- API helper ---------------- */
   function api(path, opts) {
     opts = opts || {};
@@ -55,6 +74,7 @@
     navItems.forEach(function (n) { n.classList.toggle("active", n.dataset.tab === tab); });
     panels.forEach(function (p) { p.classList.toggle("active", p.dataset.panel === tab); });
     document.getElementById("mobileNavSelect").value = tab;
+    if (tab === "users") { renderUsers(); renderBackups(); }
   }
   navItems.forEach(function (n) { n.addEventListener("click", function () { activateTab(n.dataset.tab); }); });
   document.getElementById("mobileNavSelect").addEventListener("change", function (e) { activateTab(e.target.value); });
@@ -77,15 +97,26 @@
   /* ---------------- LOAD + RENDER ---------------- */
   function loadAll() {
     return Promise.all([api("/api/admin/guests"), api("/api/admin/gifts"), api("/api/admin/providers")]).then(function (res) {
-      guests = res[0].guests; requests = res[0].requests || []; if (res[0].categories && res[0].categories.length) categories = res[0].categories;
+      var all = res[0].guests || [];
+      guests = all.filter(function (g) { return !g.removedAt; }); removedGuests = all.filter(function (g) { return g.removedAt; });
+      me = res[0].me || me; applyRole();
+      requests = res[0].requests || []; tables = res[0].tables || []; if (res[0].categories && res[0].categories.length) categories = res[0].categories;
       gifts = res[1].gifts; currencies = res[1].currencies; paymentMethods = res[1].paymentMethods;
       providers = res[2].providers;
       renderAll();
     });
   }
+  // Owners see Portal Users; viewers get the read-only view (the API enforces both).
+  function applyRole() {
+    var role = me ? me.role : "owner";
+    document.body.classList.toggle("role-viewer", role === "viewer");
+    var owner = role === "owner";
+    document.getElementById("usersNav").hidden = !owner;
+    var opt = document.getElementById("usersOption"); opt.hidden = !owner; opt.disabled = !owner;
+  }
   function renderAll() {
     populateInvitedForFilter();
-    renderDashboard(); renderGuestTable(); renderApprovals();
+    renderDashboard(); renderGuestTable(); renderApprovals(); renderTables();
     renderGifts(); renderProviders();
   }
   function fillSelect(id, firstLabel, options) {
@@ -97,6 +128,7 @@
   function populateInvitedForFilter() {
     fillSelect("filterInvitedFor", "All (invited for)", categories.map(function (c) { return { value: c, label: c }; }));
     fillSelect("filterGender", "All genders", FG.GENDERS.concat([{ value: "_none", label: "Not recorded" }]));
+    fillSelect("filterTable", "All tables", [{ value: "_none", label: "Not seated" }].concat(tables.map(function (tb) { return { value: tb.id, label: tb.name }; })));
   }
 
   function renderDashboard() {
@@ -138,6 +170,8 @@
       stat("Not Attending", not.length),
       stat("Pending", pending.length),
       stat("Checked In", checkedIn, (total - checkedIn) + " not yet arrived"),
+      stat("Seated", guests.filter(function (g) { return g.tableId && seatsFor(g); }).reduce(function (s, g) { return s + seatsFor(g); }, 0) + " / " + guests.reduce(function (s, g) { return s + seatsFor(g); }, 0), tables.length + " tables · people with a seat / expected"),
+      stat("Needs Review", guests.filter(function (g) { return g.reviewFlag; }).length, "invitations to check", guests.some(function (g) { return g.reviewFlag; })),
       stat("Pending Approval", requests.filter(function (r) { return r.status === "pending"; }).length, "RSVPs from people not on the invite list", requests.some(function (r) { return r.status === "pending"; })),
       stat("RSVP Rate", rate + "%", responded + " of " + total + " responded"),
       stat("Cash Gifts", cashTotalStr, gifts.filter(function (g) { return g.type === "cash"; }).length + " gifts recorded"),
@@ -145,6 +179,12 @@
       stat("Providers Outstanding", outstandingStr, providers.length + " providers tracked"),
       stat("Payments Due", overdueCount + dueSoonCount, overdueCount + " overdue · " + dueSoonCount + " due soon", overdueCount > 0)
     ].join("");
+
+    var dOpened = guests.filter(function (g) { return delivery(g) === "opened"; }).length, dSent = guests.filter(function (g) { return delivery(g) === "sent"; }).length, dNot = total - dOpened - dSent;
+    document.getElementById("deliveryNote").textContent = (dOpened + dSent) + " marked as sent · " + dOpened + " opened · " + guests.filter(function (g) { return !g.phone; }).length + " without a phone number";
+    var pct = function (n) { return total ? (n / total * 100).toFixed(2) + "%" : "0"; };
+    document.getElementById("deliveryBar").innerHTML = '<span class="seg-opened" style="width:' + pct(dOpened) + '"></span><span class="seg-sent" style="width:' + pct(dSent) + '"></span><span class="seg-not" style="width:' + pct(dNot) + '"></span>';
+    document.getElementById("deliveryLegend").innerHTML = '<span><i class="seg-opened"></i>Opened ' + dOpened + '</span><span><i class="seg-sent"></i>Sent, not opened ' + dSent + '</span><span><i class="seg-not"></i>Not sent ' + dNot + "</span>";
 
     var rows = [["Attending", attending.length, total], ["Maybe", maybe.length, total], ["Not Attending", not.length, total], ["Pending", pending.length, total]];
     document.getElementById("rsvpBars").innerHTML = rows.map(barRow).join("") || emptyBars();
@@ -207,10 +247,16 @@
     var fInvitedFor = document.getElementById("filterInvitedFor").value;
     var fCheckin = document.getElementById("filterCheckin").value;
     var fGender = document.getElementById("filterGender").value;
+    var fTable = document.getElementById("filterTable").value;
+    var fReview = document.getElementById("filterReview").value;
+    var fDelivery = document.getElementById("filterDelivery").value;
+    var fPhone = document.getElementById("filterPhone").value;
 
-    var rows = guests.filter(function (g) {
+    var showRemoved = document.getElementById("showRemoved").checked;
+    document.getElementById("removedCount").textContent = removedGuests.length ? "(" + removedGuests.length + ")" : "";
+    var rows = (showRemoved ? removedGuests : guests).filter(function (g) {
       if (q) {
-        var hay = (fullName(g) + " " + (g.phone || "") + " " + (g.familyName || "")).toLowerCase();
+        var hay = (fullName(g) + " " + (g.phone || "") + " " + (g.familyName || "") + " " + tableName(g) + " " + (g.notes || "")).toLowerCase();
         if (hay.indexOf(q) === -1) return false;
       }
       if (fRsvp && (g.rsvpStatus || "pending") !== fRsvp) return false;
@@ -218,8 +264,17 @@
       if (fGender && (fGender === "_none" ? !!g.gender : g.gender !== fGender)) return false;
       if (fCheckin === "yes" && !g.checkedIn) return false;
       if (fCheckin === "no" && g.checkedIn) return false;
+      if (fTable === "_none" && tableById(g.tableId)) return false;
+      if (fTable && fTable !== "_none" && g.tableId !== fTable) return false;
+      if (fDelivery && delivery(g) !== fDelivery) return false;
+      if (fPhone === "yes" && !g.phone) return false;
+      if (fPhone === "no" && g.phone) return false;
+      if (fReview === "yes" && !g.reviewFlag) return false;
+      if (fReview === "no" && g.reviewFlag) return false;
       return true;
     }).sort(function (a, b) { return fullName(a).localeCompare(fullName(b)); });
+    var people = rows.reduce(function (s, g) { return s + (Number(g.invitedCount) || 1); }, 0);
+    document.getElementById("guestCountNote").textContent = guests.length ? "Showing " + rows.length + " of " + guests.length + " invitations · " + people + " people invited" : "";
 
     document.getElementById("guestsEmpty").hidden = guests.length !== 0;
 
@@ -227,22 +282,37 @@
       var status = g.rsvpStatus || "pending";
       var subLine = [g.familyName || capitalize(g.invitationType || "individual"), g.invitedFor].filter(Boolean).join(" · ");
       var meta = [FG.genderLabel(g.gender), g.rsvpChannel && status !== "pending" ? "Replied via " + (CHANNELS[g.rsvpChannel] || g.rsvpChannel) : ""].filter(Boolean).join(" · ");
+      var dv = delivery(g);
+      var lastC = (g.contacts || []).slice(-1)[0];
+      if (lastC) meta = (meta ? meta + " · " : "") + "Last contact: " + lastC.channel + " · " + fmtDate(lastC.at);
+      if (g.removedAt) meta = (meta ? meta + " · " : "") + "Removed " + fmtDate(g.removedAt) + (g.removedBy ? " by " + g.removedBy : "");
       return "<tr>" +
-        '<td><div class="g-name">' + escapeHtml(fullName(g)) + '</div><div class="g-sub">' + escapeHtml(subLine) + "</div>" + (meta ? '<div class="g-meta">' + escapeHtml(meta) + "</div>" : "") + "</td>" +
+        '<td class="pick"><input type="checkbox" class="pick-one" data-id="' + g.id + '"' + (picked[g.id] ? " checked" : "") + ' aria-label="Select ' + escapeHtml(fullName(g)) + '"></td>' +
+        '<td><div class="g-name">' + escapeHtml(fullName(g)) + '</div><div class="g-sub">' + escapeHtml(subLine) + "</div>" + (meta ? '<div class="g-meta">' + escapeHtml(meta) + "</div>" : "") + '<div class="g-meta"><span class="pill pill-delivery-' + dv + '">' + DELIVERY[dv] + "</span>" + (g.phone ? "" : ' <span style="font-size:.68rem;">· no phone</span>') + "</div>" + (g.reviewFlag ? '<div class="g-meta"><span class="pill pill-review" title="' + escapeHtml(g.reviewFlag) + '">Needs review: ' + escapeHtml(g.reviewFlag.length > 60 ? g.reviewFlag.slice(0, 57) + "…" : g.reviewFlag) + "</span></div>" : "") + "</td>" +
         '<td><span class="pill pill-' + status + '">' + status.replace("_", " ") + "</span></td>" +
         "<td>" + (g.attendingCount != null && g.attendingCount !== "" ? g.attendingCount : "—") + " / " + (g.invitedCount || 1) + "</td>" +
+        "<td>" + (tableName(g) ? '<span class="pill pill-table">' + escapeHtml(tableName(g)) + "</span>" : '<span style="color:var(--text-muted);">—</span>') + "</td>" +
         "<td>" + checkinPill(g) + "</td>" +
-        '<td><div class="row-actions">' + iconBtn("edit", g.id, "Edit") + iconBtn("link", g.id, "Copy invite link") + iconBtn("invite", g.id, "Send invite via WhatsApp") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Delete") + "</div></td>" +
+        '<td><div class="row-actions">' + (g.removedAt
+          ? iconBtn("restore", g.id, "Restore to the guest list") + iconBtn("purge", g.id, "Delete permanently")
+          : iconBtn("edit", g.id, "Edit") + iconBtn("link", g.id, "Copy invite link") + iconBtn("invite", g.id, "Send invite via WhatsApp") + iconBtn("contact", g.id, "Log contact") + iconBtn("invitepdf", g.id, "Invitation PDF (A5)") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Remove")) + "</div></td>" +
         "</tr>";
     }).join("");
+    shownIds = rows.map(function (g) { return g.id; });
+    renderBulkBar();
   }
+  var shownIds = [];
   function iconBtn(action, id, title) {
     var icons = {
       edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
       link: '<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>',
       invite: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
       badge: '<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 18h8"/>',
+      invitepdf: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5 12 17l2.5-2.5"/>',
       checkin: '<path d="M20 6L9 17l-5-5"/>',
+      contact: '<path d="M21 12a8.5 8.5 0 0 1-12.4 7.5L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4"/>',
+      restore: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+      purge: '<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/><path d="M10 11v6M14 11v6"/>',
       delete: '<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/>',
       "gift-edit": '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
       "gift-delete": '<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/>',
@@ -257,17 +327,207 @@
   document.getElementById("filterInvitedFor").addEventListener("change", renderGuestTable);
   document.getElementById("filterCheckin").addEventListener("change", renderGuestTable);
   document.getElementById("filterGender").addEventListener("change", renderGuestTable);
+  document.getElementById("filterTable").addEventListener("change", renderGuestTable);
+  document.getElementById("showRemoved").addEventListener("change", function () { picked = {}; renderGuestTable(); });
+
+  /* ---------------- BULK ACTIONS ---------------- */
+  function pickedIds() { return Object.keys(picked).filter(function (id) { return picked[id]; }); }
+  function renderBulkBar() {
+    var ids = pickedIds(), removedView = document.getElementById("showRemoved").checked;
+    document.getElementById("bulkBar").hidden = !ids.length;
+    document.getElementById("bulkCount").textContent = ids.length + " selected";
+    var all = document.getElementById("pickAll");
+    all.checked = shownIds.length > 0 && shownIds.every(function (id) { return picked[id]; });
+    var ops = removedView ? [["restore", "Restore to the guest list"]] : [["invitePdf", "Download invitations (PDF)"], ["markSent", "Mark invitation sent"], ["seat", "Seat at a table…"], ["rsvp", "Set RSVP…"], ["invitedFor", "Set invited for…"], ["remove", "Remove"]];
+    var sel = document.getElementById("bulkOp"), cur = sel.value;
+    sel.innerHTML = ops.map(function (o) { return '<option value="' + o[0] + '">' + o[1] + "</option>"; }).join("");
+    if (ops.some(function (o) { return o[0] === cur; })) sel.value = cur;
+    renderBulkValue();
+  }
+  function renderBulkValue() {
+    var op = document.getElementById("bulkOp").value, v = document.getElementById("bulkValue");
+    var opts = null;
+    if (op === "seat") opts = tables.map(function (tb) { return [tb.id, tb.name + " · " + Math.max(0, seatsLeft(tb)) + " free"]; }).concat([["", "Not seated (take off their table)"]]);
+    if (op === "rsvp") opts = [["attending", "Attending"], ["maybe", "Maybe"], ["not_attending", "Not attending"], ["pending", "Pending"]];
+    if (op === "invitedFor") opts = categories.map(function (c) { return [c, c]; });
+    v.hidden = !opts;
+    if (opts) v.innerHTML = opts.map(function (o) { return '<option value="' + escapeHtml(o[0]) + '">' + escapeHtml(o[1]) + "</option>"; }).join("");
+  }
+  document.getElementById("bulkOp").addEventListener("change", renderBulkValue);
+  document.getElementById("guestRows").addEventListener("change", function (e) {
+    var cb = e.target.closest(".pick-one"); if (!cb) return;
+    picked[cb.dataset.id] = cb.checked; renderBulkBar();
+  });
+  document.getElementById("pickAll").addEventListener("change", function (e) {
+    shownIds.forEach(function (id) { picked[id] = e.target.checked; });
+    renderGuestTable();
+  });
+  document.getElementById("bulkClear").addEventListener("click", function () { picked = {}; renderGuestTable(); });
+  document.getElementById("bulkApply").addEventListener("click", function () {
+    var ids = pickedIds(), op = document.getElementById("bulkOp").value, value = document.getElementById("bulkValue").hidden ? null : document.getElementById("bulkValue").value;
+    if (!ids.length) return;
+    if (op === "invitePdf") { invitationPdfs(ids.map(function (id) { return guests.find(function (x) { return x.id === id; }); }).filter(Boolean)); return; }
+    var go = function () {
+      api("/api/admin/guests", { method: "POST", body: { action: "bulk", ids: ids, op: op, value: value } }).then(function (res) {
+        picked = {};
+        showToast(res.done + " guest(s) updated");
+        if (res.notSeated && res.notSeated.length) askConfirm("Some guests weren't seated", "Not enough free seats for: " + res.notSeated.join(", ") + ".");
+        return loadAll();
+      }).catch(function (e) { showToast(e.message || "Could not apply that"); });
+    };
+    if (op === "remove") askConfirm("Remove " + ids.length + " guest(s)?", "They move to Removed and give up their tables. You can restore them any time.").then(function (ok) { if (ok) go(); });
+    else go();
+  });
+
+  /* ---------------- A5 PDF INVITATIONS ---------------- */
+  // Same card the guests save from their invitation (assets/js/wn-invitation-pdf.js):
+  // the venue opens Google Maps, the phone numbers dial, the QR code and web
+  // address open that guest's personal invitation. Many guests = one PDF, a page each.
+  var pdfBusy = false;
+  function invitationPdfs(list) {
+    if (!list.length || pdfBusy) return;
+    if (!window.WNInvitationPDF) { showToast("The PDF maker didn't load — refresh the page"); return; }
+    pdfBusy = true;
+    var items = list.map(function (g) { return { name: fullName(g), link: location.origin + "/?g=" + encodeURIComponent(g.id) }; });
+    var name = list.length === 1 ? WNInvitationPDF.fileName(items[0].name) : "Nyasha-Watson-Invitations-" + list.length + "-guests.pdf";
+    showToast(list.length === 1 ? "Preparing the invitation…" : "Preparing " + list.length + " invitations…");
+    WNInvitationPDF.download(items, name, function (done, total) {
+      if (total > 12 && done < total) showToast("Preparing invitations… " + done + " of " + total);
+    }).then(function () {
+      showToast(list.length === 1 ? "Invitation saved (A5 PDF)" : list.length + " invitations saved in one PDF");
+    }).catch(function (e) {
+      console.warn("[invitation pdf]", e);
+      showToast("Sorry, the PDF could not be created");
+    }).then(function () { pdfBusy = false; });
+  }
+  document.getElementById("invitePdfAllBtn").addEventListener("click", function () {
+    var list = shownIds.map(function (id) { return guests.find(function (x) { return x.id === id; }); }).filter(Boolean);
+    if (!list.length) { showToast("No guests shown — clear the filters first"); return; }
+    if (list.length === 1) { invitationPdfs(list); return; }
+    askConfirm("Download " + list.length + " invitations?", "One A5 PDF with a page for each guest shown (about " + Math.max(1, Math.round(list.length * 0.06)) + " MB). Use the search and filters first to download fewer.").then(function (ok) { if (ok) invitationPdfs(list); });
+  });
+
+  /* ---------------- LOG CONTACT ---------------- */
+  var contactGuest = null;
+  function openContactModal(g) {
+    contactGuest = g;
+    document.getElementById("contactModalTitle").textContent = "Log Contact — " + fullName(g);
+    document.getElementById("c-date").value = new Date().toISOString().slice(0, 10);
+    document.getElementById("c-note").value = "";
+    document.getElementById("c-sent").checked = !g.inviteSentAt;
+    document.getElementById("contactHistory").innerHTML = (g.contacts || []).slice().reverse().map(function (c) {
+      return "<div><strong>" + escapeHtml(c.channel) + "</strong> · " + escapeHtml(fmtDate(c.at)) + (c.by ? " <small>by " + escapeHtml(c.by) + "</small>" : "") + (c.note ? "<br>" + escapeHtml(c.note) : "") + "</div>";
+    }).join("") || '<p class="mix-note">No contact logged yet.</p>';
+    document.getElementById("contactModalOverlay").hidden = false;
+  }
+  function closeContact() { document.getElementById("contactModalOverlay").hidden = true; contactGuest = null; }
+  document.getElementById("contactModalClose").addEventListener("click", closeContact);
+  document.getElementById("contactModalCancel").addEventListener("click", closeContact);
+  document.getElementById("contactModalSave").addEventListener("click", function () {
+    if (!contactGuest) return;
+    var g = contactGuest;
+    api("/api/admin/guests", { method: "POST", body: { action: "logContact", guestId: g.id, channel: document.getElementById("c-channel").value, at: document.getElementById("c-date").value, note: document.getElementById("c-note").value, invitationSent: document.getElementById("c-sent").checked } })
+      .then(function () { showToast("Contact logged for " + fullName(g)); closeContact(); return loadAll(); })
+      .catch(function (e) { showToast(e.message || "Could not save"); });
+  });
+
+  /* ---------------- PORTAL USERS (owners) ---------------- */
+  var USER_STATUS = { active: ["Active", "pill-status-green"], invited: ["Invited", "pill-status-amber"], deactivated: ["Deactivated", "pill-status-red"] };
+  function renderUsers() {
+    api("/api/admin/session?users=1").then(function (res) {
+      var mine = res.me || {};
+      var mainRow = '<tr><td><div class="g-name">Main login</div><div class="g-sub">The shared portal password</div></td><td>owner</td><td><span class="pill pill-status-green">Active</span></td><td>—</td><td></td></tr>';
+      document.getElementById("userRows").innerHTML = mainRow + res.users.map(function (u) {
+        var st = USER_STATUS[u.status] || [u.status, "pill-status-neutral"], self = u.id === mine.id;
+        if (u.resetRequestedAt && u.status !== "deactivated") st = ["Reset requested", "pill-status-amber"];
+        var roleCell = self ? escapeHtml(u.role) + " (you)" : '<select class="user-role" data-id="' + u.id + '" style="border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-family:inherit; font-size:.78rem;">' + ["owner", "planner", "viewer"].map(function (rl) { return '<option value="' + rl + '"' + (u.role === rl ? " selected" : "") + ">" + rl + "</option>"; }).join("") + "</select>";
+        var acts = self ? "" : '<div class="row-actions">' +
+          (u.status !== "deactivated" ? '<button class="btn btn-outline btn-sm" data-ulink="' + u.id + '">' + (u.status === "invited" ? "Invitation link" : "Password reset link") + "</button>" : "") +
+          '<button class="btn btn-outline btn-sm" data-uactive="' + u.id + '" data-on="' + (u.status === "deactivated" ? "1" : "0") + '">' + (u.status === "deactivated" ? "Reactivate" : "Deactivate") + "</button>" +
+          '<button class="btn btn-danger btn-sm" data-uremove="' + u.id + '">Remove</button></div>';
+        return '<tr><td><div class="g-name">' + escapeHtml(u.name) + '</div><div class="g-sub">' + escapeHtml(u.email) + "</div></td><td>" + roleCell + '</td><td><span class="pill ' + st[1] + '">' + st[0] + "</span></td><td>" + (u.lastLoginAt ? escapeHtml(new Date(u.lastLoginAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })) : "—") + "</td><td>" + acts + "</td></tr>";
+      }).join("");
+    }).catch(function (e) { showToast(e.message || "Could not load portal users"); });
+  }
+  function renderBackups() {
+    api("/api/admin/session?backups=1").then(function (res) {
+      document.getElementById("backupRows").innerHTML = res.backups.length ? res.backups.map(function (b) {
+        var name = b.pathname.split("/").pop().replace(/\.json$/, "");
+        var when = new Date(b.uploadedAt).toLocaleString(undefined, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+        return '<tr><td><div class="g-name">' + escapeHtml(when) + '</div><div class="g-sub">' + escapeHtml(name) + "</div></td><td>" + Math.round(b.size / 1024) + ' KB</td><td><button class="btn btn-outline btn-sm" data-restore="' + escapeHtml(b.pathname) + '">Restore</button></td></tr>';
+      }).join("") : '<tr><td colspan="3" style="color:var(--text-muted);">No backups yet.</td></tr>';
+    }).catch(function () {});
+  }
+  document.getElementById("backupNowBtn").addEventListener("click", function () {
+    api("/api/admin/session", { method: "POST", body: { action: "backup", label: "manual" } }).then(function (r) { showToast("Backed up " + r.guests + " invitations"); renderBackups(); }).catch(function (e) { showToast(e.message || "Backup failed"); });
+  });
+  document.getElementById("backupRows").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-restore]"); if (!b) return;
+    askConfirm("Restore this backup?", "The guest list, RSVPs, tables, gifts, providers and users go back to how they were then. A backup of the current state is taken first, so this can be undone.").then(function (ok) {
+      if (!ok) return;
+      api("/api/admin/session", { method: "POST", body: { action: "restore", pathname: b.dataset.restore } }).then(function (r) { showToast("Restored (" + r.guests + " invitations)"); renderBackups(); return loadAll(); }).catch(function (e2) { showToast(e2.message || "Restore failed"); });
+    });
+  });
+  function userAction(body, msg) {
+    return api("/api/admin/session", { method: "POST", body: body }).then(function (res) { if (msg) showToast(msg); renderUsers(); return res; }).catch(function (e) { showToast(e.message || "Could not update"); });
+  }
+  function showLink(name, token, reset) {
+    var url = location.origin + "/admin/login.html?invite=" + encodeURIComponent(token);
+    document.getElementById("linkModalTitle").textContent = reset ? "Password Reset Link" : "Invitation Link";
+    document.getElementById("linkModalSub").textContent = "Send this to " + name + ". It works once and expires in " + (reset ? "2" : "7") + " days.";
+    document.getElementById("linkModalUrl").value = url;
+    document.getElementById("linkModalWa").href = "https://wa.me/?text=" + encodeURIComponent("Hi " + name.split(" ")[0] + ", here is your link to the Nyasha & Watson wedding portal" + (reset ? " to set a new password" : " — choose your password to get started") + ": " + url);
+    document.getElementById("linkModalOverlay").hidden = false;
+  }
+  document.getElementById("linkModalClose").addEventListener("click", function () { document.getElementById("linkModalOverlay").hidden = true; });
+  document.getElementById("linkModalCopy").addEventListener("click", function () {
+    var v = document.getElementById("linkModalUrl").value;
+    (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { showToast("Link copied"); }).catch(function () { document.getElementById("linkModalUrl").select(); });
+  });
+  document.getElementById("userRows").addEventListener("change", function (e) {
+    var s = e.target.closest(".user-role"); if (s) userAction({ action: "update", id: s.dataset.id, role: s.value }, "Role updated");
+  });
+  document.getElementById("userRows").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var row = b.closest("tr"), name = row.querySelector(".g-name").textContent;
+    if (b.dataset.ulink) userAction({ action: "link", id: b.dataset.ulink }).then(function (res) { if (res) showLink(name, res.token, res.reset); });
+    if (b.dataset.uactive) userAction({ action: "update", id: b.dataset.uactive, active: b.dataset.on === "1" }, b.dataset.on === "1" ? name + " reactivated" : name + " deactivated — signed out everywhere");
+    if (b.dataset.uremove) askConfirm("Remove " + name + "?", "They lose access straight away.").then(function (ok) { if (ok) userAction({ action: "remove", id: b.dataset.uremove }, name + " removed"); });
+  });
+  function closeUserModal() { document.getElementById("userModalOverlay").hidden = true; }
+  document.getElementById("inviteUserBtn").addEventListener("click", function () {
+    document.getElementById("u-name").value = ""; document.getElementById("u-email").value = ""; document.getElementById("u-role").value = "planner";
+    document.getElementById("userModalOverlay").hidden = false; document.getElementById("u-name").focus();
+  });
+  document.getElementById("userModalClose").addEventListener("click", closeUserModal);
+  document.getElementById("userModalCancel").addEventListener("click", closeUserModal);
+  document.getElementById("userModalSave").addEventListener("click", function () {
+    var name = document.getElementById("u-name").value.trim();
+    userAction({ action: "invite", name: name, email: document.getElementById("u-email").value.trim(), role: document.getElementById("u-role").value }).then(function (res) {
+      if (res && res.token) { closeUserModal(); showLink(name, res.token, false); }
+    });
+  });
+  document.getElementById("filterReview").addEventListener("change", renderGuestTable);
+  document.getElementById("filterDelivery").addEventListener("change", renderGuestTable);
+  document.getElementById("filterPhone").addEventListener("change", renderGuestTable);
+  document.getElementById("dashManageGuests").addEventListener("click", function () { activateTab("guests"); });
 
   document.getElementById("guestRows").addEventListener("click", function (e) {
     var btn = e.target.closest(".icon-btn");
     if (!btn) return;
     var id = btn.dataset.id, action = btn.dataset.action;
-    var g = guests.find(function (x) { return x.id === id; });
+    var g = guests.find(function (x) { return x.id === id; }) || removedGuests.find(function (x) { return x.id === id; });
     if (!g) return;
     if (action === "edit") openGuestModal(g);
+    else if (action === "contact") openContactModal(g);
+    else if (action === "restore") api("/api/admin/guests?id=" + g.id, { method: "PATCH", body: { removedAt: null } }).then(function () { showToast(fullName(g) + " is back on the guest list"); return loadAll(); });
+    else if (action === "purge") askConfirm("Delete " + fullName(g) + " permanently?", "This can't be undone. Their RSVP and history are deleted too.").then(function (ok) {
+      if (ok) api("/api/admin/guests?id=" + g.id, { method: "DELETE" }).then(function () { showToast("Deleted permanently"); return loadAll(); });
+    });
     else if (action === "link") copyInviteLink(g);
     else if (action === "invite") sendInvite(g);
     else if (action === "badge") openBadgeModal(g);
+    else if (action === "invitepdf") invitationPdfs([g]);
     else if (action === "checkin") toggleCheckin(g);
     else if (action === "delete") deleteGuest(g);
   });
@@ -293,6 +553,8 @@
     var url = (num ? "https://wa.me/" + num : "https://wa.me/") + "?text=" + encodeURIComponent(msg);
     window.open(url, "_blank");
     showToast(num ? "Opening WhatsApp to invite " + fullName(g) : "No phone on file — opening WhatsApp so you can choose a contact");
+    // record it as sent (delivery tracking) the first time
+    if (!g.inviteSentAt) api("/api/admin/guests?id=" + g.id, { method: "PATCH", body: { inviteSentAt: new Date().toISOString() } }).then(function (res) { g.inviteSentAt = res.guest.inviteSentAt; renderDashboard(); renderGuestTable(); }).catch(function () {});
   }
 
   function toggleCheckin(g) {
@@ -302,9 +564,9 @@
       .catch(function () { showToast("Could not update check-in"); });
   }
   function deleteGuest(g) {
-    askConfirm("Remove " + fullName(g) + "?", "This permanently removes them from the guest list.").then(function (ok) {
+    askConfirm("Remove " + fullName(g) + "?", "They move to Removed (tick Removed above the list to see them), give up their table, and their invitation link stops working. You can restore them any time.").then(function (ok) {
       if (!ok) return;
-      api("/api/admin/guests?id=" + g.id, { method: "DELETE" }).then(function () { showToast("Guest removed"); return loadAll(); }).catch(function () { showToast("Could not remove guest"); });
+      api("/api/admin/guests?id=" + g.id, { method: "PATCH", body: { removedAt: new Date().toISOString() } }).then(function () { showToast(fullName(g) + " removed — restore from Removed"); return loadAll(); }).catch(function () { showToast("Could not remove guest"); });
     });
   }
 
@@ -442,6 +704,13 @@
     document.getElementById("f-attending").value = g ? (g.attendingCount || 0) : 0;
     document.getElementById("f-plusone").checked = g ? !!g.plusOneAllowed : false;
     document.getElementById("f-notes").value = g ? (g.notes || "") : "";
+    document.getElementById("f-review").value = g ? (g.reviewFlag || "") : "";
+    document.getElementById("f-sent").checked = g ? !!(g.inviteSentAt || g.openedAt) : false;
+    var curTable = g ? (g.tableId || "") : "";
+    document.getElementById("f-table").innerHTML = '<option value="">Not seated</option>' + tables.map(function (tb) {
+      var left = seatsLeft(tb, g ? g.id : null);
+      return '<option value="' + tb.id + '"' + (tb.id === curTable ? " selected" : "") + ">" + escapeHtml(tb.name) + " · " + Math.max(0, left) + " seat" + (left === 1 ? "" : "s") + " free</option>";
+    }).join("");
     document.getElementById("guestModalOverlay").hidden = false;
     document.getElementById("f-first").focus();
   }
@@ -466,8 +735,14 @@
       rsvpStatus: document.getElementById("f-rsvp").value,
       attendingCount: Number(document.getElementById("f-attending").value) || 0,
       plusOneAllowed: document.getElementById("f-plusone").checked,
-      notes: document.getElementById("f-notes").value.trim()
+      notes: document.getElementById("f-notes").value.trim(),
+      reviewFlag: document.getElementById("f-review").value.trim(),
+      tableId: document.getElementById("f-table").value || null
     };
+    var wasSent = editingGuestId ? !!(guests.find(function (x) { return x.id === editingGuestId; }) || {}).inviteSentAt : false;
+    var nowSent = document.getElementById("f-sent").checked;
+    if (nowSent && !wasSent) data.inviteSentAt = new Date().toISOString();
+    if (!nowSent) data.inviteSentAt = null;
     if (data.rsvpStatus === "attending" && !data.attendingCount) data.attendingCount = data.invitedCount;
     var original = editingGuestId ? guests.find(function (x) { return x.id === editingGuestId; }) : null;
     var statusChanged = original ? (original.rsvpStatus || "pending") !== data.rsvpStatus : data.rsvpStatus !== "pending";
@@ -507,7 +782,7 @@
       drawSpray(ctx, spray, w, h, 230, "br", 62);
       ctx.textAlign = "center";
       ctx.fillStyle = "#8B7A6E"; ctx.font = '400 22px Jost, sans-serif';
-      ctx.fillText("WATSON & NYASHA", w / 2, 90);
+      ctx.fillText("NYASHA & WATSON", w / 2, 90);
       ctx.fillStyle = "#B08A46"; ctx.font = '500 20px Jost, sans-serif';
       ctx.fillText("G U E S T   P A S S", w / 2, 124);
       ctx.strokeStyle = "#E4D2B0"; ctx.beginPath(); ctx.moveTo(80, 150); ctx.lineTo(w - 80, 150); ctx.stroke();
@@ -518,6 +793,7 @@
       var status = (g.rsvpStatus || "pending").toUpperCase().replace("_", " ");
       ctx.fillStyle = "#D97F55"; ctx.font = '500 24px Jost, sans-serif';
       ctx.fillText(status, w / 2, 372);
+      if (tableName(g) && g.rsvpStatus !== "not_attending") { ctx.fillStyle = "#3E1730"; ctx.font = '600 30px "Cormorant Garamond", serif'; ctx.fillText(tableName(g), w / 2, 414); }
       if (qrDataUrl) {
         var img = new Image();
         img.onload = function () { ctx.drawImage(img, w / 2 - 140, 440, 280, 280); finishBadge(w, h); };
@@ -911,6 +1187,152 @@
     });
   });
 
+  /* ---------------- TABLES & SEATING ---------------- */
+  function tableState(tb) { var used = seatsUsed(tb.id); return { used: used, over: used > tb.capacity, full: used === tb.capacity, empty: used === 0 }; }
+  function renderTables() {
+    var q = (document.getElementById("tableSearch").value || "").toLowerCase();
+    var fl = document.getElementById("tableFilter").value;
+    var totalSeats = tables.reduce(function (s, tb) { return s + (Number(tb.capacity) || 0); }, 0);
+    var seatedPeople = guests.reduce(function (s, g) { return tableById(g.tableId) ? s + seatsFor(g) : s; }, 0);
+    var unseated = guests.filter(function (g) { return !tableById(g.tableId) && seatsFor(g) > 0; });
+    var unseatedPeople = unseated.reduce(function (s, g) { return s + seatsFor(g); }, 0);
+    var overCount = tables.filter(function (tb) { return tableState(tb).over; }).length;
+    document.getElementById("tableStatGrid").innerHTML = [
+      stat("Tables", tables.length, totalSeats + " seats in total"),
+      stat("Seats Allocated", seatedPeople, Math.max(0, totalSeats - seatedPeople) + " seats still free"),
+      stat("Not Seated Yet", unseatedPeople, unseated.length + " invitations (declined guests excluded)", unseatedPeople > 0),
+      stat("Over Capacity", overCount, overCount ? "tables need guests moved" : "every table within its seats", overCount > 0)
+    ].join("");
+
+    var list = tables.filter(function (tb) {
+      var st = tableState(tb);
+      if (fl === "space" && st.used >= tb.capacity) return false;
+      if (fl === "full" && !st.full) return false;
+      if (fl === "over" && !st.over) return false;
+      if (fl === "empty" && !st.empty) return false;
+      if (q) {
+        var hay = (tb.name + " " + (tb.notes || "") + " " + guests.filter(function (g) { return g.tableId === tb.id; }).map(fullName).join(" ")).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+    document.getElementById("tablesEmpty").hidden = tables.length !== 0;
+    document.getElementById("tablesGrid").innerHTML = list.map(function (tb) {
+      var st = tableState(tb), seated = guests.filter(function (g) { return g.tableId === tb.id; }).sort(function (a, b) { return fullName(a).localeCompare(fullName(b)); });
+      var pct = Math.min(100, Math.round(st.used / Math.max(1, tb.capacity) * 100));
+      var declined = seated.filter(function (g) { return g.rsvpStatus === "not_attending"; }).length;
+      return '<button type="button" class="table-card' + (st.over ? " over" : st.full ? " full" : "") + '" data-table="' + tb.id + '">' +
+        '<div class="tc-head"><h4 class="tc-name">' + escapeHtml(tb.name) + '</h4><span class="tc-count">' + st.used + " / " + tb.capacity + " seats</span></div>" +
+        '<div class="bar-track tc-bar"><div class="bar-fill" style="width:' + pct + '%"></div></div>' +
+        (seated.length ? '<div class="tc-guests">' + seated.map(function (g) { return '<div class="tc-guest"><span>' + escapeHtml(fullName(g)) + "</span><span>" + (g.rsvpStatus === "not_attending" ? "declined" : seatsFor(g)) + "</span></div>"; }).join("") + "</div>" : '<div class="tc-meta">No one seated yet</div>') +
+        (tb.notes ? '<div class="tc-meta">' + escapeHtml(tb.notes) + "</div>" : "") +
+        (st.over ? '<div class="tc-warn">Over capacity by ' + (st.used - tb.capacity) + " — move someone</div>" : "") +
+        (declined ? '<div class="tc-meta">' + declined + " declined guest(s) still listed here (they don't use a seat)</div>" : "") +
+        "</button>";
+    }).join("");
+
+    document.getElementById("unseatedPanel").hidden = !guests.length;
+    document.getElementById("unseatedNote").textContent = unseated.length ? unseated.length + " invitations (" + unseatedPeople + " people) still need a table. Pick one to seat them." : "Everyone who is expected has a table.";
+    document.getElementById("unseatedRows").innerHTML = unseated.sort(function (a, b) { return fullName(a).localeCompare(fullName(b)); }).map(function (g) {
+      var need = seatsFor(g);
+      var opts = tables.map(function (tb) { var left = seatsLeft(tb); return '<option value="' + tb.id + '"' + (left < need ? " disabled" : "") + ">" + escapeHtml(tb.name) + " · " + Math.max(0, left) + " free</option>"; }).join("");
+      return "<tr><td><div class=\"g-name\">" + escapeHtml(fullName(g)) + '</div><div class="g-sub">' + escapeHtml([g.familyName, g.invitedFor].filter(Boolean).join(" · ")) + "</div></td>" +
+        '<td><span class="pill pill-' + (g.rsvpStatus || "pending") + '">' + (g.rsvpStatus || "pending").replace("_", " ") + "</span></td><td>" + need + "</td>" +
+        '<td><select class="seat-select" data-guest="' + g.id + '" style="border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-family:inherit; font-size:.78rem;"' + (tables.length ? "" : " disabled") + '><option value="">' + (tables.length ? "Choose a table…" : "Add tables first") + "</option>" + opts + "</select></td></tr>";
+    }).join("");
+  }
+  function seatGuest(guestId, tableId) {
+    return api("/api/admin/tables?id=" + encodeURIComponent(tableId), { method: "PATCH", body: { action: "assign", guestId: guestId } });
+  }
+  document.getElementById("tableSearch").addEventListener("input", renderTables);
+  document.getElementById("tableFilter").addEventListener("change", renderTables);
+  document.getElementById("tablesGrid").addEventListener("click", function (e) {
+    var card = e.target.closest(".table-card"); if (card) openTableModal(tableById(card.dataset.table));
+  });
+  document.getElementById("unseatedRows").addEventListener("change", function (e) {
+    var sel = e.target.closest(".seat-select"); if (!sel || !sel.value) return;
+    var g = guests.find(function (x) { return x.id === sel.dataset.guest; }), tb = tableById(sel.value);
+    sel.disabled = true;
+    seatGuest(sel.dataset.guest, sel.value).then(function () { showToast(fullName(g) + " seated at " + tb.name); return loadAll(); })
+      .catch(function (err) { sel.disabled = false; sel.value = ""; showToast(err.message || "Could not seat this guest"); });
+  });
+
+  var editingTableId = null;
+  function openTableModal(tb) {
+    editingTableId = tb ? tb.id : null;
+    document.getElementById("tableModalTitle").textContent = tb ? tb.name : "Add Table";
+    document.getElementById("tableModalSub").textContent = tb ? "Change the seats, or seat and move guests." : "Name or number the table and set its seats.";
+    document.getElementById("t-name").value = tb ? tb.name : "";
+    document.getElementById("t-capacity").value = tb ? tb.capacity : 10;
+    document.getElementById("t-notes").value = tb ? (tb.notes || "") : "";
+    document.getElementById("tSeatWrap").hidden = !tb;
+    document.getElementById("tableModalDelete").hidden = !tb;
+    if (tb) renderTableSeating(tb);
+    document.getElementById("tableModalOverlay").hidden = false;
+  }
+  function renderTableSeating(tb) {
+    var seated = guests.filter(function (g) { return g.tableId === tb.id; }).sort(function (a, b) { return fullName(a).localeCompare(fullName(b)); });
+    document.getElementById("tSeatedCount").textContent = seatsUsed(tb.id);
+    document.getElementById("tCapCount").textContent = tb.capacity;
+    document.getElementById("tSeatedList").innerHTML = seated.length ? seated.map(function (g) {
+      return '<div class="seated-row"><span>' + escapeHtml(fullName(g)) + " <small>· " + (g.rsvpStatus === "not_attending" ? "declined" : seatsFor(g) + " seat" + (seatsFor(g) === 1 ? "" : "s")) + " · " + escapeHtml(String(g.rsvpStatus || "pending").replace("_", " ")) + '</small></span><button class="btn btn-outline btn-sm" type="button" data-unseat="' + g.id + '">Remove</button></div>';
+    }).join("") : '<p class="mix-note">No one seated here yet.</p>';
+    var left = seatsLeft(tb);
+    var candidates = guests.filter(function (g) { return g.tableId !== tb.id && seatsFor(g) > 0; }).sort(function (a, b) { return (tableById(a.tableId) ? 1 : 0) - (tableById(b.tableId) ? 1 : 0) || fullName(a).localeCompare(fullName(b)); });
+    document.getElementById("t-assignSelect").innerHTML = '<option value="">Choose a guest… (' + Math.max(0, left) + " seats free)</option>" + candidates.map(function (g) {
+      var need = seatsFor(g), from = tableName(g);
+      return '<option value="' + g.id + '"' + (need > left ? " disabled" : "") + ">" + escapeHtml(fullName(g)) + " · " + need + (from ? " · move from " + escapeHtml(from) : "") + "</option>";
+    }).join("");
+  }
+  function closeTableModal() { document.getElementById("tableModalOverlay").hidden = true; editingTableId = null; }
+  document.getElementById("addTableBtn").addEventListener("click", function () { openTableModal(null); });
+  document.getElementById("tableModalClose").addEventListener("click", closeTableModal);
+  document.getElementById("tableModalCancel").addEventListener("click", closeTableModal);
+  document.getElementById("tableModalSave").addEventListener("click", function () {
+    var body = { name: document.getElementById("t-name").value.trim(), capacity: Number(document.getElementById("t-capacity").value) || 10, notes: document.getElementById("t-notes").value.trim() };
+    if (!body.name) { document.getElementById("t-name").focus(); return; }
+    var req = editingTableId ? api("/api/admin/tables?id=" + editingTableId, { method: "PATCH", body: body }) : api("/api/admin/tables", { method: "POST", body: body });
+    req.then(function () { showToast(editingTableId ? "Table saved" : "Table added"); closeTableModal(); return loadAll(); })
+      .catch(function (e) { showToast(e.message || "Could not save table"); });
+  });
+  document.getElementById("tableModalDelete").addEventListener("click", function () {
+    var tb = tableById(editingTableId); if (!tb) return;
+    askConfirm("Delete " + tb.name + "?", "Its guests stay on the guest list and become unseated.").then(function (ok) {
+      if (!ok) return;
+      api("/api/admin/tables?id=" + tb.id, { method: "DELETE" }).then(function () { showToast(tb.name + " deleted"); closeTableModal(); return loadAll(); });
+    });
+  });
+  document.getElementById("t-assignBtn").addEventListener("click", function () {
+    var gid = document.getElementById("t-assignSelect").value, tb = tableById(editingTableId);
+    if (!gid || !tb) return;
+    var g = guests.find(function (x) { return x.id === gid; });
+    seatGuest(gid, tb.id).then(function () { showToast(fullName(g) + " seated at " + tb.name); return loadAll(); })
+      .then(function () { var fresh = tableById(editingTableId); if (fresh) renderTableSeating(fresh); })
+      .catch(function (e) { showToast(e.message || "Could not seat this guest"); });
+  });
+  document.getElementById("tSeatedList").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-unseat]"); if (!b) return;
+    var tb = tableById(editingTableId), g = guests.find(function (x) { return x.id === b.dataset.unseat; });
+    api("/api/admin/tables?id=" + tb.id, { method: "PATCH", body: { action: "unassign", guestId: g.id } })
+      .then(function () { showToast(fullName(g) + " removed from " + tb.name); return loadAll(); })
+      .then(function () { var fresh = tableById(editingTableId); if (fresh) renderTableSeating(fresh); });
+  });
+  function closeBulk() { document.getElementById("bulkTablesOverlay").hidden = true; }
+  document.getElementById("bulkTablesBtn").addEventListener("click", function () {
+    var nums = tables.map(function (tb) { var m = String(tb.name).match(/^Table (\d+)$/); return m ? Number(m[1]) : 0; });
+    document.getElementById("b-start").value = Math.max.apply(null, nums.concat([0])) + 1;
+    document.getElementById("bulkTablesOverlay").hidden = false;
+  });
+  document.getElementById("bulkTablesClose").addEventListener("click", closeBulk);
+  document.getElementById("bulkTablesCancel").addEventListener("click", closeBulk);
+  document.getElementById("bulkTablesSave").addEventListener("click", function () {
+    var body = { action: "bulk", count: Number(document.getElementById("b-count").value) || 1, capacity: Number(document.getElementById("b-capacity").value) || 10, start: Number(document.getElementById("b-start").value) || 1 };
+    api("/api/admin/tables", { method: "POST", body: body }).then(function (res) {
+      showToast(res.added + " tables added" + (res.skipped.length ? " (" + res.skipped.length + " already existed)" : ""));
+      closeBulk(); return loadAll();
+    }).catch(function (e) { showToast(e.message || "Could not add tables"); });
+  });
+
   /* ---------------- CSV IMPORT (generic engine, reused for guests/gifts/providers) ---------------- */
   function importOpt(r, value, label) {
     return "<option value=\"" + value + "\"" + (r.resolution === value ? " selected" : "") + ">" + label + "</option>";
@@ -986,7 +1408,8 @@
     }
 
     function showPreview(res) {
-      rows = res.rows.map(function (r) { return Object.assign({}, r, { resolution: r.duplicate ? "skip" : "create" }); });
+      rows = res.rows.map(function (r) { return Object.assign({}, r, { resolution: r.duplicate ? (cfg.duplicateDefault || "skip") : "create" }); });
+      if (cfg.onPreview) cfg.onPreview(res);
       document.getElementById(cfg.dropzoneId).hidden = true;
       document.getElementById(cfg.previewWrapId).hidden = false;
       document.getElementById(cfg.commitBtnId).hidden = false;
@@ -1006,10 +1429,11 @@
     });
     document.getElementById(cfg.commitBtnId).addEventListener("click", function () {
       var payloadRows = rows.filter(cfg.isValid).map(cfg.buildCommitRow);
-      api(cfg.endpoint, { method: "POST", body: { mode: "commit", rows: payloadRows } })
+      api(cfg.endpoint, { method: "POST", body: Object.assign({ mode: "commit", rows: payloadRows }, cfg.commitExtra ? cfg.commitExtra() : {}) })
         .then(function (res) {
           showToast(cfg.resultText(res));
           document.getElementById(cfg.overlayId).hidden = true;
+          if (cfg.afterCommit) cfg.afterCommit(res);
           return loadAll();
         }).catch(function (e) { showToast(e.message || "Import failed"); });
     });
@@ -1019,16 +1443,33 @@
     openBtnId: "importGuestsBtn", overlayId: "importModalOverlay", closeId: "importModalClose", cancelId: "importCancelBtn",
     dropzoneId: "importDropzone", fileInputId: "importFileInput", previewWrapId: "importPreviewWrap", summaryId: "importSummary",
     rowsId: "importRows", commitBtnId: "importCommitBtn", endpoint: "/api/admin/guests-import",
+    // a guest already on the list is updated by default — their RSVP, check-in and table are kept
+    duplicateDefault: "update",
+    onPreview: function (res) {
+      document.getElementById("importNotInFile").textContent = res.notInFile || 0;
+      document.getElementById("importFlagMissing").checked = false;
+      document.getElementById("importFlagWrap").hidden = !res.notInFile;
+    },
+    commitExtra: function () { return { flagMissing: document.getElementById("importFlagMissing").checked }; },
+    afterCommit: function (res) {
+      var extra = [];
+      if (res.flagged) extra.push(res.flagged + " guest(s) not in the file were flagged Needs review.");
+      if (res.createdTables && res.createdTables.length) extra.push("New tables created (capacity 10 — check them under Tables): " + res.createdTables.join(", ") + ".");
+      if (res.warnings && res.warnings.length) extra.push("Could not seat: " + res.warnings.join("; ") + ".");
+      if (extra.length) askConfirm("Import finished", extra.join(" "));
+    },
     isValid: function (r) { return !!r.draft.firstName; },
     buildCommitRow: function (r) { return { fields: r.fields, resolution: r.resolution, targetId: r.duplicate ? r.duplicate.id : null }; },
     resultText: function (res) { return "Imported: " + res.created + " created, " + res.updated + " updated, " + res.skipped + " skipped"; },
     renderRow: function (r, idx) {
       var name = (r.draft.firstName + " " + r.draft.lastName).trim() || "(no name)";
       var statusHtml = r.duplicate
-        ? '<span class="pill pill-status-amber">Possible duplicate of ' + escapeHtml(r.duplicate.name) + "</span>"
+        ? '<span class="pill pill-status-amber">Already on the list as ' + escapeHtml(r.duplicate.name) + (r.duplicate.by === "phone" ? " (same phone)" : "") + " · RSVP " + escapeHtml(String(r.duplicate.rsvpStatus || "pending").replace("_", " ")) + "</span>"
         : (r.draft.firstName ? '<span class="pill pill-status-green">New guest</span>' : '<span class="pill pill-status-red">Missing name</span>');
+      if (r.draft.table) statusHtml += ' <span class="pill pill-table">' + escapeHtml(r.draft.table) + "</span>";
+      if (r.draft.reviewFlag) statusHtml += ' <span class="pill pill-review" title="' + escapeHtml(r.draft.reviewFlag) + '">Needs review</span>';
       var actionOptions = r.duplicate
-        ? importOpt(r, "skip", "Skip") + importOpt(r, "update", "Update existing") + importOpt(r, "create", "Create new anyway")
+        ? importOpt(r, "update", "Update existing (keeps RSVP)") + importOpt(r, "skip", "Skip") + importOpt(r, "create", "Create new anyway")
         : importOpt(r, "create", "Create") + importOpt(r, "skip", "Skip");
       return "<tr><td>" + escapeHtml(name) + "</td><td>" + escapeHtml(r.draft.phone || "—") + "</td><td>" + (r.draft.invitedCount || 1) + "</td><td>" + statusHtml + "</td>" +
         '<td><select data-idx="' + idx + '" class="import-action-select" style="border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-family:inherit; font-size:.78rem;">' + actionOptions + "</select></td></tr>";

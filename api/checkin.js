@@ -33,12 +33,17 @@ function samePhone(a, b) {
   return x.slice(-9) === y.slice(-9);
 }
 
+function tableName(data, guest) {
+  const t = guest.tableId && (data.tables || []).find((x) => x.id === guest.tableId);
+  return t && guest.rsvpStatus !== "not_attending" ? t.name : "";
+}
+
 module.exports = async function handler(req, res) {
   if (req.method === "GET") {
     const token = req.query.token;
     if (!token) { res.status(400).json({ error: "token is required" }); return; }
     const data = await readData();
-    const guest = data.guests.find((g) => g.id === token);
+    const guest = data.guests.find((g) => g.id === token && !g.removedAt);
     if (!guest) { res.status(200).json({ found: false }); return; }
     res.status(200).json({
       found: true,
@@ -46,6 +51,7 @@ module.exports = async function handler(req, res) {
       checkedIn: !!guest.checkedIn,
       checkInTime: guest.checkInTime || null,
       rsvpStatus: guest.rsvpStatus || "pending",
+      table: tableName(data, guest),
     });
     return;
   }
@@ -57,8 +63,8 @@ module.exports = async function handler(req, res) {
     if (!body.token && !body.phone) { res.status(400).json({ error: "token or phone is required" }); return; }
 
     const data = await readData();
-    let guest = body.token ? data.guests.find((g) => g.id === body.token) : null;
-    if (!guest && body.phone) guest = data.guests.find((g) => samePhone(g.phone, body.phone));
+    let guest = body.token ? data.guests.find((g) => g.id === body.token && !g.removedAt) : null;
+    if (!guest && body.phone) guest = data.guests.find((g) => !g.removedAt && samePhone(g.phone, body.phone));
     if (!guest) { res.status(200).json({ ok: false, reason: "not_found" }); return; }
 
     if (mode !== "self-unverified") {
@@ -69,6 +75,7 @@ module.exports = async function handler(req, res) {
     }
 
     const view = { firstName: guest.firstName || "" };
+    if (view.firstName && (body.token || mode !== "self-unverified")) view.table = tableName(data, guest);
     // A phone number alone only unlocks the guest's personal link once they've proven they're at the venue.
     if (body.token || mode !== "self-unverified") view.guestId = guest.id;
     if (guest.checkedIn) { res.status(200).json(Object.assign({ ok: true, alreadyCheckedIn: true }, view)); return; }

@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>W&amp;N Wedding Desk</title>
+<title>Nyasha &amp; Watson · Wedding Portal</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%233E1730%22/><text x=%2250%22 y=%2266%22 font-family=%22Georgia,%20serif%22 font-size=%2240%22 fill=%22%23E8D9BE%22 text-anchor=%22middle%22>N%26W</text></svg>">
+<link rel="icon" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
 <script src="/assets/js/qrcode.min.js"></script>
+<script src="/assets/js/wn-invitation-pdf.js?v=20261112a"></script>
 <script src="/assets/js/countries.js?v=20260923o"></script>
 <script src="/assets/js/guest-fields.js?v=20260923o"></script>
 <script src="/assets/js/jsQR.min.js"></script>
@@ -156,6 +157,50 @@
   .field.checkline label{ margin:0; text-transform:none; letter-spacing:0; font-size:.82rem; color:var(--text); }
   .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
 
+  .tables-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px; }
+  .table-card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; cursor:pointer; transition:border-color .18s; text-align:left; font:inherit; color:inherit; width:100%; }
+  .table-card:hover{ border-color:var(--gold); }
+  .table-card.over{ border-color:var(--error); }
+  .table-card.full .bar-fill{ background:var(--success); }
+  .table-card.over .bar-fill{ background:var(--error); }
+  .tc-head{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .tc-name{ font-size:1.25rem; }
+  .tc-count{ font-size:.74rem; color:var(--plum-2); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .tc-bar{ margin-top:10px; }
+  .tc-guests{ margin-top:12px; display:flex; flex-direction:column; gap:3px; }
+  .tc-guest{ font-size:.76rem; color:var(--plum-2); display:flex; justify-content:space-between; gap:8px; }
+  .tc-guest span:last-child{ color:var(--text-muted); font-variant-numeric:tabular-nums; }
+  .tc-meta{ margin-top:10px; font-size:.72rem; color:var(--text-muted); }
+  .tc-warn{ margin-top:8px; font-size:.72rem; color:var(--error); }
+  .seated-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 12px; border:1px solid var(--border); border-radius:6px; font-size:.82rem; }
+  .seated-row small{ color:var(--text-muted); }
+  .pill-review{ background:var(--warning-bg); color:var(--warning); text-transform:none; letter-spacing:0; }
+  .pill-table{ background:var(--ivory-deep); color:var(--plum-2); text-transform:none; letter-spacing:0; }
+  .import-option{ display:flex; gap:10px; align-items:flex-start; margin:12px 0 4px; font-size:.82rem; color:var(--plum-2); }
+  .import-option input{ margin-top:3px; }
+  .seg-bar{ display:flex; height:11px; border-radius:99px; overflow:hidden; background:var(--ivory-deep); margin:14px 0 10px; }
+  .seg-bar span{ display:block; height:100%; }
+  .seg-legend{ display:flex; flex-wrap:wrap; gap:6px 18px; font-size:.78rem; color:var(--plum-2); }
+  .seg-legend i{ display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:6px; vertical-align:-1px; }
+  .seg-opened{ background:var(--success); } .seg-sent{ background:var(--gold); } .seg-not{ background:#D9CFC2; }
+  .pill-delivery-opened{ background:var(--success-bg); color:var(--success); }
+  .pill-delivery-sent{ background:var(--warning-bg); color:var(--warning); }
+  .pill-delivery-not{ background:var(--ivory-deep); color:var(--text-muted); }
+  .bulk-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:10px 14px; margin-bottom:12px; background:var(--surface); border:1px solid var(--gold); border-radius:10px; font-size:.82rem; color:var(--plum-2); }
+  .bulk-bar[hidden]{ display:none; }
+  .bulk-bar select{ border:1px solid var(--border); background:var(--ivory); padding:8px 10px; font-size:.78rem; border-radius:6px; font-family:inherit; color:var(--text); }
+  .toolbar label.toggle{ display:inline-flex; align-items:center; gap:7px; font-size:.8rem; color:var(--plum-2); padding:0 6px; cursor:pointer; }
+  td.pick, th.pick{ width:34px; padding-right:0; }
+  td.pick input, th.pick input{ width:16px; height:16px; cursor:pointer; }
+  .contact-list{ display:flex; flex-direction:column; gap:6px; margin-top:16px; max-height:180px; overflow-y:auto; }
+  .contact-list div{ font-size:.8rem; padding:8px 12px; border:1px solid var(--border); border-radius:6px; color:var(--plum-2); }
+  .contact-list small{ color:var(--text-muted); }
+  .viewer-note{ display:none; margin-bottom:18px; padding:10px 14px; border-radius:8px; background:var(--warning-bg); color:var(--warning); font-size:.82rem; }
+  body.role-viewer .viewer-note{ display:block; }
+  body.role-viewer .btn-primary, body.role-viewer #importGuestsBtn, body.role-viewer #importGiftsBtn, body.role-viewer #importProvidersBtn, body.role-viewer #bulkTablesBtn,
+  body.role-viewer .icon-btn[data-action="edit"], body.role-viewer .icon-btn[data-action="delete"], body.role-viewer .icon-btn[data-action="checkin"], body.role-viewer .icon-btn[data-action="contact"], body.role-viewer .icon-btn[data-action="invite"],
+  body.role-viewer .icon-btn[data-action="gift-edit"], body.role-viewer .icon-btn[data-action="gift-delete"], body.role-viewer .icon-btn[data-action="provider-delete"],
+  body.role-viewer .seat-select, body.role-viewer td.pick, body.role-viewer th.pick, body.role-viewer #tSeatWrap .phone-row, body.role-viewer [data-unseat], body.role-viewer #tableModalDelete, body.role-viewer #tableModalSave{ display:none !important; }
   .badge-canvas-wrap{ text-align:center; }
   #badgeCanvas{ display:none; }
   .badge-preview{ max-width:300px; width:100%; margin:0 auto; border-radius:10px; box-shadow:0 14px 30px -16px rgba(62,23,48,.4); border:1px solid var(--border); }
@@ -188,18 +233,105 @@
   .payment-row .pr-del{ background:none; border:none; color:var(--error); cursor:pointer; font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; }
   a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
 </style>
+<style id="eguest-theme">
+  /* ---------------------------------------------------------------------------
+     Invitation design language (tokens from invitation/src/app/globals.css),
+     layered over the portal's own variables so every screen follows it.
+     --------------------------------------------------------------------------- */
+  :root{
+    --ivory:#f7f2e9; --ivory-deep:#efe6d8; --champagne:#efe3c9; --champagne-line:#e6d3a3;
+    --plum:#3b2531; --plum-2:#5a3a4b; --plum-soft:#8c6a7f; --coral:#c9825c; --coral-soft:#f0b48e;
+    --gold:#9c7e46; --gold-bright:#c4a46a; --text:#2b1f26; --text-muted:#6b5a63;
+    --border:#e8dcc7; --surface:#fffdf9; --success:#4f6b52; --success-bg:#e6efe3;
+    --warning:#a7743a; --warning-bg:#f8eddc; --error:#9b3b3b; --error-bg:#f6e3e1;
+    --sidebar:#22141c; --marble:#fbf8f2; --mauve-mist:#e8dde3;
+    --font-display:"Cormorant Garamond",Georgia,serif; --font-script:"Pinyon Script",cursive; --font-sans:"Jost",system-ui,sans-serif;
+    --radius:18px; --shadow-card:0 30px 80px -40px rgba(43,31,38,.35),0 10px 30px -22px rgba(43,31,38,.25); --ease-out:cubic-bezier(.22,1,.36,1);
+  }
+  body{ background:var(--ivory); background-image:radial-gradient(90% 60% at 100% 0%, rgba(232,221,227,.55), transparent 60%), radial-gradient(70% 50% at 0% 100%, rgba(239,227,201,.5), transparent 60%); background-attachment:fixed; font-family:var(--font-sans); color:var(--text); }
+
+  /* sidebar: deep plum like the invitation cover, florals at the foot */
+  .sidebar{ background:radial-gradient(140% 70% at 50% 0%, #4a2f3e 0%, var(--plum) 45%, var(--plum-deep,#22141c) 100%); color:#ecdfe6; position:sticky; overflow:hidden; }
+  .sidebar::after{ content:""; position:absolute; left:-46px; bottom:-26px; width:250px; height:250px; background:url("/images/roses-burgundy-corner.webp") left bottom/contain no-repeat; filter:drop-shadow(0 10px 18px rgba(10,4,8,.55)); opacity:.95; pointer-events:none; z-index:0; }
+  .sidebar > *{ position:relative; z-index:1; }
+  .brand{ font-family:var(--font-script); font-weight:400; font-size:1.9rem; line-height:1.1; color:#f7f2e9; padding:2px 10px 20px; display:flex; align-items:center; gap:.3em; flex-wrap:wrap; }
+  .brand img{ height:.82em; width:auto; filter:drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
+  .brand small{ flex-basis:100%; font-family:var(--font-sans); font-size:.6rem; letter-spacing:.28em; color:var(--gold-bright); margin-top:8px; }
+  .navitem{ font-family:var(--font-sans); letter-spacing:.04em; border-radius:12px; color:#e6d6de; transition:background .2s var(--ease-out), color .2s; }
+  .navitem:hover{ background:rgba(230,211,163,.08); }
+  .navitem.active{ background:rgba(230,211,163,.14); color:#fff; box-shadow:inset 2px 0 0 var(--gold-bright); }
+  .navitem svg{ color:var(--gold-bright); opacity:.9; }
+  .sidebar-foot{ color:#b99fae; }
+  /* keep the florals clear of the footer text: reserve room beneath it */
+  .sidebar{ padding-bottom:168px; overflow-y:auto; }
+  .sidebar::after{ position:fixed; left:-30px; bottom:-18px; width:190px; height:170px; }
+  .brand{ font-size:1.36rem; flex-wrap:nowrap; white-space:nowrap; }
+  .brand small{ position:absolute; left:10px; bottom:4px; margin:0; font-size:.55rem; letter-spacing:.2em; }
+  .sidebar > .brand{ position:relative; padding-bottom:30px; }
+  @media (max-height:700px){ .sidebar{ padding-bottom:26px; } .sidebar::after{ display:none; } }
+  .logout-btn{ border-color:rgba(230,211,163,.35); color:#efe3c9; border-radius:999px; font-family:var(--font-sans); }
+  .logout-btn:hover{ background:rgba(230,211,163,.12); }
+  .topbar{ background:linear-gradient(180deg,#4a2f3e,var(--plum)); }
+  .topbar .brand{ font-size:1.5rem; padding:0; }
+  .topbar .brand small{ display:none; }
+
+  /* headings & surfaces */
+  h1,h2,h3,h4{ font-family:var(--font-display); color:var(--plum); }
+  .page-head h2{ font-size:2.2rem; font-weight:500; letter-spacing:.01em; }
+  .page-head p{ font-family:var(--font-display); font-size:1.05rem; font-style:italic; color:var(--text-muted); }
+  .panel, .stat-card, .table-wrap, .table-card, .bulk-bar{ border-radius:var(--radius); border-color:rgba(196,164,106,.42); background:linear-gradient(180deg,#fffdf9,var(--marble)); box-shadow:var(--shadow-card); }
+  .panel h3{ font-size:1.35rem; font-weight:500; }
+  .stat-card .sc-label{ font-family:var(--font-sans); letter-spacing:.2em; color:var(--gold); }
+  .stat-card .sc-val{ font-family:var(--font-display); font-weight:500; color:var(--plum); }
+  .stat-card.accent{ border-color:var(--gold-bright); box-shadow:0 0 0 1px rgba(196,164,106,.35), var(--shadow-card); }
+  .bar-fill{ background:linear-gradient(90deg,var(--gold-bright),var(--coral-soft)); }
+  .bar-track{ background:var(--mauve-mist); }
+
+  /* tables */
+  table.data th{ font-family:var(--font-sans); letter-spacing:.16em; background:rgba(239,230,216,.7); color:var(--plum-2); border-bottom-color:rgba(196,164,106,.35); }
+  table.data td{ border-bottom-color:rgba(232,220,199,.8); }
+  table.data tr:hover td{ background:rgba(232,221,227,.35); }
+  .g-name{ font-family:var(--font-display); font-size:1.1rem; font-weight:500; color:var(--plum); }
+
+  /* buttons, fields, pills */
+  .btn{ border-radius:999px; font-family:var(--font-sans); letter-spacing:.14em; text-transform:uppercase; font-size:.7rem; transition:transform .2s var(--ease-out), box-shadow .2s, background .2s, border-color .2s; }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn-primary{ background:linear-gradient(180deg,#4a2f3e,var(--plum)); box-shadow:0 12px 22px -14px rgba(34,20,28,.75); }
+  .btn-primary:hover{ background:linear-gradient(180deg,#5a3a4b,#432a38); }
+  .btn-outline{ background:#fffdf9; border-color:rgba(196,164,106,.6); color:var(--plum); }
+  .btn-outline:hover{ border-color:var(--gold); background:#fff; }
+  .icon-btn{ border-radius:10px; border-color:rgba(196,164,106,.45); background:#fffdf9; }
+  .icon-btn:hover{ border-color:var(--gold); color:var(--plum); }
+  .toolbar input[type=search], .toolbar select, .field input, .field select, .field textarea, .phone-row select{ border-color:rgba(196,164,106,.5); border-radius:12px; background:#fffdf9; font-family:var(--font-sans); }
+  .toolbar input[type=search]:focus, .toolbar select:focus, .field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(196,164,106,.22); }
+  .field label{ font-family:var(--font-sans); letter-spacing:.18em; color:var(--text-muted); }
+  .pill{ font-family:var(--font-sans); letter-spacing:.08em; }
+
+  /* modals & toast */
+  .overlay{ background:rgba(34,20,28,.55); backdrop-filter:blur(3px); }
+  .modal{ border-radius:var(--radius); background:linear-gradient(180deg,#fffdf9,var(--marble)); border:1px solid rgba(196,164,106,.45); box-shadow:0 40px 90px -30px rgba(0,0,0,.5); animation:wnRise .35s var(--ease-out) both; }
+  .modal h3{ font-size:1.6rem; font-weight:500; }
+  #toast, .toast{ border-radius:999px; font-family:var(--font-sans); background:var(--plum); box-shadow:0 18px 40px -18px rgba(0,0,0,.6); }
+  @keyframes wnRise{ from{ opacity:0; transform:translateY(10px) scale(.99); } to{ opacity:1; transform:none; } }
+  .tabpanel.active{ animation:wnFade .3s var(--ease-out) both; }
+  @keyframes wnFade{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce){ .modal, .tabpanel.active{ animation:none; } .btn:hover{ transform:none; } }
+</style>
+
 </head>
 <body>
 
 <div class="app" id="appRoot">
   <aside class="sidebar">
-    <div class="brand">Watson &amp; Nyasha<small>Wedding Management Portal</small></div>
+    <div class="brand">Nyasha <img src="/images/wedding-rings.webp" alt="and"> Watson<small>Wedding Management Portal</small></div>
     <button class="navitem active" data-tab="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</button>
     <button class="navitem" data-tab="guests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><circle cx="17.5" cy="8.5" r="2.6"/><path d="M15.5 13.2c2.9.6 5 3 5 6.1"/></svg>Invites &amp; RSVPs</button>
+    <button class="navitem" data-tab="tables"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="5"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>Tables &amp; Seating</button>
     <button class="navitem" data-tab="approvals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>Approvals<span class="nav-count" id="approvalCount" hidden></span></button>
     <button class="navitem" data-tab="checkin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v7M14 20h4"/></svg>Check-in</button>
     <button class="navitem" data-tab="gifts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="9" width="16" height="11" rx="1"/><path d="M4 9h16M12 9v11"/><path d="M12 9c-1.5 0-4-1-4-3.2A2.3 2.3 0 0 1 10.3 3C12 3 12 6 12 9z"/><path d="M12 9c1.5 0 4-1 4-3.2A2.3 2.3 0 0 0 13.7 3C12 3 12 6 12 9z"/></svg>Gifts</button>
     <button class="navitem" data-tab="providers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"/><path d="M3 12h18"/></svg>Service Providers</button>
+    <button class="navitem" data-tab="users" id="usersNav" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>Portal Users</button>
     <button class="navitem" data-tab="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V5a1 1 0 0 1 1-1h11l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M9 13h6M9 17h6M9 9h3"/></svg>Reports</button>
     <div class="sidebar-foot">
       5 December 2026<br>Colne Valley Nature Reserve Park<br><br>Wedding Management Portal.
@@ -209,23 +341,38 @@
 
   <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
     <div class="topbar">
-      <div class="brand" style="padding:0; font-size:1rem;">W&amp;N Wedding Management Portal</div>
+      <div class="brand">Nyasha <img src="/images/wedding-rings.webp" alt="and"> Watson</div>
       <select id="mobileNavSelect">
         <option value="dashboard">Dashboard</option>
         <option value="guests">Invites &amp; RSVPs</option>
+        <option value="tables">Tables &amp; Seating</option>
         <option value="approvals" id="approvalOption">Approvals</option>
         <option value="checkin">Check-in</option>
         <option value="gifts">Gifts</option>
         <option value="providers">Service Providers</option>
+        <option value="users" id="usersOption" hidden disabled>Portal Users</option>
         <option value="reports">Reports</option>
       </select>
     </div>
 
     <main class="main">
+      <p class="viewer-note">You have view-only access — you can look and export, but not change anything. Phone numbers are masked.</p>
 
       <div class="tabpanel active" data-panel="dashboard">
         <div class="page-head"><div><h2>Dashboard</h2><p>A live overview of RSVPs, gifts and check-ins.</p></div></div>
         <div class="stat-grid" id="statGrid"></div>
+        <div class="panel"><h3>Invitations Sent</h3>
+          <p class="mix-note" id="deliveryNote" style="margin:-6px 0 0;"></p>
+          <div class="seg-bar" id="deliveryBar"></div>
+          <div class="seg-legend" id="deliveryLegend"></div>
+          <div class="btn-row" style="margin-top:16px; align-items:center;">
+            <button class="btn btn-outline btn-sm" type="button" id="dashManageGuests">Manage guests</button>
+            <span style="font-size:.78rem; color:var(--text-muted);">Personal links:</span>
+            <a class="btn btn-outline btn-sm" href="/api/admin/export?type=links&format=xlsx">Excel</a>
+            <a class="btn btn-outline btn-sm" href="/api/admin/export?type=links&format=pdf">PDF</a>
+            <a class="btn btn-outline btn-sm" href="/api/admin/export?type=links&format=csv">CSV</a>
+          </div>
+        </div>
         <div class="panel"><h3>RSVP Breakdown</h3><div class="bars" id="rsvpBars"></div></div>
         <div class="panel"><h3>Gender <span style="font-size:.72rem; color:var(--text-muted); font-weight:400;">(invitations marked attending)</span></h3>
           <div class="bars" id="genderBars"></div>
@@ -242,6 +389,8 @@
           <div class="btn-row">
             <button class="btn btn-outline" id="importGuestsBtn">Import</button>
             <a class="btn btn-outline" href="/api/admin/export?type=invited&format=xlsx">Export Excel</a>
+            <a class="btn btn-outline" href="/api/admin/export?type=links&format=xlsx" title="Every guest's personal invitation link">Personal Links</a>
+            <button class="btn btn-outline" type="button" id="invitePdfAllBtn" title="A5 PDF invitations for every guest shown below, one page each">Invitations PDF</button>
             <button class="btn btn-primary" id="addGuestBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Invite</button>
           </div>
         </div>
@@ -251,16 +400,76 @@
           <select id="filterInvitedFor"><option value="">All (invited for)</option></select>
           <select id="filterGender"><option value="">All genders</option></select>
           <select id="filterCheckin"><option value="">Check-in: all</option><option value="yes">Checked in</option><option value="no">Not checked in</option></select>
+          <select id="filterTable"><option value="">All tables</option></select>
+          <select id="filterDelivery"><option value="">Any delivery</option><option value="not">Not sent</option><option value="sent">Sent, not opened</option><option value="opened">Opened</option></select>
+          <select id="filterPhone"><option value="">Phone: all</option><option value="yes">Has a phone</option><option value="no">No phone</option></select>
+          <label class="toggle"><input type="checkbox" id="showRemoved"> Removed <span id="removedCount" style="color:var(--text-muted);"></span></label>
+          <select id="filterReview"><option value="">Review: all</option><option value="yes">Needs review</option><option value="no">No review needed</option></select>
+        </div>
+        <p class="mix-note" id="guestCountNote" style="margin:-8px 0 12px;"></p>
+        <div class="bulk-bar" id="bulkBar" hidden>
+          <strong id="bulkCount">0 selected</strong>
+          <select id="bulkOp"></select>
+          <select id="bulkValue" hidden></select>
+          <button class="btn btn-primary btn-sm" type="button" id="bulkApply">Apply</button>
+          <button class="btn btn-outline btn-sm" type="button" id="bulkClear">Clear</button>
         </div>
         <div class="table-wrap">
           <table class="data">
-            <thead><tr><th>Guest / Party</th><th>RSVP</th><th>Party</th><th>Check-in</th><th></th></tr></thead>
+            <thead><tr><th class="pick"><input type="checkbox" id="pickAll" aria-label="Select all shown"></th><th>Guest / Party</th><th>RSVP</th><th>Party</th><th>Table</th><th>Check-in</th><th></th></tr></thead>
             <tbody id="guestRows"></tbody>
           </table>
         </div>
         <div class="empty-state" id="guestsEmpty" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/></svg>
           <h4>No guests yet</h4><p>Add your first guest, or log an RSVP as it comes in over WhatsApp.</p>
+        </div>
+      </div>
+
+      <div class="tabpanel" data-panel="tables">
+        <div class="page-head">
+          <div><h2>Tables &amp; Seating</h2><p>Set up your tables and seat each invitation. A table can never take more people than it has seats.</p></div>
+          <div class="btn-row">
+            <a class="btn btn-outline" href="/api/admin/export?type=seating&format=xlsx">Seating Plan Excel</a>
+            <a class="btn btn-outline" href="/api/admin/export?type=seating&format=pdf">Seating Plan PDF</a>
+            <button class="btn btn-outline" id="bulkTablesBtn">Add Several Tables</button>
+            <button class="btn btn-primary" id="addTableBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Table</button>
+          </div>
+        </div>
+        <div class="stat-grid" id="tableStatGrid"></div>
+        <div class="toolbar">
+          <input type="search" id="tableSearch" placeholder="Find a guest or table…">
+          <select id="tableFilter"><option value="">All tables</option><option value="space">Seats left</option><option value="full">Full</option><option value="over">Over capacity</option><option value="empty">Empty</option></select>
+        </div>
+        <div class="tables-grid" id="tablesGrid"></div>
+        <div class="empty-state" id="tablesEmpty" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="5"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          <h4>No tables yet</h4><p>Add your tables (or several numbered ones at once), then seat guests from here or from each guest's details.</p>
+        </div>
+        <div class="panel" id="unseatedPanel" style="margin-top:22px;">
+          <h3>Not Seated Yet</h3>
+          <p class="mix-note" id="unseatedNote" style="margin:-6px 0 12px;"></p>
+          <div class="table-wrap"><table class="data" style="min-width:560px;"><thead><tr><th>Guest / Party</th><th>RSVP</th><th>Seats</th><th>Seat at</th></tr></thead><tbody id="unseatedRows"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="tabpanel" data-panel="users">
+        <div class="page-head">
+          <div><h2>Portal Users</h2><p>Give the couple, planners or family their own sign-in. Owner = everything, including portal users. Planner = guests, RSVPs, tables, check-in, gifts and providers, but not portal users. Viewer = read-only, phone numbers masked.</p></div>
+          <button class="btn btn-primary" id="inviteUserBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Invite Someone</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data" style="min-width:640px;">
+            <thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Last Sign-in</th><th></th></tr></thead>
+            <tbody id="userRows"></tbody>
+          </table>
+        </div>
+        <p class="mix-note" style="margin-top:12px;">Everyone signs in with their email and password. The shared portal password still works as an owner login while everyone moves over. Invitation links work once and expire after 7 days (password resets after 2). "Reset requested" means that person used Forgot password: send them a password reset link.</p>
+        <div class="panel" style="margin-top:22px;">
+          <h3>Backups</h3>
+          <p class="mix-note" style="margin:-6px 0 14px;">A complete copy of the guest list, RSVPs, tables, gifts, providers and portal users, kept privately with the site. Restoring takes a fresh backup of the current state first.</p>
+          <div class="btn-row" style="margin-bottom:14px;"><button class="btn btn-primary btn-sm" type="button" id="backupNowBtn">Back Up Now</button></div>
+          <div class="table-wrap"><table class="data" style="min-width:520px;"><thead><tr><th>Backup</th><th>Size</th><th></th></tr></thead><tbody id="backupRows"></tbody></table></div>
         </div>
       </div>
 
@@ -352,6 +561,9 @@
           <div class="report-grid">
             <div class="report-row"><span>RSVP Report</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=rsvp&format=xlsx">Excel</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=rsvp&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=rsvp&format=pdf">PDF</a></div>
             <div class="report-row"><span>Attending Guest List <span style="color:var(--text-muted); font-size:.72rem;">(confirmed only)</span></span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=attending&format=xlsx">Excel</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=attending&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=attending&format=pdf">PDF</a></div>
+            <div class="report-row"><span>Guest List with Tables <span style="color:var(--text-muted); font-size:.72rem;">(name, RSVP status, table)</span></span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=guestlist&format=xlsx">Excel</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=guestlist&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=guestlist&format=pdf">PDF</a></div>
+            <div class="report-row"><span>Seating Plan <span style="color:var(--text-muted); font-size:.72rem;">(by table)</span></span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=seating&format=xlsx">Excel</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=seating&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=seating&format=pdf">PDF</a></div>
+            <div class="report-row"><span>Personal Invitation Links <span style="color:var(--text-muted); font-size:.72rem;">(each guest's link and delivery)</span></span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=links&format=xlsx">Excel</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=links&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=links&format=pdf">PDF</a></div>
             <div class="report-row"><span>All Invited Guests</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=invited&format=xlsx">Excel</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=invited&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=invited&format=pdf">PDF</a></div>
             <div class="report-row"><span>RSVP Approval Requests <span style="color:var(--text-muted); font-size:.72rem;">(not on invite list)</span></span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=requests&format=xlsx">Excel</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=requests&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=requests&format=pdf">PDF</a></div>
             <div class="report-row"><span>Check-in Report</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=checkin&format=xlsx">Excel</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=checkin&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=checkin&format=pdf">PDF</a></div>
@@ -362,6 +574,15 @@
           <div class="report-grid">
             <div class="report-row"><span>Gift Report</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=gifts&format=xlsx">Excel</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=gifts&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=gifts&format=pdf">PDF</a></div>
             <div class="report-row"><span>Service Provider Payments</span><a class="btn btn-outline btn-sm" href="/api/admin/export?type=providers&format=xlsx">Excel</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=providers&format=csv">CSV</a><a class="btn btn-outline btn-sm" href="/api/admin/export?type=providers&format=pdf">PDF</a></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Import Templates</h3>
+          <p class="mix-note" style="margin:-6px 0 14px;">Fill these in Excel, then use Import on the matching page.</p>
+          <div class="btn-row">
+            <a class="btn btn-outline btn-sm" href="/api/admin/export?type=template&for=guests">Guest Register</a>
+            <a class="btn btn-outline btn-sm" href="/api/admin/export?type=template&for=gifts">Gift Register</a>
+            <a class="btn btn-outline btn-sm" href="/api/admin/export?type=template&for=providers">Service Providers</a>
           </div>
         </div>
       </div>
@@ -405,7 +626,10 @@
       <div class="field"><label for="f-invited">Number invited</label><input id="f-invited" type="number" min="1" value="1"></div>
       <div class="field"><label for="f-rsvp">RSVP status</label><select id="f-rsvp"><option value="pending">Pending</option><option value="attending">Attending</option><option value="maybe">Maybe</option><option value="not_attending">Not Attending</option></select></div>
       <div class="field"><label for="f-attending">Attending count</label><input id="f-attending" type="number" min="0" value="0"></div>
-      <div class="field checkline full"><input type="checkbox" id="f-plusone"><label for="f-plusone">Plus-one allowed</label></div>
+      <div class="field"><label for="f-table">Table</label><select id="f-table"><option value="">Not seated</option></select></div>
+      <div class="field"><label for="f-review">Needs review</label><input id="f-review" type="text" placeholder="Leave empty when all is confirmed"></div>
+      <div class="field checkline"><input type="checkbox" id="f-plusone"><label for="f-plusone">Plus-one allowed</label></div>
+      <div class="field checkline"><input type="checkbox" id="f-sent"><label for="f-sent">Invitation sent</label></div>
       <div class="field full"><label for="f-notes">Notes</label><textarea id="f-notes" placeholder="Anything else worth remembering"></textarea></div>
     </div>
     <div class="modal-actions">
@@ -447,8 +671,9 @@
     </div>
     <div id="importPreviewWrap" hidden>
       <div class="import-summary" id="importSummary"></div>
+      <label class="import-option" id="importFlagWrap"><input type="checkbox" id="importFlagMissing"><span>Flag guests already on the site who aren't in this file as <strong>Needs review</strong> (<span id="importNotInFile">0</span>). Nothing is deleted.</span></label>
       <div class="table-wrap" style="max-height:340px; overflow-y:auto;">
-        <table class="data">
+        <table class="data" style="min-width:0;">
           <thead><tr><th>Name</th><th>Phone</th><th>Invited</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="importRows"></tbody>
         </table>
@@ -587,6 +812,97 @@
         <div class="field"><label for="pay-method">Method</label><select id="pay-method"></select></div>
       </div>
       <button class="btn btn-outline btn-sm" id="addPaymentBtn" style="margin-top:10px;">Record Payment</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="tableModalOverlay" hidden>
+  <div class="modal modal-wide">
+    <button class="modal-close" id="tableModalClose" aria-label="Close">&times;</button>
+    <h3 id="tableModalTitle">Table</h3>
+    <p class="modal-sub" id="tableModalSub">Set the capacity and seat guests.</p>
+    <div class="form-grid">
+      <div class="field"><label for="t-name">Table name or number</label><input id="t-name" type="text" placeholder="e.g. 7 or Top Table"></div>
+      <div class="field"><label for="t-capacity">Seats</label><input id="t-capacity" type="number" min="1" max="100" value="10"></div>
+      <div class="field full"><label for="t-notes">Notes</label><input id="t-notes" type="text" placeholder="e.g. Near the dance floor"></div>
+    </div>
+    <div id="tSeatWrap" style="margin-top:18px;">
+      <div class="field"><label>Seated (<span id="tSeatedCount">0</span> of <span id="tCapCount">0</span> seats)</label></div>
+      <div id="tSeatedList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;"></div>
+      <div class="field"><label for="t-assignSelect">Seat a guest here</label>
+        <div class="phone-row"><select id="t-assignSelect" style="flex:1; width:auto;"></select><button class="btn btn-outline btn-sm" id="t-assignBtn" type="button">Seat</button></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="tableModalDelete">Delete Table</button>
+      <button class="btn btn-outline" id="tableModalCancel">Close</button>
+      <button class="btn btn-primary" id="tableModalSave">Save Table</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="bulkTablesOverlay" hidden>
+  <div class="modal">
+    <button class="modal-close" id="bulkTablesClose" aria-label="Close">&times;</button>
+    <h3>Add Several Tables</h3>
+    <p class="modal-sub">Creates numbered tables (Table 1, Table 2…). Numbers that already exist are skipped.</p>
+    <div class="form-grid">
+      <div class="field"><label for="b-count">How many tables</label><input id="b-count" type="number" min="1" max="60" value="10"></div>
+      <div class="field"><label for="b-capacity">Seats per table</label><input id="b-capacity" type="number" min="1" max="100" value="10"></div>
+      <div class="field"><label for="b-start">Start numbering at</label><input id="b-start" type="number" min="1" value="1"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="bulkTablesCancel">Cancel</button>
+      <button class="btn btn-primary" id="bulkTablesSave">Add Tables</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="contactModalOverlay" hidden>
+  <div class="modal">
+    <button class="modal-close" id="contactModalClose" aria-label="Close">&times;</button>
+    <h3 id="contactModalTitle">Log Contact</h3>
+    <p class="modal-sub">Record a call, message or visit. It counts as the invitation being sent.</p>
+    <div class="form-grid">
+      <div class="field"><label for="c-channel">How</label><select id="c-channel"><option>WhatsApp</option><option>Phone call</option><option>SMS</option><option>In person</option><option>Email</option><option>Other</option></select></div>
+      <div class="field"><label for="c-date">Date</label><input id="c-date" type="date"></div>
+      <div class="field full"><label for="c-note">Note</label><textarea id="c-note" placeholder="e.g. Sent the invitation link; will confirm numbers by Friday"></textarea></div>
+      <div class="field checkline full"><input type="checkbox" id="c-sent" checked><label for="c-sent">This was the invitation (mark as sent)</label></div>
+    </div>
+    <div class="contact-list" id="contactHistory"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="contactModalCancel">Cancel</button>
+      <button class="btn btn-primary" id="contactModalSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="userModalOverlay" hidden>
+  <div class="modal">
+    <button class="modal-close" id="userModalClose" aria-label="Close">&times;</button>
+    <h3>Invite Someone</h3>
+    <p class="modal-sub">They get a one-time link to choose their own password. Send it to them yourself on WhatsApp or email.</p>
+    <div class="form-grid">
+      <div class="field"><label for="u-name">Name</label><input id="u-name" type="text"></div>
+      <div class="field"><label for="u-email">Email (their sign-in)</label><input id="u-email" type="email"></div>
+      <div class="field full"><label for="u-role">Role</label><select id="u-role"><option value="planner">Planner — guests, RSVPs, tables, check-in, gifts, providers</option><option value="owner">Owner — everything, including portal users</option><option value="viewer">Viewer — read-only, phone numbers masked</option></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="userModalCancel">Cancel</button>
+      <button class="btn btn-primary" id="userModalSave">Create Invitation</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="linkModalOverlay" hidden>
+  <div class="modal">
+    <button class="modal-close" id="linkModalClose" aria-label="Close">&times;</button>
+    <h3 id="linkModalTitle">Invitation Link</h3>
+    <p class="modal-sub" id="linkModalSub"></p>
+    <div class="field"><input id="linkModalUrl" type="text" readonly></div>
+    <div class="modal-actions">
+      <a class="btn btn-outline" id="linkModalWa" target="_blank" rel="noopener">WhatsApp</a>
+      <button class="btn btn-primary" id="linkModalCopy">Copy Link</button>
     </div>
   </div>
 </div>

@@ -143,11 +143,27 @@ async function handleImport(req, res) {
 }
 
 module.exports = async function handler(req, res) {
-  if (!requireAuth(req, res)) return;
+  if (!(await requireAuth(req, res))) return;
 
   if (req.method === "GET") {
     const data = await readData();
-    res.status(200).json({ providers: data.providers.map(withComputed), currencies: CURRENCIES, paymentMethods: PAYMENT_METHODS });
+    // one-off (Nov 2026): e-Guests as the digital-invitations supplier — USD 80 agreed, USD 20 paid
+    data.migrations = data.migrations || {};
+    if (!data.migrations.eGuestsProvider) {
+      if (!data.providers.some((p) => /e-?guests/i.test(p.name || ""))) {
+        const now = new Date().toISOString();
+        data.providers.push({
+          id: newId("provider"), name: "e-Guests — Digital Invitations", category: "Stationery & Printing", contactName: "Comfort Vhurudzai",
+          phone: "+263 778 106 935", email: "info@e-guests.com", agreedFee: 80, currency: "USD", paymentDeadline: null,
+          notes: "Digital invitations, RSVP website and guest management portal.", createdAt: now,
+          payments: [{ id: newId("payment"), date: now.slice(0, 10), amount: 20, currency: "USD", method: "Other", notes: "USD 20 paid so far — recorded " + now.slice(0, 10) + "; payment date and method not given" }],
+        });
+      }
+      data.migrations.eGuestsProvider = new Date().toISOString();
+      await writeData(data);
+    }
+    const viewer = req.wnUser.role === "viewer";
+    res.status(200).json({ providers: data.providers.map(withComputed).map((p) => (viewer ? Object.assign({}, p, { phone: require("../../lib/auth").maskPhone(p.phone) }) : p)), currencies: CURRENCIES, paymentMethods: PAYMENT_METHODS });
     return;
   }
 
