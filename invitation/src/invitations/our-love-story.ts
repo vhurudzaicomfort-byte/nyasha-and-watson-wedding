@@ -102,6 +102,7 @@ export const ourLoveStory: Invitation = {
     },
     frameImage: "/images/frame-gold-roses.webp",
     ringsImage: "/images/wedding-rings.webp",
+    sealImage: "/images/wax-seal-nw.webp",
   },
 
   theme: {

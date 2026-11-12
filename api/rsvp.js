@@ -4,8 +4,10 @@
 // GET  ?request=<id>     -> status of an RSVP that is waiting for approval.
 // POST { token?, ... }   -> records the RSVP on the guest's record. Without a
 //                           token we match an existing invitation by phone, then
-//                           email, then exact full name (a name alone may only
-//                           claim an invitation nobody has answered yet). Only
+//                           email, then by name the way people write it: titles
+//                           ignored, every recognisable name word must belong to
+//                           one invitation (assets/js/guest-match.js). A name
+//                           alone may only claim an unanswered invitation. Only
 //                           guests on the list can RSVP: anyone we can't match is
 //                           refused (403, notListed) and nothing is stored.
 //                           Also refused (403) once an RSVP deadline has passed.
@@ -13,6 +15,7 @@
 //                           in the portal; GET ?request keeps reporting them.)
 const { readData, writeData } = require("../lib/blob-store");
 const Fields = require("../assets/js/guest-fields.js");
+const Match = require("../assets/js/guest-match.js");
 
 const CHANNELS = ["web", "whatsapp", "sms", "email", "call"];
 
@@ -20,16 +23,6 @@ function splitName(name) {
   var parts = String(name || "").trim().split(/\s+/);
   return { firstName: parts.shift() || "", lastName: parts.join(" ") };
 }
-function digits(s) { return String(s || "").replace(/[^\d]/g, ""); }
-// Compare on the trailing 9 digits so "+263 77…" and "077…" match each other.
-function samePhone(a, b) {
-  var x = digits(a), y = digits(b);
-  if (x.length < 7 || y.length < 7) return false;
-  return x.slice(-9) === y.slice(-9);
-}
-function normName(s) { return String(s || "").trim().toLowerCase().replace(/\s+/g, " "); }
-function fullName(g) { return ((g.firstName || "") + " " + (g.lastName || "")).trim(); }
-
 // The guest's own table only — never anyone else's seating.
 function tableName(data, guest) {
   var t = guest.tableId && (data.tables || []).find(function (x) { return x.id === guest.tableId; });
@@ -94,19 +87,15 @@ module.exports = async function handler(req, res) {
     var data2 = await readData();
     var guest2 = null, matchedBy = "", nameHint = "";
     if (body.token) { guest2 = data2.guests.find(function (g) { return g.id === body.token && !g.removedAt; }); if (guest2) matchedBy = "link"; }
-    if (!guest2 && phone) { guest2 = data2.guests.find(function (g) { return !g.removedAt && samePhone(g.phone, phone); }); if (guest2) matchedBy = "phone"; }
-    if (!guest2 && email) {
-      var em = email.toLowerCase();
-      guest2 = data2.guests.find(function (g) { return !g.removedAt && g.email && String(g.email).trim().toLowerCase() === em; });
-      if (guest2) matchedBy = "email";
-    }
-    if (!guest2 && body.name) {
-      var n = normName(body.name);
-      // Name alone is guessable, so it may only claim an invitation nobody has answered yet.
-      var byName = data2.guests.filter(function (g) { return !g.removedAt && normName(fullName(g)) === n; });
-      if (byName.length === 1 && (byName[0].rsvpStatus || "pending") === "pending") { guest2 = byName[0]; matchedBy = "name"; }
-      else if (byName.length > 1) nameHint = "shared";
-      else if (byName.length === 1) nameHint = "answered";
+    if (!guest2) {
+      // phone / email (exact), then the name as people actually write it (see assets/js/guest-match.js)
+      var found = Match.findGuest(data2.guests, { phone: phone, email: email, name: body.name });
+      if (found && found.guest) {
+        if (found.by !== "name") { guest2 = found.guest; matchedBy = found.by; }
+        // Name alone is guessable, so it may only claim an invitation nobody has answered yet.
+        else if ((found.guest.rsvpStatus || "pending") === "pending") { guest2 = found.guest; matchedBy = "name"; }
+        else nameHint = "answered";
+      } else if (found && found.ambiguous) nameHint = "shared";
     }
 
     var now = new Date().toISOString();
@@ -135,7 +124,7 @@ module.exports = async function handler(req, res) {
     // guests can RSVP, so nothing is recorded.
     if (!splitName(body.name).firstName && !phone && !email) { res.status(400).json({ error: "Please enter your full name" }); return; }
     var why = nameHint === "shared"
-      ? "More than one guest has this name. Please add the phone number or email address on your invitation, or open your personal invitation link."
+      ? "A few invitations match that name. Please add the phone number or email address the couple has for you, or open your personal invitation link."
       : nameHint === "answered"
         ? "This invitation already has a reply. To change it, open your personal invitation link, or add the phone number or email address on your invitation."
         : "Sorry, we couldn't find you on the guest list. Please use your full name as it appears on your invitation, or the phone number or email address the couple has for you.";

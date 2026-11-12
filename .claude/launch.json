@@ -14,6 +14,12 @@
       "port": 3010
     },
     {
+      "name": "wedding-site-qa",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["-e", "process.env.PORT='3011'; require('./tools/dev-server.js')"],
+      "port": 3011
+    },
+    {
       "name": "e-guests-demo",
       "runtimeExecutable": "npx",
       "runtimeArgs": ["--yes", "serve", "-l", "3100", "C:/Users/info/OneDrive/Documents/e-Events/Product/demo-site"],

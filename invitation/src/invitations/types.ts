@@ -139,6 +139,8 @@ export interface Invitation {
     frameImage?: string;
     /** Photographic wedding rings shown in place of "&" between the names. */
     ringsImage?: string;
+    /** The envelope's wax seal (round transparent image); the drawn monogram otherwise. */
+    sealImage?: string;
   };
   theme: {
     /** Accent colours exposed as CSS variables (keeps each wedding on-brand). */

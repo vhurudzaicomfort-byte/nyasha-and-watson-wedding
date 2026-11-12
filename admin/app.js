@@ -645,19 +645,28 @@
   });
 
   var approvingRequest = null;
-  function nameTokens(s) { return String(s || "").toLowerCase().split(/\s+/).filter(Boolean); }
   function openApproveModal(r) {
     approvingRequest = r;
     document.getElementById("approveModalSub").textContent = reqName(r) + " — " + reqResponse(r) + (r.phone ? " · " + WNPhone.formatPhone(r.phone) : "");
     document.getElementById("approve-invitedfor").innerHTML = '<option value="">—</option>' + categories.map(function (c) { return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + "</option>"; }).join("");
-    // suggest the most likely existing invite: shared surname or first name
-    var mine = nameTokens(reqName(r));
-    var sorted = guests.slice().sort(function (a, b) { return fullName(a).localeCompare(fullName(b)); });
-    var suggestion = sorted.find(function (g) { return nameTokens(fullName(g)).some(function (t) { return mine.indexOf(t) !== -1; }); });
-    document.getElementById("approve-guest").innerHTML = '<option value="">Choose an invite…</option>' + sorted.map(function (g) {
-      return '<option value="' + g.id + '"' + (suggestion && suggestion.id === g.id ? " selected" : "") + ">" + escapeHtml(fullName(g)) + (g.phone ? " · " + escapeHtml(WNPhone.formatPhone(g.phone)) : "") + "</option>";
-    }).join("");
-    document.querySelector('input[name="approve-mode"][value="new"]').checked = true;
+    // the same smart matching the RSVP form uses (assets/js/guest-match.js): titles
+    // ignored, phone/email first, every recognisable name word on one invitation
+    var q = { name: reqName(r), phone: r.phone, email: r.email };
+    var found = window.WNGuestMatch ? WNGuestMatch.findGuest(guests, q) : null;
+    var ranked = window.WNGuestMatch ? WNGuestMatch.suggest(guests, q, 6) : [];
+    var sure = found && found.guest ? found.guest : null;
+    var suggestion = sure || (ranked[0] && ranked[0].guest) || null;
+    var sorted = guests.filter(function (g) { return !g.removedAt; }).sort(function (a, b) { return fullName(a).localeCompare(fullName(b)); });
+    var top = ranked.map(function (x) { return x.guest; });
+    var option = function (g) { return '<option value="' + g.id + '"' + (suggestion && suggestion.id === g.id ? " selected" : "") + ">" + escapeHtml(fullName(g)) + (g.phone ? " · " + escapeHtml(WNPhone.formatPhone(g.phone)) : "") + "</option>"; };
+    document.getElementById("approve-guest").innerHTML = '<option value="">Choose an invite…</option>' +
+      (top.length ? '<optgroup label="Likely matches">' + top.map(option).join("") + "</optgroup>" : "") +
+      '<optgroup label="Everyone">' + sorted.filter(function (g) { return top.indexOf(g) === -1; }).map(option).join("") + "</optgroup>";
+    var party = window.WNGuestMatch ? WNGuestMatch.impliedPartySize(reqName(r)) : null;
+    document.getElementById("approveModalSub").textContent = reqName(r) + " — " + reqResponse(r) + (r.phone ? " · " + WNPhone.formatPhone(r.phone) : "") +
+      (sure ? " · Looks like: " + fullName(sure) + (found.by !== "name" ? " (same " + found.by + ")" : "") : found && found.ambiguous ? " · Several invites could match — choose below" : "") +
+      (party && party > (Number(r.guests) || 1) ? " · Name says " + party + " people" : "");
+    document.querySelector('input[name="approve-mode"][value="' + (sure ? "link" : "new") + '"]').checked = true;
     syncApproveMode();
     document.getElementById("approveModalOverlay").hidden = false;
   }

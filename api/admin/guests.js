@@ -1,6 +1,7 @@
 const { requireAuth, maskPhone } = require("../../lib/auth");
 const { readData, writeData, newId } = require("../../lib/blob-store");
 const Fields = require("../../assets/js/guest-fields.js");
+const Match = require("../../assets/js/guest-match.js");
 const Seat = require("../../lib/seating");
 
 const CATEGORIES = Fields.CATEGORIES;
@@ -10,10 +11,23 @@ const CATEGORIES = Fields.CATEGORIES;
 //   POST { action: "approve", requestId, mode: "new", invitedFor }
 //   POST { action: "approve", requestId, mode: "link", guestId }
 //   POST { action: "decline" | "reopen", requestId }
+// People in a request: what they entered, or more when the name says so
+// ("Mr and Mrs X", "X & Wife" = 2).
+function requestParty(reqRec) {
+  const implied = Match.impliedPartySize(((reqRec.firstName || "") + " " + (reqRec.lastName || "")).trim()) || 0;
+  return Math.max(1, Number(reqRec.guests) || 1, implied);
+}
 function applyRequestToGuest(guest, reqRec, now) {
+  const party = requestParty(reqRec);
+  // approving a request for N people admits N, even if the invitation allowed fewer
+  if (reqRec.attend === "attending" && party > (Number(guest.invitedCount) || 1) + (guest.plusOneAllowed ? 1 : 0)) {
+    guest.invitedCount = party;
+    if (party === 2 && (guest.invitationType || "individual") === "individual") guest.invitationType = "couple";
+    if (party > 2) guest.invitationType = "family";
+  }
   const cap = (Number(guest.invitedCount) || 1) + (guest.plusOneAllowed ? 1 : 0);
   guest.rsvpStatus = reqRec.attend;
-  guest.attendingCount = reqRec.attend === "attending" ? Math.max(1, Math.min(Number(reqRec.guests) || 1, cap)) : 0;
+  guest.attendingCount = reqRec.attend === "attending" ? Math.max(1, Math.min(party, cap)) : 0;
   if (reqRec.plusOneName) guest.plusOneName = reqRec.plusOneName;
   if (reqRec.message) {
     guest.rsvpMessage = reqRec.message;
@@ -48,7 +62,7 @@ async function handleRequestAction(body, res) {
       applyRequestToGuest(guest, reqRec, now);
       guest.notes = (guest.notes ? guest.notes + " | " : "") + "RSVP request linked " + now.slice(0, 10);
     } else {
-      const party = Math.max(1, Number(reqRec.guests) || 1);
+      const party = requestParty(reqRec);
       guest = {
         id: newId("guest"),
         firstName: reqRec.firstName || "",
