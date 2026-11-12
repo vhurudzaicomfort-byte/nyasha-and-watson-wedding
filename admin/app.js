@@ -295,7 +295,7 @@
         "<td>" + checkinPill(g) + "</td>" +
         '<td><div class="row-actions">' + (g.removedAt
           ? iconBtn("restore", g.id, "Restore to the guest list") + iconBtn("purge", g.id, "Delete permanently")
-          : iconBtn("edit", g.id, "Edit") + iconBtn("link", g.id, "Copy invite link") + iconBtn("invite", g.id, "Send invite via WhatsApp") + iconBtn("contact", g.id, "Log contact") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Remove")) + "</div></td>" +
+          : iconBtn("edit", g.id, "Edit") + iconBtn("link", g.id, "Copy invite link") + iconBtn("invite", g.id, "Send invite via WhatsApp") + iconBtn("contact", g.id, "Log contact") + iconBtn("invitepdf", g.id, "Invitation PDF (A5)") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Remove")) + "</div></td>" +
         "</tr>";
     }).join("");
     shownIds = rows.map(function (g) { return g.id; });
@@ -308,6 +308,7 @@
       link: '<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>',
       invite: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
       badge: '<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 18h8"/>',
+      invitepdf: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5 12 17l2.5-2.5"/>',
       checkin: '<path d="M20 6L9 17l-5-5"/>',
       contact: '<path d="M21 12a8.5 8.5 0 0 1-12.4 7.5L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4"/>',
       restore: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
@@ -337,7 +338,7 @@
     document.getElementById("bulkCount").textContent = ids.length + " selected";
     var all = document.getElementById("pickAll");
     all.checked = shownIds.length > 0 && shownIds.every(function (id) { return picked[id]; });
-    var ops = removedView ? [["restore", "Restore to the guest list"]] : [["markSent", "Mark invitation sent"], ["seat", "Seat at a table…"], ["rsvp", "Set RSVP…"], ["invitedFor", "Set invited for…"], ["remove", "Remove"]];
+    var ops = removedView ? [["restore", "Restore to the guest list"]] : [["invitePdf", "Download invitations (PDF)"], ["markSent", "Mark invitation sent"], ["seat", "Seat at a table…"], ["rsvp", "Set RSVP…"], ["invitedFor", "Set invited for…"], ["remove", "Remove"]];
     var sel = document.getElementById("bulkOp"), cur = sel.value;
     sel.innerHTML = ops.map(function (o) { return '<option value="' + o[0] + '">' + o[1] + "</option>"; }).join("");
     if (ops.some(function (o) { return o[0] === cur; })) sel.value = cur;
@@ -365,6 +366,7 @@
   document.getElementById("bulkApply").addEventListener("click", function () {
     var ids = pickedIds(), op = document.getElementById("bulkOp").value, value = document.getElementById("bulkValue").hidden ? null : document.getElementById("bulkValue").value;
     if (!ids.length) return;
+    if (op === "invitePdf") { invitationPdfs(ids.map(function (id) { return guests.find(function (x) { return x.id === id; }); }).filter(Boolean)); return; }
     var go = function () {
       api("/api/admin/guests", { method: "POST", body: { action: "bulk", ids: ids, op: op, value: value } }).then(function (res) {
         picked = {};
@@ -375,6 +377,34 @@
     };
     if (op === "remove") askConfirm("Remove " + ids.length + " guest(s)?", "They move to Removed and give up their tables. You can restore them any time.").then(function (ok) { if (ok) go(); });
     else go();
+  });
+
+  /* ---------------- A5 PDF INVITATIONS ---------------- */
+  // Same card the guests save from their invitation (assets/js/wn-invitation-pdf.js):
+  // the venue opens Google Maps, the phone numbers dial, the QR code and web
+  // address open that guest's personal invitation. Many guests = one PDF, a page each.
+  var pdfBusy = false;
+  function invitationPdfs(list) {
+    if (!list.length || pdfBusy) return;
+    if (!window.WNInvitationPDF) { showToast("The PDF maker didn't load — refresh the page"); return; }
+    pdfBusy = true;
+    var items = list.map(function (g) { return { name: fullName(g), link: location.origin + "/?g=" + encodeURIComponent(g.id) }; });
+    var name = list.length === 1 ? WNInvitationPDF.fileName(items[0].name) : "Nyasha-Watson-Invitations-" + list.length + "-guests.pdf";
+    showToast(list.length === 1 ? "Preparing the invitation…" : "Preparing " + list.length + " invitations…");
+    WNInvitationPDF.download(items, name, function (done, total) {
+      if (total > 12 && done < total) showToast("Preparing invitations… " + done + " of " + total);
+    }).then(function () {
+      showToast(list.length === 1 ? "Invitation saved (A5 PDF)" : list.length + " invitations saved in one PDF");
+    }).catch(function (e) {
+      console.warn("[invitation pdf]", e);
+      showToast("Sorry, the PDF could not be created");
+    }).then(function () { pdfBusy = false; });
+  }
+  document.getElementById("invitePdfAllBtn").addEventListener("click", function () {
+    var list = shownIds.map(function (id) { return guests.find(function (x) { return x.id === id; }); }).filter(Boolean);
+    if (!list.length) { showToast("No guests shown — clear the filters first"); return; }
+    if (list.length === 1) { invitationPdfs(list); return; }
+    askConfirm("Download " + list.length + " invitations?", "One A5 PDF with a page for each guest shown (about " + Math.max(1, Math.round(list.length * 0.06)) + " MB). Use the search and filters first to download fewer.").then(function (ok) { if (ok) invitationPdfs(list); });
   });
 
   /* ---------------- LOG CONTACT ---------------- */
@@ -497,6 +527,7 @@
     else if (action === "link") copyInviteLink(g);
     else if (action === "invite") sendInvite(g);
     else if (action === "badge") openBadgeModal(g);
+    else if (action === "invitepdf") invitationPdfs([g]);
     else if (action === "checkin") toggleCheckin(g);
     else if (action === "delete") deleteGuest(g);
   });

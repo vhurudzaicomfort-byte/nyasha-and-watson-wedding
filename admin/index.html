@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
 <script src="/assets/js/qrcode.min.js"></script>
+<script src="/assets/js/wn-invitation-pdf.js?v=20261112a"></script>
 <script src="/assets/js/countries.js?v=20260923o"></script>
 <script src="/assets/js/guest-fields.js?v=20260923o"></script>
 <script src="/assets/js/jsQR.min.js"></script>
@@ -389,6 +390,7 @@
             <button class="btn btn-outline" id="importGuestsBtn">Import</button>
             <a class="btn btn-outline" href="/api/admin/export?type=invited&format=xlsx">Export Excel</a>
             <a class="btn btn-outline" href="/api/admin/export?type=links&format=xlsx" title="Every guest's personal invitation link">Personal Links</a>
+            <button class="btn btn-outline" type="button" id="invitePdfAllBtn" title="A5 PDF invitations for every guest shown below, one page each">Invitations PDF</button>
             <button class="btn btn-primary" id="addGuestBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Invite</button>
           </div>
         </div>
