@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useContext, useEffect, useId, useState } from "react";
 import { Monogram } from "@/components/ornaments/Monogram";
-import { Rings, SprigDecor } from "@/components/ornaments/Decor";
+import { DecorContext, Rings, SprigDecor } from "@/components/ornaments/Decor";
 import styles from "./Envelope.module.css";
 
 export type EnvelopePhase = "closed" | "opening" | "done";
@@ -38,6 +38,7 @@ export function Envelope({
   onOpened,
   phase,
 }: Props) {
+  const { sealImage } = useContext(DecorContext);
   const [withMusic, setWithMusic] = useState(true);
   const [reduced, setReduced] = useState(false);
   const descId = useId();
@@ -120,7 +121,12 @@ export function Envelope({
             <span className={styles.flapInner} />
           </span>
           <span className={styles.seal}>
-            <Monogram initials={initials} variant="seal" size={84} />
+            {sealImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={sealImage} alt="" aria-hidden="true" className={styles.sealImg} width={300} height={300} decoding="async" />
+            ) : (
+              <Monogram initials={initials} variant="seal" size={84} />
+            )}
           </span>
         </button>
 

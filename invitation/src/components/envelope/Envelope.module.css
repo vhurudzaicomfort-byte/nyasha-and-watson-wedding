@@ -472,3 +472,16 @@ img.sprigRight[data-photo] {
   right: -6rem;
   transform: scaleX(-1) rotate(-16deg);
 }
+
+/* the couple's wax-seal button (photographic, transparent) */
+.sealImg {
+  display: block;
+  width: clamp(64px, 20vw, 90px);
+  height: auto;
+  border-radius: 50%;
+}
+
+/* phones: a touch higher so the seal never meets the "Dear …" line */
+@media (max-width: 520px) {
+  .seal { top: 52%; }
+}

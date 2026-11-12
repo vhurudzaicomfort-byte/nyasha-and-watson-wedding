@@ -7,7 +7,6 @@ import { mapsDirectionsUrl } from "@/lib/maps";
 import { Reveal } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/Button";
 import { AddToCalendar } from "@/components/ui/AddToCalendar";
-import { ShareButton } from "@/components/ui/ShareButton";
 import { MapPinIcon } from "@/components/ui/Icons";
 import { CornerDecor } from "@/components/ornaments/Decor";
 import { Flourish } from "@/components/ornaments/Flourish";
@@ -19,7 +18,7 @@ interface Props {
 }
 
 export function Details({ invitation, shareUrl }: Props) {
-  const { schedule, venue, couple } = invitation;
+  const { schedule, venue } = invitation;
   const p = dateParts(schedule.date, schedule.timeZone);
   const ev = invitationToEvent(invitation, shareUrl);
 
@@ -65,11 +64,6 @@ export function Details({ invitation, shareUrl }: Props) {
           <Button variant="outline" icon={<MapPinIcon />} href={mapsDirectionsUrl(venue)}>
             Get directions
           </Button>
-          <ShareButton
-            title={`Wedding of ${couple.partnerOne} & ${couple.partnerTwo}`}
-            text={`${invitation.invitationLine} ${invitation.title} – ${couple.partnerOne} & ${couple.partnerTwo}, ${p.day} ${p.month} ${p.year}.`}
-            url={shareUrl}
-          />
         </Reveal>
       </div>
     </section>

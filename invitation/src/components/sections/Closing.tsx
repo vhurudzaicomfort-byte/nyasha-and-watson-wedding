@@ -4,7 +4,6 @@ import type { GuestContext, Invitation } from "@/invitations/types";
 import { InvitationCardButton } from "@/components/ui/InvitationCard";
 import { Reveal } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/Button";
-import { ShareButton } from "@/components/ui/ShareButton";
 import { ReplayIcon } from "@/components/ui/Icons";
 import { Flourish } from "@/components/ornaments/Flourish";
 import { Rings, SprigDecor } from "@/components/ornaments/Decor";
@@ -18,7 +17,7 @@ interface Props {
   guest?: GuestContext | null;
 }
 
-export function Closing({ invitation, onReplay, shareUrl, guest = null }: Props) {
+export function Closing({ invitation, onReplay, guest = null }: Props) {
   const { couple } = invitation;
   return (
     <footer className={styles.footer}>
@@ -45,15 +44,12 @@ export function Closing({ invitation, onReplay, shareUrl, guest = null }: Props)
             </Button>
           )}
           <InvitationCardButton invitation={invitation} guest={guest} />
-          <ShareButton
-            variant="ghost"
-            title={`Wedding of ${couple.partnerOne} & ${couple.partnerTwo}`}
-            text={`${invitation.invitationLine} ${invitation.title} – ${couple.partnerOne} & ${couple.partnerTwo}.`}
-            url={shareUrl}
-          />
         </div>
         <p className={styles.powered}>
-          Crafted with <span aria-hidden="true">♥</span> · eGuest
+          Crafted with <span aria-hidden="true">♥</span> by{" "}
+          <a href="https://www.e-guests.com" target="_blank" rel="noopener">
+            e-Guests
+          </a>
         </p>
       </Reveal>
     </footer>
