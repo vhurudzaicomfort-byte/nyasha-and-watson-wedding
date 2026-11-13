@@ -29,10 +29,10 @@ function distanceMeters(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 function digits(s) { return String(s || "").replace(/[^\d]/g, ""); }
+// same number however it was typed: the last 9 digits (fewer for shorter national numbers, min 7)
 function samePhone(a, b) {
-  const x = digits(a), y = digits(b);
-  if (x.length < 7 || y.length < 7) return false;
-  return x.slice(-9) === y.slice(-9);
+  const x = digits(a), y = digits(b), n = Math.min(9, x.length, y.length);
+  return n >= 7 && x.slice(-n) === y.slice(-n);
 }
 
 function tableName(data, guest) {

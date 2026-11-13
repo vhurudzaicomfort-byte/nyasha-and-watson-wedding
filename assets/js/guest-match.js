@@ -64,9 +64,11 @@
     return lev(a, b) <= (L >= 8 ? 2 : 1);
   }
   function digits(s) { return String(s || "").replace(/\D/g, ""); }
+  // same number however it was typed (+263…, 0…, 00…, no prefix, other countries):
+  // compare the last 9 digits, or fewer for countries with shorter numbers (min 7)
   function samePhone(a, b) {
-    var x = digits(a), y = digits(b);
-    return x.length >= 7 && y.length >= 7 && x.slice(-9) === y.slice(-9);
+    var x = digits(a), y = digits(b), n = Math.min(9, x.length, y.length);
+    return n >= 7 && x.slice(-n) === y.slice(-n);
   }
 
   // How many people a typed name stands for when it says so: "Mr and Mrs X",

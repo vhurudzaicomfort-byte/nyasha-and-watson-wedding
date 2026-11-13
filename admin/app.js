@@ -570,11 +570,10 @@
     } else { prompt("Copy this link:", url); }
   }
 
+  // wa.me wants the full international number without "+": any stored form works
+  // ("0774…", "774…", "+263…", "263…", "00263…", or another country's code)
   function waNumber(phone) {
-    var digits = String(phone || "").replace(/[^\d]/g, "");
-    if (!digits) return "";
-    if (digits.charAt(0) === "0") return "263" + digits.slice(1); // local Zimbabwean format -> country code
-    return digits;
+    return WNPhone.toInternational(phone).replace(/^\+/, "");
   }
 
   function sendInvite(g) {
