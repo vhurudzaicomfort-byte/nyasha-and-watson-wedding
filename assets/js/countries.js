@@ -61,12 +61,23 @@
     return COUNTRIES.find(function (c) { return c.dial === dial; });
   }
 
-  // Best-effort parse of whatever's already stored (raw digits, "0..." local,
-  // "+263..." E.164, or "263..." with no plus) into {dial, number}.
+  // Parse a phone number however it was typed into {dial, number}. Every form
+  // of the same number gives the same result:
+  //   "+263 77 404 6963", "263774046963", "00263774046963"  → 263 / 774046963
+  //   "0774 046 963", "774 046 963" (local, with or without the 0) → 263 / 774046963
+  //   "+27 73 846 3892", "0027 73 846 3892" (other countries) → 27 / 738463892
+  // A number without a country code is Zimbabwean (the wedding's home). An
+  // international number whose code isn't in the list keeps its digits as typed.
   function splitPhone(raw) {
-    var digits = String(raw || "").replace(/[^\d]/g, "");
+    var s = String(raw || "").trim();
+    var digits = s.replace(/[^\d]/g, "");
     if (!digits) return { dial: "263", number: "" };
-    if (digits.charAt(0) === "0") return { dial: "263", number: digits.slice(1) };
+    var intl = s.charAt(0) === "+" || digits.indexOf("00") === 0;
+    if (digits.indexOf("00") === 0) digits = digits.slice(2);
+    if (!intl) {
+      if (digits.charAt(0) === "0") return { dial: "263", number: digits.slice(1) };
+      if (digits.length <= 9) return { dial: "263", number: digits }; // local, written without the 0
+    }
     var sortedByLen = COUNTRIES.slice().sort(function (a, b) { return b.dial.length - a.dial.length; });
     for (var i = 0; i < sortedByLen.length; i++) {
       var c = sortedByLen[i];
@@ -74,7 +85,14 @@
         return { dial: c.dial, number: digits.slice(c.dial.length) };
       }
     }
+    if (intl) return { dial: "", number: digits }; // a country we don't list: keep it as typed
     return { dial: "263", number: digits };
+  }
+
+  // "+<country><number>" for links (WhatsApp, tap-to-call), from any form above. "" when empty.
+  function toInternational(raw) {
+    var p = splitPhone(raw);
+    return p.number ? "+" + p.dial + p.number : "";
   }
 
   function joinPhone(dial, number) {
@@ -108,9 +126,9 @@
     var s = String(raw || "").trim();
     if (!s) return "";
     var p = splitPhone(s);
-    return p.number ? "+" + p.dial + " " + p.number : s;
+    return p.number ? "+" + p.dial + (p.dial ? " " : "") + p.number : s;
   }
 
-  global.WNPhone = { COUNTRIES: COUNTRIES, splitPhone: splitPhone, joinPhone: joinPhone, formatPhone: formatPhone, populatePhoneWidget: populatePhoneWidget, readPhoneWidget: readPhoneWidget, findByDial: findByDial };
+  global.WNPhone = { COUNTRIES: COUNTRIES, splitPhone: splitPhone, toInternational: toInternational, joinPhone: joinPhone, formatPhone: formatPhone, populatePhoneWidget: populatePhoneWidget, readPhoneWidget: readPhoneWidget, findByDial: findByDial };
   if (typeof module !== "undefined" && module.exports) module.exports = global.WNPhone;
 })(typeof window !== "undefined" ? window : globalThis);
