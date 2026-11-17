@@ -26,7 +26,7 @@ const HEADER_ALIASES = {
 
 function normPhone(s) { return String(s || "").replace(/[^\d]/g, ""); }
 // "+263 77…" and "077…" are the same number: compare the last 9 digits
-function samePhone(a, b) { var x = normPhone(a), y = normPhone(b); return x.length >= 7 && y.length >= 7 && x.slice(-9) === y.slice(-9); }
+function samePhone(a, b) { var x = normPhone(a), y = normPhone(b), n = Math.min(9, x.length, y.length); return n >= 7 && x.slice(-n) === y.slice(-n); }
 function normName(s) { return String(s || "").trim().toLowerCase().replace(/[^a-z0-9' ]/g, " ").replace(/\s+/g, " ").trim(); }
 const TITLES = { mai: 1, baba: 1, ba: 1, va: 1, sekuru: 1, mbuya: 1, tete: 1, mainini: 1, bamnini: 1, maiguru: 1, mukoma: 1, mk: 1, sis: 1, mr: 1, mrs: 1, ms: 1, dr: 1, bishop: 1, elder: 1, overseer: 1, pastor: 1, and: 1, wife: 1, husband: 1, guest: 1, family: 1 };
 function words(s) { return normName(s).split(" ").filter(function (w) { return w.length > 1 && !TITLES[w]; }); }

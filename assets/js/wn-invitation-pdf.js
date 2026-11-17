@@ -288,9 +288,14 @@
     ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
     ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
   }
+  // any form of a number → "+<country><number>" (same rules as WNPhone.toInternational)
   function toIntl(ph) {
-    var digits = String(ph).replace(/\D/g, "");
-    if (digits.charAt(0) === "0") digits = "263" + digits.slice(1);
+    if (global.WNPhone && global.WNPhone.toInternational) return global.WNPhone.toInternational(ph);
+    var s = String(ph || "").trim(), digits = s.replace(/\D/g, "");
+    var intl = s.charAt(0) === "+" || digits.indexOf("00") === 0;
+    if (digits.indexOf("00") === 0) digits = digits.slice(2);
+    if (!intl && digits.charAt(0) === "0") digits = "263" + digits.slice(1);
+    else if (!intl && digits.length <= 9) digits = "263" + digits;
     return "+" + digits;
   }
   function shortLink(link) { return String(link).replace(/^https?:\/\//, "").replace(/\/$/, ""); }

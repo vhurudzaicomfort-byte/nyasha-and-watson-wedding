@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { GuestContext, Invitation as InvitationData } from "@/invitations/types";
 import { dottedDate } from "@/lib/datetime";
+import { telHref } from "@/lib/share";
 import { useMusic } from "@/hooks/useMusic";
 import { Envelope, type EnvelopePhase } from "@/components/envelope/Envelope";
 import { MusicControl } from "@/components/ui/MusicControl";
@@ -108,7 +109,7 @@ export function InvitationExperience({ invitation, guest, shareUrl, musicSrc, sk
             {invitation.rsvp.fallbackPhones.map((ph, i) => (
               <span key={ph}>
                 {i ? " or " : "Call "}
-                <a href={`tel:+263${ph.replace(/D/g, "").replace(/^0/, "")}`}>{ph}</a>
+                <a href={telHref(ph)}>{ph}</a>
               </span>
             ))}
             .
