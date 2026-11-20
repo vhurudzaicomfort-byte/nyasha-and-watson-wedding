@@ -189,6 +189,9 @@
   .pill-delivery-not{ background:var(--ivory-deep); color:var(--text-muted); }
   .bulk-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:10px 14px; margin-bottom:12px; background:var(--surface); border:1px solid var(--gold); border-radius:10px; font-size:.82rem; color:var(--plum-2); }
   .bulk-bar[hidden]{ display:none; }
+  .rsvp-choice{ display:flex; flex-wrap:wrap; gap:8px 18px; padding:6px 0; }
+  .rsvp-choice label{ display:inline-flex; align-items:center; gap:8px; font-size:.9rem; letter-spacing:0; text-transform:none; color:var(--text); cursor:pointer; white-space:nowrap; margin:0; }
+  .rsvp-choice input[type=radio]{ width:auto; height:auto; margin:0; padding:0; flex:none; accent-color:var(--plum); }
   .bulk-bar select{ border:1px solid var(--border); background:var(--ivory); padding:8px 10px; font-size:.78rem; border-radius:6px; font-family:inherit; color:var(--text); }
   .toolbar label.toggle{ display:inline-flex; align-items:center; gap:7px; font-size:.8rem; color:var(--plum-2); padding:0 6px; cursor:pointer; }
   td.pick, th.pick{ width:34px; padding-right:0; }
@@ -861,6 +864,34 @@
     <div class="modal-actions">
       <button class="btn btn-outline" id="bulkTablesCancel">Cancel</button>
       <button class="btn btn-primary" id="bulkTablesSave">Add Tables</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="rsvpModalOverlay" hidden>
+  <div class="modal">
+    <button class="modal-close" id="rsvpModalClose" aria-label="Close">&times;</button>
+    <h3 id="rsvpModalTitle">Record RSVP</h3>
+    <p class="modal-sub" id="rsvpModalSub">For guests who reply by phone, WhatsApp or in person.</p>
+    <div class="form-grid">
+      <div class="field full">
+        <label>Coming?</label>
+        <div class="rsvp-choice" role="radiogroup" aria-label="Coming?">
+          <label><input type="radio" name="r-attend" value="attending" checked> Yes, attending</label>
+          <label><input type="radio" name="r-attend" value="not_attending"> No, can't come</label>
+          <label><input type="radio" name="r-attend" value="maybe"> Maybe</label>
+        </div>
+      </div>
+      <div class="field" id="r-countField"><label for="r-count">How many people</label><input id="r-count" type="number" min="1" max="20" value="1"><span class="mix-note" id="r-capNote"></span></div>
+      <div class="field"><label for="r-channel">How they replied</label><select id="r-channel"><option value="call">Phone call</option><option value="whatsapp">WhatsApp</option><option value="sms">SMS</option><option value="in_person">In person</option><option value="email">Email</option><option value="admin">Other</option></select></div>
+      <div class="field checkline full" id="r-raiseField" hidden><input type="checkbox" id="r-raise"><label for="r-raise" id="r-raiseLabel">Allow more than the invitation (raises it)</label></div>
+      <div class="field full"><label for="r-message">Their message (optional)</label><textarea id="r-message" placeholder="e.g. Congratulations! / Coming with my wife"></textarea></div>
+    </div>
+    <p class="mix-note" id="rsvpCurrent" style="margin-top:4px;"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="rsvpModalClear" type="button">Clear reply</button>
+      <button class="btn btn-outline" id="rsvpModalCancel" type="button">Cancel</button>
+      <button class="btn btn-primary" id="rsvpModalSave" type="button">Save RSVP</button>
     </div>
   </div>
 </div>

@@ -16,7 +16,7 @@
   // before the guest list has loaded or if an older API response is cached.
   var categories = FG.CATEGORIES.slice();
   var CHECKIN_METHODS = { usher: "Usher", self: "Self", auto: "Auto (GPS)", "self-unverified": "Self · no location" };
-  var CHANNELS = { web: "website", whatsapp: "WhatsApp", sms: "SMS", email: "email", call: "phone call", admin: "portal (logged by admin)" };
+  var CHANNELS = { web: "website", whatsapp: "WhatsApp", sms: "SMS", email: "email", call: "phone call", in_person: "in person", admin: "portal (logged by admin)" };
 
   var toastTimer;
   function showToast(msg) {
@@ -281,7 +281,7 @@
     document.getElementById("guestRows").innerHTML = rows.map(function (g) {
       var status = g.rsvpStatus || "pending";
       var subLine = [g.familyName || capitalize(g.invitationType || "individual"), g.invitedFor].filter(Boolean).join(" · ");
-      var meta = [FG.genderLabel(g.gender), g.rsvpChannel && status !== "pending" ? "Replied via " + (CHANNELS[g.rsvpChannel] || g.rsvpChannel) : ""].filter(Boolean).join(" · ");
+      var meta = [FG.genderLabel(g.gender), g.rsvpChannel && status !== "pending" ? "Replied via " + (CHANNELS[g.rsvpChannel] || g.rsvpChannel) + (g.rsvpRecordedBy ? " · recorded by " + g.rsvpRecordedBy : "") : ""].filter(Boolean).join(" · ");
       var dv = delivery(g);
       var lastC = (g.contacts || []).slice(-1)[0];
       if (lastC) meta = (meta ? meta + " · " : "") + "Last contact: " + lastC.channel + " · " + fmtDate(lastC.at);
@@ -295,7 +295,7 @@
         "<td>" + checkinPill(g) + "</td>" +
         '<td><div class="row-actions">' + (g.removedAt
           ? iconBtn("restore", g.id, "Restore to the guest list") + iconBtn("purge", g.id, "Delete permanently")
-          : iconBtn("edit", g.id, "Edit") + iconBtn("link", g.id, "Copy invite link") + iconBtn("invite", g.id, "Send invite via WhatsApp") + iconBtn("contact", g.id, "Log contact") + iconBtn("invitepdf", g.id, "Invitation PDF (A5)") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Remove")) + "</div></td>" +
+          : iconBtn("edit", g.id, "Edit") + iconBtn("link", g.id, "Copy invite link") + iconBtn("invite", g.id, "Send invite via WhatsApp") + iconBtn("contact", g.id, "Log contact") + iconBtn("rsvp", g.id, "Record RSVP") + iconBtn("invitepdf", g.id, "Invitation PDF (A5)") + iconBtn("badge", g.id, "Badge") + iconBtn("checkin", g.id, g.checkedIn ? "Undo check-in" : "Check in") + iconBtn("delete", g.id, "Remove")) + "</div></td>" +
         "</tr>";
     }).join("");
     shownIds = rows.map(function (g) { return g.id; });
@@ -326,6 +326,7 @@
       link: '<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>',
       invite: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
       badge: '<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 18h8"/>',
+      rsvp: '<path d="M8 2v4M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
       invitepdf: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5 12 17l2.5-2.5"/>',
       checkin: '<path d="M20 6L9 17l-5-5"/>',
       contact: '<path d="M21 12a8.5 8.5 0 0 1-12.4 7.5L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4"/>',
@@ -436,6 +437,61 @@
     if (!list.length) { showToast("No guests shown — clear the filters first"); return; }
     if (list.length === 1) { invitationPdfs(list); return; }
     askConfirm("Download " + list.length + " invitations?", "One A5 PDF with a page for each guest shown (about " + Math.max(1, Math.round(list.length * 0.06)) + " MB). Use the search and filters first to download fewer.").then(function (ok) { if (ok) invitationPdfs(list); });
+  });
+
+  /* ---------------- RECORD RSVP (on a guest's behalf) ---------------- */
+  var rsvpGuest = null;
+  function rsvpCap(g) { return (Number(g.invitedCount) || 1) + (g.plusOneAllowed ? 1 : 0); }
+  function syncRsvpModal() {
+    if (!rsvpGuest) return;
+    var attend = document.querySelector('input[name="r-attend"]:checked').value;
+    var coming = attend === "attending";
+    document.getElementById("r-countField").hidden = !coming;
+    var n = Number(document.getElementById("r-count").value) || 1, cap = rsvpCap(rsvpGuest);
+    var over = coming && n > cap;
+    document.getElementById("r-raiseField").hidden = !over;
+    document.getElementById("r-raiseLabel").textContent = "Allow " + n + " (their invitation covers " + cap + "): raise the invitation to " + n;
+    document.getElementById("r-capNote").textContent = "Invitation covers " + cap;
+  }
+  function openRsvpModal(g) {
+    rsvpGuest = g;
+    var st = g.rsvpStatus || "pending";
+    document.getElementById("rsvpModalTitle").textContent = "Record RSVP — " + fullName(g);
+    document.getElementById("rsvpModalSub").textContent = "For guests who reply by phone, WhatsApp or in person. Their invitation shows this reply too.";
+    var pick = document.querySelector('input[name="r-attend"][value="' + (st === "pending" ? "attending" : st) + '"]');
+    (pick || document.querySelector('input[name="r-attend"][value="attending"]')).checked = true;
+    document.getElementById("r-count").value = st === "attending" ? (g.attendingCount || 1) : rsvpCap(g);
+    document.getElementById("r-channel").value = ["call", "whatsapp", "sms", "in_person", "email"].indexOf(g.rsvpChannel) !== -1 ? g.rsvpChannel : "call";
+    document.getElementById("r-raise").checked = false;
+    document.getElementById("r-message").value = "";
+    document.getElementById("rsvpCurrent").textContent = st === "pending" ? "No reply yet." :
+      "Current reply: " + (st === "attending" ? "attending, " + (g.attendingCount || 1) : st === "maybe" ? "maybe" : "not attending") +
+      (g.rsvpChannel ? " · via " + (CHANNELS[g.rsvpChannel] || g.rsvpChannel) : "") + (g.rsvpRecordedBy ? " · recorded by " + g.rsvpRecordedBy : "") + (g.rsvpAt ? " · " + fmtDate(g.rsvpAt) : "");
+    document.getElementById("rsvpModalClear").hidden = st === "pending";
+    syncRsvpModal();
+    document.getElementById("rsvpModalOverlay").hidden = false;
+  }
+  function closeRsvpModal() { document.getElementById("rsvpModalOverlay").hidden = true; rsvpGuest = null; }
+  function saveRsvp(attend) {
+    if (!rsvpGuest) return;
+    var g = rsvpGuest;
+    var body = { action: "recordRsvp", id: g.id, attend: attend, guests: Number(document.getElementById("r-count").value) || 1,
+      channel: document.getElementById("r-channel").value, message: document.getElementById("r-message").value, raiseAllowance: document.getElementById("r-raise").checked };
+    if (attend === "attending" && body.guests > rsvpCap(g) && !body.raiseAllowance) { showToast("Tick 'Allow " + body.guests + "' to go above their invitation"); return; }
+    api("/api/admin/guests", { method: "POST", body: body }).then(function () {
+      closeRsvpModal();
+      showToast(attend === "pending" ? "Reply cleared for " + fullName(g) : "RSVP recorded for " + fullName(g) + (attend === "attending" ? " (" + body.guests + ")" : ""));
+      return loadAll();
+    }).catch(function (e) { showToast(e.message || "Could not save the RSVP"); });
+  }
+  document.querySelectorAll('input[name="r-attend"]').forEach(function (el) { el.addEventListener("change", syncRsvpModal); });
+  document.getElementById("r-count").addEventListener("input", syncRsvpModal);
+  document.getElementById("rsvpModalClose").addEventListener("click", closeRsvpModal);
+  document.getElementById("rsvpModalCancel").addEventListener("click", closeRsvpModal);
+  document.getElementById("rsvpModalSave").addEventListener("click", function () { saveRsvp(document.querySelector('input[name="r-attend"]:checked').value); });
+  document.getElementById("rsvpModalClear").addEventListener("click", function () {
+    var g = rsvpGuest; if (!g) return;
+    askConfirm("Clear " + fullName(g) + "'s reply?", "They go back to 'not replied yet' and can RSVP again from their invitation.").then(function (ok) { if (ok) saveRsvp("pending"); });
   });
 
   /* ---------------- LOG CONTACT ---------------- */
@@ -559,6 +615,7 @@
     else if (action === "invite") sendInvite(g);
     else if (action === "badge") openBadgeModal(g);
     else if (action === "invitepdf") invitationPdfs([g]);
+    else if (action === "rsvp") openRsvpModal(g);
     else if (action === "checkin") toggleCheckin(g);
     else if (action === "delete") deleteGuest(g);
   });
