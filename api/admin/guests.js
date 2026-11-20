@@ -131,6 +131,59 @@ async function handleBulk(body, req, res) {
 }
 
 // A contact made with a guest (WhatsApp, call…): kept as a history; counts as the invite being sent.
+// Record an RSVP on a guest's behalf (they phoned, messaged or told someone):
+//   POST { action: "recordRsvp", id, attend: attending|not_attending|maybe|pending,
+//          guests, channel: call|whatsapp|sms|in_person|email|admin, message?, raiseAllowance? }
+// "pending" clears the reply. Going above the invitation needs raiseAllowance (it then
+// grows the invitation); a seated guest can't outgrow their table's free seats.
+const RSVP_CHANNELS = ["call", "whatsapp", "sms", "in_person", "email", "admin"];
+async function handleRecordRsvp(body, req, res) {
+  const attend = ["attending", "not_attending", "maybe", "pending"].indexOf(body.attend) !== -1 ? body.attend : "";
+  if (!attend) { res.status(400).json({ error: "Choose whether they're coming" }); return; }
+  const data = await readData();
+  const g = data.guests.find((x) => x.id === body.id && !x.removedAt);
+  if (!g) { res.status(404).json({ error: "Guest not found" }); return; }
+  const now = new Date().toISOString();
+  const cap = (Number(g.invitedCount) || 1) + (g.plusOneAllowed ? 1 : 0);
+  let count = attend === "attending" ? Math.max(1, Math.min(20, Math.round(Number(body.guests) || 1))) : 0;
+  if (count > cap && !body.raiseAllowance) { res.status(400).json({ error: "Their invitation covers " + cap + ". Tick 'allow more' to raise it to " + count + "." }); return; }
+  const before = { invitedCount: g.invitedCount, invitationType: g.invitationType };
+  if (count > cap) {
+    g.invitedCount = count - (g.plusOneAllowed ? 1 : 0);
+    if (g.invitedCount === 2 && (g.invitationType || "individual") === "individual") g.invitationType = "couple";
+    if (g.invitedCount > 2) g.invitationType = "family";
+  }
+  if (g.tableId && attend === "attending") {
+    const tb = (data.tables || []).find((t) => t.id === g.tableId);
+    if (tb) {
+      const used = Seat.occupied(data.guests, tb.id, g.id);
+      if (used + count > tb.capacity) {
+        Object.assign(g, before);
+        res.status(409).json({ error: tb.name + " has " + Math.max(0, tb.capacity - used) + " free seat(s) for them; move them to another table first, or record fewer people." });
+        return;
+      }
+    }
+  }
+  const channel = RSVP_CHANNELS.indexOf(body.channel) !== -1 ? body.channel : "admin";
+  const message = String(body.message || "").trim().slice(0, 1000);
+  g.rsvpStatus = attend;
+  g.attendingCount = count;
+  if (attend === "pending") {
+    g.rsvpAt = null; g.rsvpChannel = ""; g.rsvpRecordedBy = "";
+  } else {
+    g.rsvpAt = now;
+    g.rsvpChannel = channel;
+    g.rsvpRecordedBy = req.wnUser.name || "Admin";
+    if (message) {
+      g.rsvpMessage = message;
+      g.notes = (g.notes ? g.notes + " | " : "") + "RSVP message: " + message;
+    }
+    if (count > cap) g.notes = (g.notes ? g.notes + " | " : "") + "Invitation raised to " + count + " when recording their RSVP " + now.slice(0, 10);
+  }
+  await writeData(data);
+  res.status(200).json({ ok: true, guest: g });
+}
+
 async function handleLogContact(body, req, res) {
   var data = await readData();
   var g = data.guests.find(function (x) { return x.id === body.guestId; });
@@ -170,6 +223,7 @@ module.exports = async function handler(req, res) {
     var body = req.body || {};
     if (body.action === "bulk") { await handleBulk(body, req, res); return; }
     if (body.action === "logContact") { await handleLogContact(body, req, res); return; }
+    if (body.action === "recordRsvp") { await handleRecordRsvp(body, req, res); return; }
     if (body.action) { await handleRequestAction(body, res); return; }
     var data2 = await readData();
     var guest = {
